@@ -16,18 +16,17 @@ export default function HeroSection() {
             <div className="relative mx-auto flex max-w-6xl flex-col px-6 lg:block">
               <div className="mx-auto max-w-lg text-center lg:ml-0 lg:w-1/2 lg:text-left">
                 <h1 className="mt-8 max-w-2xl text-balance text-5xl font-medium md:text-6xl lg:mt-16 xl:text-7xl">
-                  Share Path
+                  Ship 10x Faster with NS
                 </h1>
                 <p className="mt-8 max-w-2xl text-pretty text-lg">
-                  Viajar es la mejor forma de encontrarte con lo desconocido y
-                  contigo mismo. Descubre nuevos horizontes y vive experiencias
-                  inolvidables con nosotros.
+                  Highly customizable components for building modern websites
+                  and applications that look and feel the way you mean it.
                 </p>
 
                 <div className="mt-12 flex flex-col items-center justify-center gap-2 sm:flex-row lg:justify-start">
                   <Button asChild size="lg" className="px-5 text-base">
                     <Link href="#link">
-                      <span className="text-nowrap">Comienza la aventura</span>
+                      <span className="text-nowrap">Start Building</span>
                     </Link>
                   </Button>
                   <Button
@@ -38,7 +37,7 @@ export default function HeroSection() {
                     className="px-5 text-base"
                   >
                     <Link href="#link">
-                      <span className="text-nowrap">Ingresar</span>
+                      <span className="text-nowrap">Request a demo</span>
                     </Link>
                   </Button>
                 </div>
@@ -57,58 +56,84 @@ export default function HeroSection() {
           <div className="group relative m-auto max-w-6xl px-6">
             <div className="flex flex-col items-center md:flex-row">
               <div className="md:max-w-44 md:border-r md:pr-6">
-                <p className="text-end text-sm">Explora estos estados</p>
+                <p className="text-end text-sm">Powering the best teams</p>
               </div>
               <div className="relative py-6 md:w-[calc(100%-11rem)]">
-                <InfiniteSlider speedOnHover={20} speed={40} gap={150}>
-                  
+                <InfiniteSlider speedOnHover={20} speed={40} gap={112}>
+                  <div className="flex">
+                    <img
+                      className="mx-auto h-5 w-fit dark:invert"
+                      src="https://html.tailus.io/blocks/customers/nvidia.svg"
+                      alt="Nvidia Logo"
+                      height="20"
+                      width="auto"
+                    />
+                  </div>
+
                   <div className="flex">
                     <img
                       className="mx-auto h-4 w-fit dark:invert"
-                      src="https://upload.wikimedia.org/wikipedia/commons/e/ea/Mapa_M%C3%A9xico%2C_D._F..svg"
-                      alt="CDMX"
-                      height="1000"
-                      width="auto"
-                    />
-                  </div>
-                  <div className="flex">
-                    <img
-                      className="mx-auto h-5 w-fit dark:invert"
-                      src="https://upload.wikimedia.org/wikipedia/commons/9/91/Blank_map_of_Morelos.svg"
-                      alt="Morelos"
-                      height="1000"
-                      width="auto"
-                    />
-                  </div>
-                  <div className="flex">
-                    <img
-                      className="mx-auto h-5 w-fit dark:invert"
-                      src="https://upload.wikimedia.org/wikipedia/commons/2/26/Blank_map_of_Hidalgo.svg"
-                      alt="Hidalgo"
-                      height="1000"
+                      src="https://html.tailus.io/blocks/customers/column.svg"
+                      alt="Column Logo"
+                      height="16"
                       width="auto"
                     />
                   </div>
                   <div className="flex">
                     <img
                       className="mx-auto h-4 w-fit dark:invert"
-                      src="https://upload.wikimedia.org/wikipedia/commons/f/f3/Regions_of_the_state_of_Mexico_%28blank%29.svg"
-                      alt="Estado de México"
-                      height="1000"
+                      src="https://html.tailus.io/blocks/customers/github.svg"
+                      alt="GitHub Logo"
+                      height="16"
+                      width="auto"
+                    />
+                  </div>
+                  <div className="flex">
+                    <img
+                      className="mx-auto h-5 w-fit dark:invert"
+                      src="https://html.tailus.io/blocks/customers/nike.svg"
+                      alt="Nike Logo"
+                      height="20"
+                      width="auto"
+                    />
+                  </div>
+                  <div className="flex">
+                    <img
+                      className="mx-auto h-5 w-fit dark:invert"
+                      src="https://html.tailus.io/blocks/customers/lemonsqueezy.svg"
+                      alt="Lemon Squeezy Logo"
+                      height="20"
+                      width="auto"
+                    />
+                  </div>
+                  <div className="flex">
+                    <img
+                      className="mx-auto h-4 w-fit dark:invert"
+                      src="https://html.tailus.io/blocks/customers/laravel.svg"
+                      alt="Laravel Logo"
+                      height="16"
                       width="auto"
                     />
                   </div>
                   <div className="flex">
                     <img
                       className="mx-auto h-7 w-fit dark:invert"
-                      src="https://upload.wikimedia.org/wikipedia/commons/2/26/QUE-mun-map.svg"
-                      alt="Queretaro"
-                      height="1000"
+                      src="https://html.tailus.io/blocks/customers/lilly.svg"
+                      alt="Lilly Logo"
+                      height="28"
                       width="auto"
                     />
                   </div>
 
-            
+                  <div className="flex">
+                    <img
+                      className="mx-auto h-6 w-fit dark:invert"
+                      src="https://html.tailus.io/blocks/customers/openai.svg"
+                      alt="OpenAI Logo"
+                      height="24"
+                      width="auto"
+                    />
+                  </div>
                 </InfiniteSlider>
 
                 <div className="bg-linear-to-r from-background absolute inset-y-0 left-0 w-20"></div>
