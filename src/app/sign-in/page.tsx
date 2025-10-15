@@ -10,10 +10,7 @@ import { FiEye, FiEyeOff } from "react-icons/fi";
 import { toast } from "sonner"; 
 
 export default function SignInPage() {
-<<<<<<< HEAD
-=======
-  // --- LÓGICA DEL FORMULARIO ---
->>>>>>> c6c41dc (first-landing)
+
   const [correo, setCorreo] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
