@@ -4,14 +4,13 @@
     width: 900px;
     max-width: 95%;
     min-height: 600px;
-    /* Las reglas de color y sombra ahora vienen del tema */
-    border-radius: var(--radius-lg); /* Usamos el radio del tema */
+    border-radius: var(--radius-lg); 
     overflow: hidden;
 }
 
 .panel-logo {
     flex: 1;
-    display: flex; /* Mantenemos flex para centrar */
+    display: flex;
     justify-content: center;
     align-items: center;
     overflow: hidden;
@@ -76,7 +75,7 @@
     text-decoration: none;
 }
 
-/* Dejamos las clases de botones genéricas sin colores */
+
 .boton {
     width: 100%;
     padding: 12px;
@@ -97,7 +96,7 @@
 .separador::after {
     content: '';
     flex: 1;
-    border-bottom: 1px solid var(--border); /* Usamos el color de borde del tema */
+    border-bottom: 1px solid var(--border); 
 }
 
 .separador span {

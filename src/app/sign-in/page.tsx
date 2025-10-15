@@ -1,50 +1,66 @@
 "use client";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import styles from './signin.module.css'; // Tu archivo de estilos importado
-
-// Componentes de UI que ya existen en tu proyecto
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-// Iconos para el ojo de la contraseña
 import { FiEye, FiEyeOff } from "react-icons/fi";
+import { toast } from "sonner"; 
 
 export default function SignInPage() {
-  // --- LÓGICA DEL FORMULARIO (Sin cambios) ---
   const [correo, setCorreo] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); 
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    setIsLoading(true); 
 
-    try {
-      const response = await fetch("https://harol-lovers.up.railway.app/auth", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ correo, password }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || "Error al iniciar sesión.");
+    
+    const promise = fetch("https://harol-lovers.up.railway.app/auth", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ correo, password }),
+    }).then(async (res) => {
+        if (!res.ok) {
+            
+            const errorData = await res.json();
+            throw new Error(errorData.message || 'Ocurrió un error.');
+        }
+        return res.json(); 
+    });
+
+    toast.promise(promise, {
+      loading: "Iniciando sesión...",
+      success: (data) => {
+        if (data && data.token) {
+            localStorage.setItem("authToken", data.token);
+            setTimeout(() => router.push("/dashboard"), 1000); 
+            return "¡Bienvenido de vuelta!";
+        }
+        
+        throw new Error("Respuesta inválida del servidor.");
+      },
+      error: (error) => {
+       
+        return error.message || "Credenciales incorrectas o error de red.";
+      },
+      finally: () => {
+        setIsLoading(false); 
       }
-      localStorage.setItem("authToken", data.token);
-      router.push("/dashboard");
-    } catch (err: any) {
-      setError(err.message);
-    }
+    });
   };
 
-  // --- ESTRUCTURA Y DISEÑO (JSX con tus clases CSS) ---
-   return (
+  // --- ESTRUCTURA Y DISEÑO (JSX) ---
+  return (
     <main className="flex min-h-screen w-full items-center justify-center bg-muted/40 p-4">
-      <div className="flex w-full max-w-4xl min-h-[600px] overflow-hidden rounded-2xl shadow-2xl">
+       <div className="flex w-full max-w-4xl min-h-[600px] overflow-hidden rounded-2xl shadow-2xl">
         
         {/* Panel Izquierdo: Imagen */}
         <div className="hidden lg:block lg:w-1/2">
@@ -78,7 +94,8 @@ export default function SignInPage() {
                   value={correo}
                   onChange={(e) => setCorreo(e.target.value)}
                   required
-                  className="py-6" // Hacemos los inputs un poco más altos
+                  disabled={isLoading}
+                  className="py-6"
                 />
                 <div className="relative">
                   <Input
@@ -87,6 +104,7 @@ export default function SignInPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    disabled={isLoading}
                     className="py-6 pr-10"
                   />
                   <button
@@ -106,10 +124,10 @@ export default function SignInPage() {
                 </Link>
               </div>
 
-              {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
+              
 
-              <Button type="submit" className="w-full py-6 text-lg font-semibold" style={{ backgroundColor: '#555', color: 'white' }}>
-                Iniciar sesión
+              <Button type="submit" className="w-full py-6 text-lg font-semibold" style={{ backgroundColor: '#555', color: 'white' }} disabled={isLoading}>
+                {isLoading ? "Verificando..." : "Iniciar sesión"}
               </Button>
 
               <div className="my-6 flex items-center">
@@ -118,7 +136,7 @@ export default function SignInPage() {
                 <div className="flex-grow border-t border-border"></div>
               </div>
 
-              <Button type="button" variant="outline" className="w-full py-6">
+              <Button type="button" variant="outline" className="w-full py-6" disabled={isLoading}>
                 <Image 
                   src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" 
                   alt="Google logo"
@@ -141,7 +159,5 @@ export default function SignInPage() {
       </div>
     </main>
   );
-
-
 }
 
