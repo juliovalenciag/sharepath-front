@@ -1,137 +1,170 @@
 "use client";
-import Link from "next/link";
+
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 
-export default function SignUpUI() {
+export default function SignUpPage() {
+  // --- ESTADOS PARA LOS CAMPOS DEL FORMULARIO ---
+  const [nombre, setNombre] = useState("");
+  const [correo, setCorreo] = useState("");
+  const [password, setPassword] = useState("");
+  const [foto, setFoto] = useState<File | null>(null); // Estado para el archivo de la foto
+  
+  // Estados para la UI
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const router = useRouter();
 
+  // --- LÓGICA DE ENVÍO DEL FORMULARIO ---
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccessMessage(null);
+
+    // 1. Usamos FormData para poder enviar archivos (la foto)
+    const formData = new FormData();
+    formData.append("nombre", nombre);
+    formData.append("correo", correo);
+    formData.append("password", password);
+    if (foto) {
+      formData.append("foto", foto);
+    }
+
+    try {
+      // 2. Hacemos la petición POST al endpoint de registro
+      const response = await fetch("https://harol-lovers.up.railway.app/auth/register", {
+        method: "POST",
+        body: formData, 
+        // ¡OJO! No establecemos 'Content-Type'. El navegador lo hace automáticamente
+        // por nosotros cuando enviamos un objeto FormData.
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Si el servidor devuelve un error, lo mostramos
+        throw new Error(data.message || "Error al registrar el usuario.");
+      }
+      
+      // 3. Mostramos un mensaje de éxito y redirigimos al login
+      setSuccessMessage(data.message + ". Serás redirigido para iniciar sesión.");
+      setTimeout(() => {
+        router.push("/sign-in");
+      }, 3000); // Esperamos 3 segundos antes de redirigir
+
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message);
+    }
+  };
+
+  // --- ESTRUCTURA Y DISEÑO (JSX con Tailwind CSS) ---
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900 p-6">
-      <div className="w-full max-w-sm">
-        {/* Header with logo and title */}
-        <div className="flex flex-col items-center mb-8">
-          <Link href="/">
-            <img
-              src=""
-              alt="logo"
-              className="hidden lg:block h-12 w-auto ml-2"
-            />
-          </Link>
-          <h1 className="mt-4 text-3xl font-bold text-gray-800 dark:text-gray-100">
-            Create your account
-          </h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 text-center">
-            Join SharePath and start managing your projects
-          </p>
+    <main className="flex min-h-screen w-full items-center justify-center bg-muted/40 p-4">
+      <div className="flex w-full max-w-4xl min-h-[600px] overflow-hidden rounded-2xl shadow-2xl">
+        
+        {/* Panel Izquierdo: Imagen */}
+        <div className="hidden lg:block lg:w-1/2">
+          <Image
+            src="/img/bellas_artes.jpg" // Asegúrate que esta imagen esté en public/img/
+            alt="Mural del Palacio de Bellas Artes"
+            width={1920}
+            height={1080}
+            className="h-full w-full object-cover"
+          />
         </div>
 
-        <Card className="shadow-md rounded-2xl overflow-hidden">
-          <CardContent className="p-6 space-y-5">
-            {/* Form — UI only */}
-            <form onSubmit={(e) => e.preventDefault()} className="space-y-5">
-              {/* Name */}
-              <div className="space-y-2">
-                <label htmlFor="name" className="text-sm font-medium">
-                  Name
-                </label>
+        {/* Panel Derecho: Formulario */}
+        <div className="flex w-full flex-col items-center justify-center bg-card p-8 lg:w-1/2">
+          <div className="w-full max-w-sm text-center">
+            <form onSubmit={handleSubmit}>
+              <h2 className="mb-2 text-3xl font-bold text-foreground">Regístrate</h2>
+              <p className="mb-6 text-sm text-muted-foreground">
+                Crea tu cuenta para empezar a compartir.
+              </p>
+              
+              <div className="space-y-4 text-left">
+                {/* NOTA: Tu HTML pedía "Nombre de usuario", pero el backend pide "nombre". Usamos "nombre". */}
                 <Input
-                  id="name"
-                  placeholder="Julio Valencia"
-                  className="border-b-2 border-gray-300 bg-transparent focus:ring-0 focus:border-accent"
+                  type="text"
+                  placeholder="Nombre completo"
+                  value={nombre}
+                  onChange={(e) => setNombre(e.target.value)}
+                  required
                 />
-                <p
-                  className="text-xs text-muted-foreground h-4"
-                  aria-live="polite"
-                />
-              </div>
-
-              {/* Email */}
-              <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium">
-                  Email
-                </label>
                 <Input
-                  id="email"
                   type="email"
-                  placeholder="dalio@mail.com"
-                  className="border-b-2 border-gray-300 bg-transparent focus:ring-0 focus:border-accent"
+                  placeholder="Correo electrónico"
+                  value={correo}
+                  onChange={(e) => setCorreo(e.target.value)}
+                  required
                 />
-                <p
-                  className="text-xs text-muted-foreground h-4"
-                  aria-live="polite"
-                />
-              </div>
-
-              {/* Password */}
-              <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium">
-                  Password
-                </label>
                 <div className="relative">
                   <Input
-                    id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    className="border-b-2 border-gray-300 bg-transparent pr-10 focus:ring-0 focus:border-accent"
+                    placeholder="Contraseña"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-gray-500 hover:text-gray-700"
-                    aria-label={
-                      showPassword ? "Hide password" : "Show password"
-                    }
-                  >
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                     {showPassword ? <FiEyeOff /> : <FiEye />}
                   </button>
                 </div>
-                <p
-                  className="text-xs text-muted-foreground h-4"
-                  aria-live="polite"
-                />
+                {/* Campo para subir la foto de perfil */}
+                <div>
+                  <label htmlFor="foto" className="text-sm font-medium text-muted-foreground">
+                    Foto de perfil (opcional)
+                  </label>
+                  <Input
+                    id="foto"
+                    type="file"
+                    accept="image/png, image/jpeg, image/jpg"
+                    onChange={(e) => setFoto(e.target.files ? e.target.files[0] : null)}
+                    className="mt-1"
+                  />
+                </div>
               </div>
 
-              {/* Submit — visual only */}
-              <Button
-                type="submit"
-                className="w-full py-3 bg-primary text-white font-semibold rounded-xl shadow hover:shadow-lg"
-              >
-                Create account
+              <p className="my-4 text-xs text-muted-foreground">
+                Al registrarte, aceptas nuestras <Link href="#" className="underline">Condiciones y Política de privacidad</Link>.
+              </p>
+
+              {/* Mensajes de éxito o error */}
+              {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
+              {successMessage && <p className="mb-4 text-sm text-green-600">{successMessage}</p>}
+
+              <Button type="submit" className="w-full py-3 text-lg font-semibold" style={{ backgroundColor: '#555', color: 'white' }}>
+                Regístrate
               </Button>
+
+              <div className="my-4 flex items-center">
+                <div className="flex-grow border-t border-border"></div>
+                <span className="mx-4 text-xs text-muted-foreground">o</span>
+                <div className="flex-grow border-t border-border"></div>
+              </div>
+
+              <Button type="button" variant="outline" className="w-full">
+                <Image src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google logo" width={20} height={20} className="mr-2"/>
+                Continuar con Google
+              </Button>
+
+              <p className="mt-6 text-sm text-muted-foreground">
+                ¿Ya tienes una cuenta?{" "}
+                <Link href="/sign-in" className="font-semibold text-primary hover:underline">
+                  Iniciar sesión
+                </Link>
+              </p>
             </form>
-
-            {/* Separator */}
-            <div className="flex items-center justify-center space-x-2">
-              <span className="h-px w-10 bg-gray-300 dark:bg-gray-700" />
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                or sign up with
-              </span>
-              <span className="h-px w-10 bg-gray-300 dark:bg-gray-700" />
-            </div>
-
-            {/* OAuth button — visual only */}
-            <Button variant="outline" className="w-full rounded-xl">
-              Continue with Google
-            </Button>
-          </CardContent>
-
-          <CardFooter className="flex flex-col items-center p-4 bg-gray-100 dark:bg-gray-800">
-            <span className="text-sm text-gray-600 dark:text-gray-400">
-              Already have an account?{" "}
-              <Link
-                href="/sign-in"
-                className="text-primary font-medium hover:underline"
-              >
-                Sign in
-              </Link>
-            </span>
-          </CardFooter>
-        </Card>
+          </div>
+        </div>
       </div>
-    </div>
+    </main>
   );
 }
