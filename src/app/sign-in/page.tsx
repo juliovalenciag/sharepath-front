@@ -7,21 +7,19 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FiEye, FiEyeOff } from "react-icons/fi";
-import { toast } from "sonner"; 
+import { toast } from "sonner";
 
 export default function SignInPage() {
-
   const [correo, setCorreo] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false); 
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true); 
+    setIsLoading(true);
 
-    
     const promise = fetch("https://harol-lovers.up.railway.app/auth", {
       method: "PUT",
       headers: {
@@ -30,30 +28,39 @@ export default function SignInPage() {
       body: JSON.stringify({ correo, password }),
     }).then(async (res) => {
         if (!res.ok) {
-            
             const errorData = await res.json();
-            throw new Error(errorData.message || 'Ocurrió un error.');
+            throw new Error(errorData.message || 'Ocurrió un error al iniciar sesión.');
         }
-        return res.json(); 
+        return res.json();
     });
 
     toast.promise(promise, {
       loading: "Iniciando sesión...",
       success: (data) => {
-        if (data && data.token) {
+        if (data && data.token && data.usuario) {
             localStorage.setItem("authToken", data.token);
-            setTimeout(() => router.push("/dashboard"), 1000); 
+            
+            // --- NUEVA LÓGICA DE REDIRECCIÓN BASADA EN ROL ---
+            const userRole = data.usuario.role; // Obtenemos el rol del usuario
+            let redirectPath = '/dashboard'; // Ruta por defecto para usuarios normales
+
+            if (userRole === 'admin') {
+                redirectPath = '/admin-dashboard'; // Ruta para administradores
+            }
+            // Si hay otros roles, podrías añadir más 'else if' aquí
+
+            setTimeout(() => router.push(redirectPath), 1000); 
+            // -----------------------------------------------
+
             return "¡Bienvenido de vuelta!";
         }
-        
-        throw new Error("Respuesta inválida del servidor.");
+        throw new Error("Respuesta inválida del servidor: Token o usuario no encontrados.");
       },
       error: (error) => {
-       
         return error.message || "Credenciales incorrectas o error de red.";
       },
       finally: () => {
-        setIsLoading(false); 
+        setIsLoading(false);
       }
     });
   };
@@ -124,8 +131,6 @@ export default function SignInPage() {
                   Olvidé mi contraseña
                 </Link>
               </div>
-
-              
 
               <Button type="submit" className="w-full py-6 text-lg font-semibold" style={{ backgroundColor: '#555', color: 'white' }} disabled={isLoading}>
                 {isLoading ? "Verificando..." : "Iniciar sesión"}

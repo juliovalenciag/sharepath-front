@@ -11,9 +11,10 @@ import { Logo } from "@/components/logo";
 import { ModeToggle } from "@/components/landing-components/mode-toggle";
 
 const menuItems = [
-  { name: "Inicio", href: "/" },
-  { name: "Nosotros", href: "/about" },
-  { name: "Contacto", href: "/contact" },
+  { name: "Features", href: "#link" },
+  { name: "Solution", href: "#link" },
+  { name: "Pricing", href: "#link" },
+  { name: "About", href: "#link" },
 ];
 
 export const HeroHeader = () => {
@@ -78,12 +79,12 @@ export const HeroHeader = () => {
               <div className="flex w-full flex-col space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit">
                 <Button asChild variant="outline" size="sm">
                   <Link href="sign-in">
-                    <span>Ingresar</span>
+                    <span>Login</span>
                   </Link>
                 </Button>
                 <Button asChild size="sm">
                   <Link href="sign-up">
-                    <span>Registrarse</span>
+                    <span>Sign Up</span>
                   </Link>
                 </Button>
                 <ModeToggle />
