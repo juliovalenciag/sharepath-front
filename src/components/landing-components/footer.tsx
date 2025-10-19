@@ -3,28 +3,16 @@ import Link from "next/link";
 
 const links = [
   {
-    title: "Features",
-    href: "#",
+    title: "Inicio",
+    href: "/",
   },
   {
-    title: "Solution",
-    href: "#",
+    title: "Nosotros",
+    href: "/about",
   },
   {
-    title: "Customers",
-    href: "#",
-  },
-  {
-    title: "Pricing",
-    href: "#",
-  },
-  {
-    title: "Help",
-    href: "#",
-  },
-  {
-    title: "About",
-    href: "#",
+    title: "Contacto",
+    href: "/contact",
   },
 ];
 

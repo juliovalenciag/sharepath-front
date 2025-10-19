@@ -11,19 +11,18 @@ import { Logo } from "@/components/logo";
 import { ModeToggle } from "@/components/landing-components/mode-toggle";
 
 const menuItems = [
-  { name: "Features", href: "#link" },
-  { name: "Solution", href: "#link" },
-  { name: "Pricing", href: "#link" },
-  { name: "About", href: "#link" },
+  { name: "Inicio", href: "/" },
+  { name: "Nosotros", href: "/about" },
+  { name: "Contacto", href: "/contact" },
 ];
 
 export const HeroHeader = () => {
   const [menuState, setMenuState] = React.useState(false);
   return (
-    <header>
+    <header className="sticky top-0 z-50 w-full border-b backdrop-blu-3x1 bg-background/50">
       <nav
         data-state={menuState && "active"}
-        className="bg-background/50 fixed z-20 w-full border-b backdrop-blur-3xl"
+        //className="bg-background/50 fixed z-20 w-full border-b backdrop-blur-3xl"
       >
         <div className="mx-auto max-w-6xl px-6 transition-all duration-300">
           <div className="relative flex flex-wrap items-center justify-between gap-6 py-3 lg:gap-0 lg:py-4">
@@ -79,12 +78,12 @@ export const HeroHeader = () => {
               <div className="flex w-full flex-col space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit">
                 <Button asChild variant="outline" size="sm">
                   <Link href="sign-in">
-                    <span>Login</span>
+                    <span>Ingresar</span>
                   </Link>
                 </Button>
                 <Button asChild size="sm">
                   <Link href="sign-up">
-                    <span>Sign Up</span>
+                    <span>Registrarse</span>
                   </Link>
                 </Button>
                 <ModeToggle />

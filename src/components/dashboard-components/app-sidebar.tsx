@@ -15,12 +15,14 @@ import {
   IconCalendarFilled,
   IconMessages,
   IconCompassFilled,
+  IconMapPinFilled,
 } from "@tabler/icons-react";
 
 import { NavDocuments } from "@/components/dashboard-components/nav-documents";
 import { NavMain } from "@/components/dashboard-components/nav-main";
 import { NavSecondary } from "@/components/dashboard-components/nav-secondary";
 import { NavUser } from "@/components/dashboard-components/nav-user";
+
 import {
   Sidebar,
   SidebarContent,
@@ -38,13 +40,14 @@ const data = {
     avatar: "profile.png",
   },
   navMain: [
-    { title: "Inicio", url: "/", icon: IconHomeFilled },
+    { title: "Inicio", url: "/dashboard", icon: IconHomeFilled },
     { title: "Descubre", url: "/dashboard/descubre", icon: IconCompassFilled },
     {
       title: "Itinerario",
       url: "/dashboard/itinerario",
       icon: IconCalendarFilled,
     },
+    { title: "Ver Mapa", url: "/dashboard/vermapa", icon: IconMapPinFilled },
   ],
   navClouds: [
     {

@@ -17,18 +17,21 @@ import { FiEye, FiEyeOff } from "react-icons/fi";
 
 // 1. Definimos el "contrato" de validación con Zod
 const formSchema = z.object({
-  nombre: z.string().min(2, {
+  nombre_completo: z.string().min(2, {
     message: "El nombre debe tener al menos 2 caracteres.",
   }),
   correo: z.string().email({
-    message: "Por favor, introduce un correo electrónico válido.",
+    message: "El correo debe ser un correo electrónico válido.",
   }),
   password: z.string().refine((password) => {
     // Regex para validar: al menos 1 mayúscula, 1 minúscula, 1 número y 1 símbolo
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
     return passwordRegex.test(password);
-  }, {
-    message: "La contraseña debe tener 8+ caracteres, incluyendo mayúscula, minúscula, número y símbolo.",
+  },{
+    message: "La contraseña debe tener más caracteres, incluyendo mayúscula, minúscula, número y símbolo.",
+  }),
+  username: z.string().min(5, {
+    message: "El username debe tener al menos 5 caracteres.",
   }),
   foto: z.instanceof(File).optional(),
 });
@@ -42,9 +45,10 @@ export default function SignUpPage() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      nombre: "",
+      nombre_completo: "",
       correo: "",
       password: "",
+      username: "",
     },
   });
 
@@ -53,9 +57,10 @@ export default function SignUpPage() {
     setIsLoading(true);
 
     const formData = new FormData();
-    formData.append("nombre", values.nombre);
+    formData.append("nombre_completo", values.nombre_completo);
     formData.append("correo", values.correo);
     formData.append("password", values.password);
+    formData.append("username", values.username);
     if (values.foto) {
       formData.append("foto", values.foto);
     }
@@ -101,11 +106,23 @@ export default function SignUpPage() {
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="nombre"
+                  name="nombre_completo"
                   render={({ field }) => (
                     <FormItem>
                       <FormControl>
                         <Input placeholder="Nombre completo" {...field} className="py-6" disabled={isLoading} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input placeholder="Username" {...field} className="py-6" disabled={isLoading} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
