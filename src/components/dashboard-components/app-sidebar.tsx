@@ -41,12 +41,7 @@ const data = {
   },
   navMain: [
     { title: "Inicio", url: "/dashboard", icon: IconHomeFilled },
-    { title: "Descubre", url: "/dashboard/descubre", icon: IconCompassFilled },
-    {
-      title: "Itinerario",
-      url: "/dashboard/itinerario",
-      icon: IconCalendarFilled,
-    },
+    { title: "Itinerarios", url: "/dashboard/itinerarios", icon: IconCalendarFilled, },
     { title: "Ver Mapa", url: "/dashboard/vermapa", icon: IconMapPinFilled },
   ],
   navClouds: [
@@ -86,7 +81,7 @@ const data = {
   ],
   documents: [
     { name: "Chats", url: "/dashboard/chats", icon: IconMessages },
-    { name: "Amigos", url: "/dashboard/amigos", icon: IconUsers },
+    { name: "Notificaciones", url: "/dashboard/notificaciones", icon: IconUsers },
   ],
 };
 
@@ -100,7 +95,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              {/* ✅ Usa Link de Next para navegación cliente */}
+              {/* Usa Link de Next para navegación cliente */}
               <Link href="/" className="flex items-center gap-2">
                 <IconInnerShadowTop className="!size-5" />
                 <span className="text-base font-semibold">Share Path</span>
