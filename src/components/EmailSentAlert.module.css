@@ -1,0 +1,33 @@
+/* components/EmailSentAlert.module.css */
+
+.container {
+  text-align: center;
+  font-family: sans-serif;
+  color: #545454;
+}
+
+.title {
+  font-weight: 500;
+  margin-top: 0;
+  margin-bottom: 0;
+  font-size: 1.8em;
+}
+
+.iconWrapper {
+display: flex;
+align-items: center;
+justify-content: center;
+
+}
+
+.text {
+  font-size: 1em;
+  margin: 10px 0;
+}
+
+.email {
+  font-weight: bold;
+  font-size: 1.1em;
+  margin-top: 5px;
+  margin-bottom: 20px;
+}

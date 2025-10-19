@@ -1,0 +1,141 @@
+
+.contenedor-login {
+    display: flex;
+    width: 900px;
+    max-width: 95%;
+    min-height: 600px;
+    border-radius: var(--radius-lg); 
+    overflow: hidden;
+}
+
+.panel-logo {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.logo-empresa {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.panel-formulario {
+    flex: 1;
+    padding: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.formulario-login {
+    width: 100%;
+    max-width: 350px;
+    text-align: center;
+}
+
+.formulario-login h2 {
+    margin-bottom: 15px;
+    font-size: 2rem;
+}
+
+.icono-login {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 20px;
+}
+
+.grupo-input {
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.grupo-password input {
+    padding-right: 45px;
+}
+
+.ojo-password {
+    position: absolute;
+    top: 50%;
+    right: 15px;
+    transform: translateY(-50%);
+    cursor: pointer;
+    width: 20px;
+    opacity: 0.6;
+}
+
+.olvido-password {
+    display: block;
+    text-align: right;
+    margin: -10px 0 20px;
+    font-size: 0.9rem;
+    text-decoration: none;
+}
+
+
+.boton {
+    width: 100%;
+    padding: 12px;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.separador {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 20px 0;
+}
+
+.separador::before,
+.separador::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--border); 
+}
+
+.separador span {
+    padding: 0 10px;
+}
+
+.boton-google {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    font-size: 1rem;
+}
+
+.boton-google img {
+    width: 20px;
+    height: 20px;
+}
+
+.enlace-registro {
+    margin-top: 20px;
+    font-size: 0.9rem;
+}
+
+.enlace-registro a {
+    text-decoration: none;
+    font-weight: bold;
+}
+
+@media (max-width: 800px) {
+    .contenedor-login {
+        flex-direction: column;
+        width: 100%;
+        max-width: 450px;
+        min-height: auto;
+        margin: 20px;
+    }
+
+    .panel-logo {
+        display: none;
+    }
+}
