@@ -6,26 +6,40 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Pencil } from "lucide-react";
 
 interface User{
-    fullname: string;
+    correo: string;
     username: string;
-    email: string;
-    itineraries: number;
-    friends: string;
-    avatarUrl?: string;
-    accountType?: string; 
+    nombre_completo: string;
+    foto_url: string;
+    role: string;
+    privacity_mode: string;
+    verified_email: string; 
 }
 
 export default function AccountPage() {
-    //Esto es para obtener la información del usuario
-    {/* const [user, setUser] = useState<User | null>(null);
+    // Esto es para obtener la información del usuario
+    const [user, setUser] = useState<User | null>(null);    
 
   useEffect(() => {
     // 🔹 Ejemplo: simulación de fetch a un backend o API
     // Aquí reemplazas por tu API real
     async function fetchUser() {
       try {
-        const res = await fetch("/api/user"); // endpoint de tu backend
-        const data = await res.json();
+        const res   = await fetch("https://harol-lovers.up.railway.app/user", { 
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            token: localStorage.getItem('authToken') || ""
+          }
+        }); // endpoint de tu backend
+        console.log(res.statusText);
+        // Cuando no esta autenticado.
+        if( res.status == 401 ) {
+          const message = await res.text();
+          console.log(message);
+        }
+        console.log(res.status);
+        
+        const data  = await res.json();        
         setUser(data);
       } catch (error) {
         console.error("Error al cargar usuario:", error);
@@ -37,7 +51,7 @@ export default function AccountPage() {
 
   if (!user) {
     return <p className="p-6 text-muted-foreground">Cargando perfil...</p>;
-  } */}
+  }
 
   return (
     <div className="p-6 flex flex-col gap-6">
@@ -65,7 +79,7 @@ export default function AccountPage() {
         {/* Información básica */}
         <div className="flex flex-col gap-1 text-center sm:text-left">
             {/* Aqui cambiar Social por {user.fullName} */}
-          <h1 className="text-lg font-semibold">Social Media User</h1>
+          <h1 className="text-lg font-semibold"> { user.username } </h1>
           <div className="flex flex-col sm:flex-row gap-2 text-sm text-muted-foreground">
             {/* Cambiar 100 por {user.itineraries} */}
             <span>100 Itinerarios publicados</span>
@@ -85,14 +99,14 @@ export default function AccountPage() {
             <div>
               <p className="text-sm font-medium">Nombre completo</p>
               {/* Cambiar Nombre completo por {user.fullName} */}
-              <p className="text-sm text-muted-foreground">Nombre completo</p>
+              <p className="text-sm text-muted-foreground"> { user.nombre_completo } </p>
             </div>
 
             {/* Nombre de usuario */}
             <div>
               <p className="text-sm font-medium">Nombre de usuario</p>
               {/* Cambiar Nombre de usuario por {user.username} */}
-              <p className="text-sm text-muted-foreground">Nombre de usuario</p>
+              <p className="text-sm text-muted-foreground"> { user.username } </p>
             </div>
 
             {/* Correo electrónico */}
@@ -100,14 +114,14 @@ export default function AccountPage() {
               <p className="text-sm font-medium">Correo electrónico</p>
               {/* Cambiar correo por {user.email} */}
               <p className="text-sm text-muted-foreground">
-                correo@ejemplo.com
+                { user.correo }
               </p>
             </div>
 
             {/* Tipo de cuenta u otro dato */}
             <div>
               <p className="text-sm font-medium">Tipo de cuenta</p>
-              <p className="text-sm text-muted-foreground">Usuario estándar</p>
+              <p className="text-sm text-muted-foreground"> { user.role } </p>
             </div>
           </CardContent>
         </Card>
