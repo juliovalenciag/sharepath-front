@@ -2,6 +2,7 @@
 
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   IconCreditCard,
   IconDotsVertical,
@@ -30,6 +31,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { url } from "inspector";
 
 export function NavUser({
   user,
@@ -40,7 +42,13 @@ export function NavUser({
     avatar: string
   }
 }) {
-  const { isMobile } = useSidebar()
+  const { isMobile } = useSidebar();
+  const pathname = usePathname();
+
+  const menuItems = [
+    { title: "Cuenta", url: "/dashboard/cuenta", icon: IconUserCircle},
+    { title: "Notificaciones", url: "/dashboard/notificaciones", icon: IconNotification},
+  ];
 
   return (
     <SidebarMenu>
@@ -87,27 +95,28 @@ export function NavUser({
             <DropdownMenuSeparator />
 
             <DropdownMenuGroup>
-              {/* Cada ítem usa Link, igual que NavMain */}
-              <DropdownMenuItem asChild>
-                <Link href="/dashboard/cuenta" className="flex items-center gap-2">
-                  <IconUserCircle />
-                  Account
-                </Link>
-              </DropdownMenuItem>
+              {menuItems.map((item) => {
+                const isActive =
+                  pathname === item.url || pathname.startsWith(item.url);
+                const Icon = item.icon;
 
-              <DropdownMenuItem asChild>
-                <Link href="/dashboard/billing" className="flex items-center gap-2">
-                  <IconCreditCard />
-                  Billing
-                </Link>
-              </DropdownMenuItem>
-
-              <DropdownMenuItem asChild>
-                <Link href="/dashboard/notificaciones" className="flex items-center gap-2">
-                  <IconNotification />
-                  Notifications
-                </Link>
-              </DropdownMenuItem>
+                return (
+                  <DropdownMenuItem
+                    asChild
+                    key={item.title}
+                    className={`flex items-center gap-2 ${
+                      isActive
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                        : "hover:bg-sidebar-accent/60"
+                    }`}
+                  >
+                    <Link href={item.url}>
+                      <Icon className="size-4" />
+                      {item.title}
+                    </Link>
+                  </DropdownMenuItem>
+                );
+              })}
             </DropdownMenuGroup>
 
             <DropdownMenuSeparator />
