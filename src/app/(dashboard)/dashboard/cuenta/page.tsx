@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Pencil } from "lucide-react";
+import Link from "next/link";
 
 interface User{
     correo: string;
@@ -20,8 +21,6 @@ export default function AccountPage() {
     const [user, setUser] = useState<User | null>(null);    
 
   useEffect(() => {
-    // 🔹 Ejemplo: simulación de fetch a un backend o API
-    // Aquí reemplazas por tu API real
     async function fetchUser() {
       try {
         const res   = await fetch("https://harol-lovers.up.railway.app/user", { 
@@ -30,7 +29,7 @@ export default function AccountPage() {
             'Content-Type': 'application/json',
             token: localStorage.getItem('authToken') || ""
           }
-        }); // endpoint de tu backend
+        }); // endpoint del backend
         console.log(res.statusText);
         // Cuando no esta autenticado.
         if( res.status == 401 ) {
@@ -56,9 +55,9 @@ export default function AccountPage() {
   return (
     <div className="p-6 flex flex-col gap-6">
       {/* Encabezado */}
-      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+      <div className="flex flex-col sm:flex-row items-center sm:items-center justify-between gap-6">
         {/* Avatar */}
-        <div className="relative">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
           <Avatar className="h-24 w-24 text-3xl">
             {/* En src ={user.avatarUrl || ""} */}
             <AvatarImage src={`https://harol-lovers.up.railway.app${user.foto_url}`} alt="Foto de perfil" /> 
@@ -66,28 +65,26 @@ export default function AccountPage() {
             <AvatarFallback>A</AvatarFallback>
           </Avatar>
 
-          {/* Botón de editar */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute bottom-0 right-0 rounded-full bg-white border shadow-sm hover:bg-gray-100"
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-        </div>
-
-        {/* Información básica */}
-        <div className="flex flex-col gap-1 text-center sm:text-left">
-            {/* Aqui cambiar Social por {user.fullName} */}
-          <h1 className="text-lg font-semibold"> { user.username } </h1>
-          <div className="flex flex-col sm:flex-row gap-2 text-sm text-muted-foreground">
-            {/* Cambiar 100 por {user.itineraries} */}
-            <span>100 Itinerarios publicados</span>
-            <span className="hidden sm:block">•</span>
-            {/* Cambiar 14K por {user.friends} */}
-            <span>14k Amigos</span>
+          {/* Información básica */}
+          <div className="flex flex-col gap-1 text-center sm:text-left">
+            <h1 className="text-lg font-semibold"> { user.username } </h1>
+            <div className="flex flex-col sm:flex-row gap-2 text-sm text-muted-foreground">
+              {/* Cambiar 100 por {user.itineraries} */}
+              <span>100 Itinerarios publicados</span>
+              <span className="hidden sm:block">•</span>
+              {/* Cambiar 14K por {user.friends} */}
+              <span>14k Amigos</span>
+            </div>
           </div>
         </div>
+
+        {/* Boton para editar información */}
+        <Link href="/dashboard/cuenta/editar">
+          <Button variant="outline" className="flex items-center gap-2 self-end sm:self-auto">
+            <Pencil className="h-4 w-4"/>
+            <span>Editar perfil</span>
+        </Button>
+        </Link>
       </div>
 
       {/* Información detallada */}
