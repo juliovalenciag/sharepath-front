@@ -147,6 +147,9 @@ importers:
       '@types/react-dom':
         specifier: ^19
         version: 19.2.2(@types/react@19.2.2)
+      embla-carousel:
+        specifier: ^8.6.0
+        version: 8.6.0
       eslint:
         specifier: ^9
         version: 9.37.0(jiti@2.6.1)
