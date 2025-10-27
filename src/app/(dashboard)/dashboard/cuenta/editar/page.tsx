@@ -30,6 +30,7 @@ export default function EditAccountPage() {
   const [nombre, setNombre] = useState("");
   const [username, setUsername] = useState("");
   const [privacidad, setPrivacidad] = useState("publica");
+  const [loadingDelete, setLoadingDelete] = useState(false);
 
   // Obtener datos del usuario al montar
   useEffect(() => {
@@ -86,6 +87,45 @@ export default function EditAccountPage() {
       }
     } catch (error) {
       console.error("Error al actualizar:", error);
+    }
+  };
+
+  const handleDelete = async () =>{
+    if (loadingDelete) return;
+
+    const confirmDelete = confirm("¿Esta seguro de eliminar la cuenta?");
+    if (!confirmDelete) return;
+
+    setLoadingDelete(true);
+
+
+    try {
+      const res = await fetch("https://harol-lovers.up.railway.app/user/update", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          token: localStorage.getItem("authToken") || "",
+        },
+      });
+
+      if (!res.ok) {
+        const msg = await res.text();
+        alert("Error al eliminar la cuenta: " + msg);
+        setLoadingDelete(false);
+        return;
+      }
+
+      alert("Cuenta eliminada correctamente");
+
+      localStorage.removeItem("authToken");
+      //router.push("/sign-up");
+      
+
+    } catch (error) {
+      console.error("Error al eliminar la cuenta:", error);
+      alert("Hubo un problema al intentar eliminar la cuenta, intentelo nuevamente");
+    } finally {
+      setLoadingDelete(false);
     }
   };
 
@@ -175,7 +215,7 @@ export default function EditAccountPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row justify-between gap-4 mt-4">
-            <Link href="/dashboard/cuenta/cambContraseña">
+            <Link href="/dashboard/cuenta/editar/cambContraseña">
                   <Button variant="secondary" className="w-full sm:w-auto">
                     Cambiar contraseña
                   </Button>
@@ -189,9 +229,10 @@ export default function EditAccountPage() {
             <Button
               variant="destructive"
               className="w-full sm:w-auto"
-              onClick={() => alert("Función de eliminar cuenta próximamente.")}
+              onClick={handleDelete}
+              disabled={loadingDelete}
             >
-              Eliminar cuenta
+              {loadingDelete ? "Eliminando..." : "Eliminar cuenta"}
             </Button>
           </div>
         </CardContent>
