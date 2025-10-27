@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+//<<<<<<< HEAD
+//import 'sweetalert2/dist/sweetalert2.min.css';
+//=======
+//>>>>>>> abf5e16404d6701c2067fcbbef4d463cd7b22909
 
 import { cookies } from "next/headers";
 

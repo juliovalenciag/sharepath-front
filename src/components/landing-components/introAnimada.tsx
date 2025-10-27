@@ -72,7 +72,7 @@ export default function IntroAnimada(){
             <div className={styles.imageContainer}>
                 <Image
                     // src="/img/tunel2.webp"
-                    src="/img/prueba.png"
+                    src="/img/tunel1.png"
                     alt="Imagen_tunel"
                     fill /* width/heigth 100% */
                     style={{ objectFit: 'cover' }}
