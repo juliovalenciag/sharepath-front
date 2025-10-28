@@ -41,6 +41,12 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  /* === Colores de la paleta añadidos === */
+  --color-palette-white: var(--palette-white);
+  --color-palette-dark: var(--palette-dark);
+  --color-palette-blue: var(--palette-blue);
+  --color-palette-pink: var(--palette-pink);
 }
 
 :root {
@@ -76,6 +82,16 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* === Definición de colores de la paleta (Light Mode) === */
+  /* #F7F7F7 */
+  --palette-white: oklch(0.973 0.002 99.4);
+  /* #0D0426 */
+  --palette-dark: oklch(0.129 0.066 284.15);
+  /* #2609FF */
+  --palette-blue: oklch(0.392 0.324 269.34);
+  /* #F020C3 */
+  --palette-pink: oklch(0.559 0.33 320.15);
 }
 
 .dark {
@@ -110,6 +126,17 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
+  /* === Definición de colores de la paleta (Dark Mode) === */
+  /* Los mantengo iguales que en light-mode para consistencia de la paleta */
+  /* #F7F7F7 */
+  --palette-white: oklch(0.973 0.002 99.4);
+  /* #0D0426 */
+  --palette-dark: oklch(0.129 0.066 284.15);
+  /* #2609FF */
+  --palette-blue: oklch(0.392 0.324 269.34);
+  /* #F020C3 */
+  --palette-pink: oklch(0.559 0.33 320.15);
 }
 
 @layer base {
@@ -121,3 +148,156 @@
   }
 }
 
+/* === React-Date-Range (SharePath theme) === */
+
+/* Contenedor principal */
+.rdrCalendarWrapper {
+  background: var(--card) !important;
+  color: var(--foreground) !important;
+  border: none !important; /* el popover ya da borde/sombra */
+  border-radius: var(--radius) !important;
+  font-family: var(--font-sans);
+}
+
+/* Sin “date display” superior */
+.rdrDateDisplayWrapper {
+  display: none !important;
+}
+
+/* Layout de meses */
+.rdrMonths {
+  padding: 0.75rem !important;
+}
+
+/* Mes / días de semana */
+.rdrMonthName {
+  color: var(--foreground) !important;
+  font-size: 1rem;
+  font-weight: 600;
+  padding-bottom: 0.75rem;
+}
+.rdrWeekDay {
+  color: var(--muted-foreground) !important;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Día base */
+.rdrDay {
+  position: relative;
+  height: 2.25rem;
+}
+.rdrDayNumber span {
+  display: inline-grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  color: var(--foreground) !important;
+  background: transparent; /* asegura base limpia */
+  border-radius: var(--radius-md) !important;
+  transition: all 150ms ease;
+}
+
+/* Días pasivos (otro mes) */
+.rdrDayPassive .rdrDayNumber span {
+  color: var(--muted-foreground) !important;
+  opacity: 0.6;
+}
+
+/* Hover (fuera del rango actual) */
+.rdrDay:not(.rdrDayPassive):not(.rdrDayInRange):not(.rdrDayStartEdge):not(
+    .rdrDayEndEdge
+  )
+  .rdrDayNumber:hover
+  span {
+  background: var(--accent) !important;
+}
+
+/* “Hoy” con punto rosa */
+.rdrDayToday .rdrDayNumber span::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  translate: -50% 0;
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background: var(--palette-pink) !important;
+}
+/* Oculta el punto rosa si hoy es inicio/fin/seleccionado */
+.rdrDayToday.rdrDayStartEdge .rdrDayNumber span::after,
+.rdrDayToday.rdrDayEndEdge .rdrDayNumber span::after,
+.rdrDayToday.rdrDaySelected .rdrDayNumber span::after {
+  background: transparent !important;
+}
+
+/* === RANGO SELECCIONADO (clases correctas) === */
+
+/* Rango intermedio (entre inicio y fin) */
+.rdrDayInRange .rdrDayNumber span {
+  background: color-mix(
+    in oklch,
+    var(--palette-blue) 28%,
+    transparent
+  ) !important;
+}
+
+/* Día de inicio, fin o único seleccionado (sólido) */
+.rdrDayStartEdge .rdrDayNumber span,
+.rdrDayEndEdge .rdrDayNumber span,
+.rdrDaySelected .rdrDayNumber span {
+  background: var(--palette-blue) !important;
+  color: var(--primary-foreground) !important;
+  font-weight: 600;
+}
+
+/* Previsualización del rango mientras arrastras/eliges */
+.rdrDayInPreview .rdrDayNumber span {
+  background: color-mix(
+    in oklch,
+    var(--palette-blue) 18%,
+    transparent
+  ) !important;
+}
+.rdrDayStartPreview .rdrDayNumber span,
+.rdrDayEndPreview .rdrDayNumber span {
+  outline: 2px dashed color-mix(in oklch, var(--palette-blue) 70%, transparent);
+  outline-offset: 2px;
+  background: color-mix(
+    in oklch,
+    var(--palette-blue) 12%,
+    transparent
+  ) !important;
+}
+
+/* Accesibilidad: foco de teclado en el día */
+.rdrDayNumber span:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Días deshabilitados */
+.rdrDayDisabled .rdrDayNumber span {
+  color: var(--muted-foreground) !important;
+  opacity: 0.4;
+}
+
+/* Navegación (mes anterior/siguiente) */
+.rdrNextPrevButton {
+  background: var(--card) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--foreground) !important;
+  border-radius: var(--radius-md) !important;
+  padding: 0.25rem;
+}
+.rdrNextPrevButton:hover {
+  background: var(--accent) !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .rdrMonths {
+    padding: 0.5rem !important;
+  }
+}

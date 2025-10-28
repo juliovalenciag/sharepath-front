@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  devtools: { enabled: false },
   /* config options here */
   images: {
     remotePatterns: [
