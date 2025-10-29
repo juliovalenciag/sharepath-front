@@ -118,14 +118,14 @@ export default function SignInPage() {
                   </button>
                 </div>
               </div>
-
+  
               <div className="mb-6 text-right">
-                <Link href="#" className="text-sm text-muted-foreground hover:text-primary hover:underline">
+                <Link href="/recover-password"
+                className="text-sm text-muted-foreground hover:text-primary hover:underline"
+                >
                   Olvidé mi contraseña
                 </Link>
               </div>
-
-              
 
               <Button type="submit" className="w-full py-6 text-lg font-semibold" style={{ backgroundColor: '#555', color: 'white' }} disabled={isLoading}>
                 {isLoading ? "Verificando..." : "Iniciar sesión"}
