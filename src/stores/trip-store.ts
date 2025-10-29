@@ -1,4 +1,3 @@
-// src/stores/trip-store.ts
 "use client";
 import { create } from "zustand";
 
@@ -6,56 +5,59 @@ export type Place = {
   id: string;
   name: string;
   city: string;
-  tag: string; // cultura | parque | naturaleza | historia | ...
-  rating?: number; // 4.6
-  popular?: boolean;
+  tag: string;
+  img: string;
   lat?: number;
   lng?: number;
-  img?: string;
-  image?: string;
+  // extra opcionales para el panel de detalle
   about?: string;
-  why?: string[];
   tips?: string[];
   reviews?: string[];
+  photos?: string[];
 };
 
+type Day = { key: string; date: Date };
+
 type TripState = {
+  days: Day[];
+  activeDayKey: string;
   byDay: Record<string, Place[]>;
   selectedPlace: Place | null;
 
+  setActiveDay: (key: string) => void;
   addPlace: (dayKey: string, p: Place) => void;
-  removePlace: (dayKey: string, index: number) => void;
+  removePlace: (dayKey: string, idx: number) => void;
   movePlace: (dayKey: string, from: number, to: number) => void;
-
   selectPlace: (p: Place | null) => void;
-  clearDay: (dayKey: string) => void;
 };
 
-export const useTrip = create<TripState>()((set) => ({
+export const useTrip = create<TripState>((set, get) => ({
+  days: [0, 1, 2, 3].map((off) => ({
+    key: `d${off + 1}`,
+    date: new Date(2025, 10, 1 + off),
+  })),
+  activeDayKey: "d1",
   byDay: {},
   selectedPlace: null,
 
+  setActiveDay: (key) => set({ activeDayKey: key }),
   addPlace: (dayKey, p) =>
-    set((s) => ({
-      byDay: { ...s.byDay, [dayKey]: [...(s.byDay[dayKey] ?? []), p] },
+    set(({ byDay }) => ({
+      byDay: { ...byDay, [dayKey]: [...(byDay[dayKey] ?? []), p] },
     })),
-
-  removePlace: (dayKey, index) =>
-    set((s) => {
-      const arr = [...(s.byDay[dayKey] ?? [])];
-      arr.splice(index, 1);
-      return { byDay: { ...s.byDay, [dayKey]: arr } };
+  removePlace: (dayKey, idx) =>
+    set(({ byDay }) => {
+      const arr = [...(byDay[dayKey] ?? [])];
+      arr.splice(idx, 1);
+      return { byDay: { ...byDay, [dayKey]: arr } };
     }),
-
   movePlace: (dayKey, from, to) =>
-    set((s) => {
-      const arr = [...(s.byDay[dayKey] ?? [])];
-      if (to < 0 || to >= arr.length) return s;
+    set(({ byDay }) => {
+      const arr = [...(byDay[dayKey] ?? [])];
+      if (to < 0 || to >= arr.length) return { byDay };
       const [it] = arr.splice(from, 1);
       arr.splice(to, 0, it);
-      return { byDay: { ...s.byDay, [dayKey]: arr } };
+      return { byDay: { ...byDay, [dayKey]: arr } };
     }),
-
   selectPlace: (p) => set({ selectedPlace: p }),
-  clearDay: (dayKey) => set((s) => ({ byDay: { ...s.byDay, [dayKey]: [] } })),
 }));

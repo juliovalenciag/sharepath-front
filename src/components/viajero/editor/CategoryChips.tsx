@@ -1,76 +1,65 @@
 "use client";
-
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 
 export function CategoryChips({
   categories,
-  initialSelected = [],
-  multiselect = true,
+  value,
   onChange,
   className,
 }: {
   categories: string[];
-  initialSelected?: string[];
-  multiselect?: boolean;
-  onChange?: (sel: string[]) => void;
+  value?: string | null;
+  onChange?: (next: string | null) => void;
   className?: string;
 }) {
-  const [sel, setSel] = React.useState<string[]>(initialSelected);
+  const [active, setActive] = React.useState<string | null>(value ?? null);
 
-  React.useEffect(() => onChange?.(sel), [sel, onChange]);
-
-  function toggle(c: string) {
-    setSel((prev) => {
-      if (multiselect) {
-        return prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c];
-      }
-      return prev.includes(c) ? [] : [c];
-    });
-  }
+  React.useEffect(() => {
+    if (value !== undefined) setActive(value);
+  }, [value]);
 
   return (
-    <div className={cn("w-full", className)}>
-      <div className="flex items-center justify-between mb-1">
-        <p className="text-xs text-muted-foreground">Filtrar por categoría</p>
-        {!!sel.length && (
+    <div
+      className={cn(
+        "sticky top-[calc(64px+12px)] z-30", // queda debajo del header, no se sobrepone
+        "bg-[var(--card)]/90 backdrop-blur rounded-[var(--radius)] border p-2",
+        "flex flex-wrap gap-2",
+        className
+      )}
+    >
+      {categories.map((c) => {
+        const is = active === c;
+        return (
           <button
-            onClick={() => setSel([])}
-            className="text-xs underline text-muted-foreground hover:text-foreground"
+            key={c}
+            onClick={() => {
+              const next = is ? null : c;
+              setActive(next);
+              onChange?.(next);
+            }}
+            className={cn(
+              "px-3 h-8 rounded-full text-sm border transition",
+              is
+                ? "bg-[var(--palette-blue)] text-[var(--primary-foreground)] border-transparent"
+                : "bg-background hover:bg-muted"
+            )}
           >
-            Limpiar
+            {c}
           </button>
-        )}
-      </div>
-
-      <div className="relative">
-        <div className="flex gap-2 overflow-x-auto mask-fade-x py-1">
-          {categories.map((c) => {
-            const active = sel.includes(c);
-            return (
-              <Badge
-                key={c}
-                onClick={() => toggle(c)}
-                className={cn(
-                  "cursor-pointer rounded-full px-3 py-1.5 text-xs select-none border",
-                  active
-                    ? "bg-[var(--palette-blue)] text-[var(--primary-foreground)] border-transparent"
-                    : "bg-background hover:bg-muted"
-                )}
-              >
-                {c}
-              </Badge>
-            );
-          })}
-          {/* “+ Más” si tienes muchas categorías (opcional) */}
-          <span className="hidden md:inline text-xs text-muted-foreground pl-1">
-            {categories.length > 10 ? "+ Más" : ""}
-          </span>
-        </div>
-        {/* marca sutil inferior */}
-        <div className="pointer-events-none absolute inset-x-0 -bottom-1 h-px bg-gradient-to-r from-transparent via-[var(--border)] to-transparent" />
-      </div>
+        );
+      })}
+      {active && (
+        <button
+          onClick={() => {
+            setActive(null);
+            onChange?.(null);
+          }}
+          className="ml-auto text-sm underline text-muted-foreground"
+        >
+          Limpiar
+        </button>
+      )}
     </div>
   );
 }
