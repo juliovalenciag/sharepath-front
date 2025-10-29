@@ -1,127 +1,143 @@
-// src/components/viajero/editor/DaySection.tsx
 "use client";
 import * as React from "react";
 import { IconArrowDown, IconArrowUp, IconTrash } from "@tabler/icons-react";
-import { useTrip, type Place } from "@/stores/trip-store";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { useTrip, type Place } from "@/stores/trip-store";
 
 export function DaySection({
-  title = "Lugares para visitar",
   dayKey,
   date,
   recommended,
 }: {
-  title?: string;
   dayKey: string;
-  date?: Date;
+  date: Date;
   recommended: Place[];
 }) {
   const { byDay, addPlace, removePlace, movePlace, selectPlace } = useTrip();
   const items = byDay[dayKey] ?? [];
 
   return (
-    <Card className="p-4 md:p-5">
-      <div className="flex items-start justify-between">
+    <section aria-labelledby={`h-${dayKey}`} className="space-y-3">
+      <header className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">{title}</h3>
-          {date && (
-            <p className="text-xs text-muted-foreground">
-              {format(date, "EEEE d 'de' MMM", { locale: es })}
-            </p>
-          )}
+          <h2 id={`h-${dayKey}`} className="text-xl md:text-2xl font-bold">
+            {format(date, "EEEE, MMMM dº", { locale: es })}
+          </h2>
+          <p className="text-muted-foreground text-sm">Añadir subtítulo</p>
         </div>
+        <div className="flex items-center gap-3 text-[var(--palette-blue)]">
+          <button className="font-semibold">Rellenar día</button>
+          <span>·</span>
+          <button className="font-semibold">Optimizar ruta</button>
+        </div>
+      </header>
+
+      {/* Lista del día */}
+      <Card className="divide-y border">
+        {items.length === 0 && (
+          <div className="p-4 text-sm text-muted-foreground">
+            No hay lugares aún. Usa el buscador o las recomendaciones de abajo.
+          </div>
+        )}
+        {items.map((p, i) => (
+          <article
+            key={`${p.id}-${i}`}
+            className="p-3 md:p-4 flex gap-3 md:gap-4"
+          >
+            <div className="shrink-0 size-12 rounded-md overflow-hidden border">
+              <img
+                src={p.img}
+                alt={p.name}
+                className="size-full object-cover"
+              />
+            </div>
+
+            <div className="min-w-0 grow">
+              <h3 className="font-semibold leading-tight">
+                {i + 1}. {p.name}
+              </h3>
+              <p className="text-sm text-muted-foreground line-clamp-2">
+                {p.city} • {p.tag} — Añadir notas, enlaces, etc.
+              </p>
+              <div className="mt-2 text-xs text-muted-foreground flex items-center gap-4">
+                <span>🚶‍♂️ 6 mins · 0.31 mi</span>
+                <button className="underline">Direcciones</button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-8"
+                onClick={() => movePlace(dayKey, i, i - 1)}
+              >
+                <IconArrowUp className="size-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-8"
+                onClick={() => movePlace(dayKey, i, i + 1)}
+              >
+                <IconArrowDown className="size-4" />
+              </Button>
+              <Button
+                variant="destructive"
+                size="icon"
+                className="size-8"
+                onClick={() => removePlace(dayKey, i)}
+              >
+                <IconTrash className="size-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => selectPlace(p)}
+              >
+                Ver en mapa
+              </Button>
+            </div>
+          </article>
+        ))}
+      </Card>
+
+      {/* Añadir un lugar (input visual) */}
+      <div className="rounded-xl border bg-muted/40 flex items-center gap-3 px-4 h-12 text-muted-foreground">
+        <span>📍</span> Añadir un lugar
       </div>
 
-      <div className="mt-3 space-y-3">
-        {/* Lista actual */}
-        <ul className="space-y-2">
-          {items.length === 0 && (
-            <li className="text-sm text-muted-foreground">
-              Aún no hay lugares. Usa el buscador o el carrusel de abajo.
-            </li>
-          )}
-          {items.map((p, i) => (
-            <li key={`${p.id}-${i}`} className="group">
-              <div className="flex items-center justify-between gap-2 rounded-lg border bg-card/50 p-2">
-                <button
-                  className="flex items-center gap-3 min-w-0 text-left"
-                  onClick={() => selectPlace(p)}
-                  title="Ver detalle en mapa"
-                >
-                  <img
-                    src={p.image}
-                    alt={p.name}
-                    className="size-12 rounded object-cover border"
-                  />
-                  <div className="min-w-0">
-                    <p className="truncate font-medium">{p.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {p.city} • {p.tag}
-                    </p>
-                  </div>
-                </button>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="size-8"
-                    onClick={() => movePlace(dayKey, i, i - 1)}
-                  >
-                    <IconArrowUp className="size-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="size-8"
-                    onClick={() => movePlace(dayKey, i, i + 1)}
-                  >
-                    <IconArrowDown className="size-4" />
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="size-8"
-                    onClick={() => removePlace(dayKey, i)}
-                  >
-                    <IconTrash className="size-4" />
-                  </Button>
+      {/* Quick chips del día */}
+      <div>
+        <p className="text-sm font-medium mb-2">Lugares recomendados</p>
+        <div className="mask-fade-x overflow-x-auto">
+          <div className="flex gap-3 pr-3">
+            {recommended.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => addPlace(dayKey, p)}
+                className="min-w-[260px] rounded-lg border overflow-hidden bg-card hover:bg-muted/50"
+                title={`Añadir ${p.name}`}
+              >
+                <img
+                  src={p.img}
+                  alt={p.name}
+                  className="h-28 w-full object-cover"
+                />
+                <div className="p-2 text-left">
+                  <p className="truncate font-medium">{p.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {p.city} • {p.tag}
+                  </p>
                 </div>
-              </div>
-            </li>
-          ))}
-        </ul>
-
-        {/* Recomendados (horizontal) */}
-        <div>
-          <p className="text-sm font-medium mb-2">Lugares recomendados</p>
-          <div className="mask-fade-x overflow-x-auto">
-            <div className="flex gap-3 pr-3">
-              {recommended.map((p) => (
-                <button
-                  key={`rec-${p.id}`}
-                  onClick={() => addPlace(dayKey, p)}
-                  className="min-w-[260px] rounded-lg border hover:bg-muted/40 overflow-hidden text-left"
-                >
-                  <img
-                    src={p.image}
-                    alt={p.name}
-                    className="h-28 w-full object-cover"
-                  />
-                  <div className="p-2">
-                    <p className="truncate font-medium">{p.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {p.city} • {p.tag}
-                    </p>
-                  </div>
-                </button>
-              ))}
-            </div>
+              </button>
+            ))}
           </div>
         </div>
       </div>
-    </Card>
+    </section>
   );
 }

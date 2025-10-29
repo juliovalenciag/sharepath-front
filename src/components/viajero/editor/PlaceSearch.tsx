@@ -1,238 +1,160 @@
-// components/viajero/editor/PlaceSearch.tsx
 "use client";
-
 import * as React from "react";
-import Image from "next/image";
-import { cn } from "@/lib/utils";
 import {
+  IconMapPin,
   IconSearch,
-  IconPlus,
-  IconMapPinFilled,
-  IconHotelService,
-  IconRun,
+  IconX,
+  IconChevronDown,
 } from "@tabler/icons-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { SUGGESTIONS } from "@/lib/places-adapter";
+import type { Place } from "@/stores/trip-store";
 
-type Item = {
-  id: string;
-  name: string;
-  city: string;
-  tag: string; // cultura | naturaleza | parque | historia | gastronomía | arqueología
-  image?: string;
-  rating?: number; // opcional
-  popular?: boolean;
-};
-
-type Props = {
-  onPick: (p: Item) => void;
-  // opcional: semilla para sugerencias
-  suggestions?: Item[];
-};
-
-const CATEGORY_ORDER = [
-  "cultura",
-  "naturaleza",
-  "parque",
-  "historia",
-  "gastronomía",
-  "arqueología",
-] as const;
-const TABS = [
-  { key: "lugares", label: "Lugares", icon: IconMapPinFilled },
-  { key: "actividades", label: "Actividades", icon: IconRun },
+const TABS = ["Lugares", "Actividades"] as const;
+const CATEGORIES = [
+  "Cultura",
+  "Naturaleza",
+  "Parque",
+  "Historia",
+  "Gastronomía",
+  "Arqueología",
 ] as const;
 
-export function PlaceSearch({ onPick, suggestions = [] }: Props) {
-  const [tab, setTab] = React.useState<(typeof TABS)[number]["key"]>("lugares");
-  const [query, setQuery] = React.useState("");
-  const [activeTag, setActiveTag] = React.useState<string | null>(null);
+export function PlaceSearch({ onPick }: { onPick: (p: Place) => void }) {
+  const [q, setQ] = React.useState("");
+  const [tab, setTab] = React.useState<(typeof TABS)[number]>("Lugares");
+  const [cat, setCat] = React.useState<string | null>(null);
 
-  // demo: filtra de la lista de sugerencias (cuando integres tu API, cámbialo aquí)
-  const results = React.useMemo(() => {
-    const base = suggestions;
-    const byTab = base; // en prod: filtra por tab
-    const byTag = activeTag ? byTab.filter((x) => x.tag === activeTag) : byTab;
-    const byQuery = query.trim()
-      ? byTag.filter((x) =>
-          (x.name + " " + x.city)
-            .toLowerCase()
-            .includes(query.trim().toLowerCase())
-        )
-      : byTag;
-    return byQuery.slice(0, 30);
-  }, [suggestions, activeTag, query]);
+  const items = React.useMemo(() => {
+    let list = SUGGESTIONS;
+    if (cat) list = list.filter((i) => i.tag === cat);
+    if (q.trim()) {
+      const s = q.toLowerCase();
+      list = list.filter(
+        (i) =>
+          i.name.toLowerCase().includes(s) || i.city.toLowerCase().includes(s)
+      );
+    }
+    return list.slice(0, 10);
+  }, [q, cat]);
 
   return (
-    <Card className="p-3 md:p-4 border bg-card/90">
-      {/* INPUT + TABS */}
-      <div className="flex gap-2 items-center">
-        <div className="relative flex-1">
-          <IconSearch className="absolute left-2 top-1/2 -translate-y-1/2 size-4 opacity-60" />
-          <input
-            className="w-full h-10 rounded-md border pl-8 pr-10 bg-white/70 outline-none focus:ring-2 focus:ring-[var(--palette-blue)]"
-            placeholder="Busca lugares (ej. Bellas Artes, Tolantongo…)"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
+    <div className="rounded-[var(--radius)] border bg-card/80 backdrop-blur p-3 md:p-4 shadow-sm">
+      {/* Tabs compactos */}
+      <div className="flex gap-2 mb-3">
+        {TABS.map((t) => (
           <button
-            type="button"
-            title="Ubicación"
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md border bg-background/70 size-8 grid place-content-center"
+            key={t}
+            className={cn(
+              "h-8 px-3 rounded-full text-sm border",
+              t === tab
+                ? "bg-[var(--palette-blue)] text-[var(--primary-foreground)] border-transparent"
+                : "hover:bg-accent"
+            )}
+            onClick={() => setTab(t)}
           >
-            <IconMapPinFilled className="size-4" />
+            {t}
           </button>
-        </div>
+        ))}
+      </div>
 
-        <div className="hidden md:flex gap-1 rounded-md border p-1 bg-background">
-          {TABS.map((t) => {
-            const Icon = t.icon;
-            const active = tab === t.key;
+      {/* Input */}
+      <div className="relative">
+        <IconSearch className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          className="w-full h-10 pl-9 pr-9 rounded-md border bg-white/70 focus-visible:ring-2 outline-none"
+          placeholder="Busca lugares (ej. Bellas Artes, Tolantongo...)"
+        />
+        {q && (
+          <button
+            className="absolute right-2 top-2.5 p-1 hover:bg-muted rounded"
+            onClick={() => setQ("")}
+          >
+            <IconX className="size-4" />
+          </button>
+        )}
+      </div>
+
+      {/* Chips de categorías (scroll-x, sin traslapar) */}
+      <div className="mt-3 mask-fade-x overflow-x-auto">
+        <div className="flex gap-2 pr-4">
+          {CATEGORIES.map((c) => {
+            const active = c === cat;
             return (
               <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
+                key={c}
+                onClick={() => setCat(active ? null : c)}
                 className={cn(
-                  "px-3 h-10 rounded-md text-sm inline-flex items-center gap-2 transition",
+                  "h-7 px-3 rounded-full border text-sm whitespace-nowrap",
                   active
-                    ? "bg-[var(--palette-blue)] text-white"
-                    : "hover:bg-muted"
+                    ? "bg-[var(--palette-blue)] text-[var(--primary-foreground)] border-transparent"
+                    : "bg-secondary hover:bg-secondary/80"
                 )}
               >
-                <Icon className="size-4" /> {t.label}
+                {c}
               </button>
             );
           })}
-        </div>
-      </div>
-
-      {/* CATEGORÍAS (scroll-x y sticky visualmente al bloque, no a la página) */}
-      <div className="mt-3">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-xs font-medium text-muted-foreground">
-            Categorías
-          </span>
-          {activeTag && (
+          {cat && (
             <button
-              className="text-xs underline text-muted-foreground hover:text-foreground"
-              onClick={() => setActiveTag(null)}
+              onClick={() => setCat(null)}
+              className="h-7 px-3 rounded-full text-sm border hover:bg-muted"
             >
               Limpiar
             </button>
           )}
         </div>
-        <div className="mask-fade-x overflow-x-auto">
-          <div className="flex gap-2 py-1">
-            {CATEGORY_ORDER.map((cat) => (
-              <Badge
-                key={cat}
-                variant={activeTag === cat ? "default" : "outline"}
-                className={cn(
-                  "cursor-pointer whitespace-nowrap",
-                  activeTag === cat &&
-                    "bg-[var(--palette-blue)] text-[var(--primary-foreground)] border-transparent"
-                )}
-                onClick={() => setActiveTag(activeTag === cat ? null : cat)}
+      </div>
+
+      {/* Resultados */}
+      <div className="mt-3 rounded-lg border overflow-hidden">
+        <ul className="divide-y">
+          {items.map((p) => (
+            <li
+              key={p.id}
+              className="flex items-center justify-between gap-3 p-2 hover:bg-accent/60"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <img
+                  src={p.image}
+                  alt={p.name}
+                  className="size-11 rounded-md object-cover border"
+                />
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{p.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {p.city} • {p.tag}
+                  </p>
+                </div>
+              </div>
+              <button
+                className="h-8 px-3 rounded-md border bg-white hover:bg-muted"
+                onClick={() => onPick(p)}
+                title="Añadir a tu plan"
               >
-                {cat[0].toUpperCase() + cat.slice(1)}
-              </Badge>
-            ))}
-          </div>
-        </div>
+                Añadir
+              </button>
+            </li>
+          ))}
+          {!items.length && (
+            <li className="p-3 text-sm text-muted-foreground">
+              Sin resultados.
+            </li>
+          )}
+        </ul>
       </div>
 
-      {/* RESULTADOS (altura fija + scroll interno) */}
-      <div className="mt-3">
-        <ScrollArea className="max-h-[360px] rounded-lg border overflow-hidden">
-          <ul className="divide-y">
-            {results.map((it) => (
-              <li key={it.id} className="p-3 hover:bg-muted/60">
-                <div className="flex items-center gap-3">
-                  <div className="relative h-12 w-16 shrink-0 rounded-md overflow-hidden border bg-muted">
-                    <Image
-                      src={
-                        it.image ||
-                        "https://images.unsplash.com/photo-1528909514045-2fa4ac7a08ba?q=80&w=800&auto=format&fit=crop"
-                      }
-                      alt={it.name}
-                      fill
-                      sizes="64px"
-                      className="object-cover"
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium truncate">{it.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {it.city} • {it.tag}
-                    </p>
-                    {it.popular && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground mt-1 inline-block">
-                        Popular
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    className="h-8 px-2 rounded-md border text-sm hover:bg-muted"
-                    onClick={() => onPick(it)}
-                    title="Añadir a día actual"
-                  >
-                    <IconPlus className="size-4 inline -mt-0.5 mr-1" />
-                    Añadir
-                  </button>
-                </div>
-              </li>
-            ))}
-
-            {results.length === 0 && (
-              <li className="p-6 text-sm text-muted-foreground">
-                Sin resultados. Prueba con otro término o cambia de categoría.
-              </li>
-            )}
-          </ul>
-        </ScrollArea>
+      {/* Pie compacto (ubicación y más filtros, solo UI) */}
+      <div className="mt-3 flex justify-between text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1">
+          <IconMapPin className="size-4" /> Ciudad de México
+        </span>
+        <button className="inline-flex items-center gap-1 hover:text-foreground">
+          Más filtros <IconChevronDown className="size-4" />
+        </button>
       </div>
-
-      {/* SUGERENCIAS (solo si no hay query) */}
-      {!query && (
-        <div className="mt-3">
-          <p className="text-xs font-medium text-muted-foreground mb-2">
-            Sugerencias populares
-          </p>
-          <div className="flex gap-3 overflow-x-auto mask-fade-x pb-1">
-            {suggestions.slice(0, 12).map((s) => (
-              <article key={`s-${s.id}`} className="min-w-[240px]">
-                <div className="rounded-lg border overflow-hidden bg-card">
-                  <div className="relative h-[120px]">
-                    <Image
-                      src={
-                        s.image ||
-                        "https://images.unsplash.com/photo-1528909514045-2fa4ac7a08ba?q=80&w=1200&auto=format&fit=crop"
-                      }
-                      alt={s.name}
-                      fill
-                      sizes="240px"
-                      className="object-cover"
-                    />
-                  </div>
-                  <div className="p-2">
-                    <p className="text-sm font-medium line-clamp-2">{s.name}</p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {s.city} • {s.tag}
-                    </p>
-                    <button
-                      className="mt-2 w-full h-8 text-sm rounded-md border hover:bg-muted"
-                      onClick={() => onPick(s)}
-                    >
-                      Añadir
-                    </button>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      )}
-    </Card>
+    </div>
   );
 }

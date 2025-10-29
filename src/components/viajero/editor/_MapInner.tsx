@@ -1,4 +1,3 @@
-// src/components/viajero/editor/_MapInner.tsx
 "use client";
 import * as React from "react";
 import {
@@ -9,7 +8,7 @@ import {
   ZoomControl,
 } from "react-leaflet";
 import L from "leaflet";
-import { useTrip } from "@/stores/trip-store";
+import "leaflet/dist/leaflet.css";
 
 const icon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -18,31 +17,35 @@ const icon = new L.Icon({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
 });
 
-export default function MapInner() {
-  const { selectedPlace } = useTrip();
-  const center: [number, number] = selectedPlace
-    ? [selectedPlace.lat, selectedPlace.lng]
-    : [19.4326, -99.1332];
+export default function MapInner({
+  center,
+  selectedName,
+}: {
+  center: [number, number];
+  selectedName?: string;
+}) {
+  const [ready, setReady] = React.useState(false);
+  React.useEffect(() => setReady(true), []);
+  if (!ready) return <div className="h-full w-full" />;
 
   return (
     <MapContainer
       center={center}
-      zoom={13}
+      zoom={12}
       zoomControl={false}
       className="h-full w-full"
     >
       <TileLayer
+        // evitar appendChild error asegurando que solo se monta en cliente
         attribution="&copy; OpenStreetMap"
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <ZoomControl position="bottomleft" />
-      {selectedPlace && (
-        <Marker position={[selectedPlace.lat, selectedPlace.lng]} icon={icon}>
-          <Popup>{selectedPlace.name}</Popup>
+      {center && (
+        <Marker position={center} icon={icon}>
+          {selectedName && <Popup>{selectedName}</Popup>}
         </Marker>
       )}
     </MapContainer>

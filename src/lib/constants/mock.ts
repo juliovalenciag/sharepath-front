@@ -5,6 +5,8 @@ export type Place = {
   city: string;
   tag: string;
   img: string;
+  lat?: number;
+  lng?: number;
 };
 
 export const UI = {
@@ -38,6 +40,8 @@ export const SUGGESTIONS: Place[] = [
     city: "CDMX",
     tag: "Cultura",
     img: "https://images.pexels.com/photos/12281148/pexels-photo-12281148.jpeg",
+    lat: 19.4353,
+    lng: -99.1411,
   },
   {
     id: "2",
@@ -45,6 +49,8 @@ export const SUGGESTIONS: Place[] = [
     city: "CDMX",
     tag: "Parque",
     img: "https://images.pexels.com/photos/12666954/pexels-photo-12666954.jpeg",
+    lat: 19.4209,
+    lng: -99.1917,
   },
   {
     id: "3",
@@ -52,6 +58,8 @@ export const SUGGESTIONS: Place[] = [
     city: "Querétaro",
     tag: "Naturaleza",
     img: "https://images.pexels.com/photos/33826654/pexels-photo-33826654.jpeg",
+    lat: 20.5984,
+    lng: -99.8237,
   },
   {
     id: "4",
@@ -59,6 +67,8 @@ export const SUGGESTIONS: Place[] = [
     city: "Hidalgo",
     tag: "Naturaleza",
     img: "https://images.pexels.com/photos/12331034/pexels-photo-12331034.jpeg",
+    lat: 20.5984,
+    lng: -99.8237,
   },
   {
     id: "5",
@@ -66,6 +76,8 @@ export const SUGGESTIONS: Place[] = [
     city: "Edo. Méx.",
     tag: "Arqueología",
     img: "https://images.pexels.com/photos/17061903/pexels-photo-17061903.jpeg",
+    lat: 19.6925,
+    lng: -98.8438,
   },
   {
     id: "6",
@@ -73,6 +85,8 @@ export const SUGGESTIONS: Place[] = [
     city: "Morelos",
     tag: "Historia",
     img: "https://upload.wikimedia.org/wikipedia/commons/b/ba/Jardin_borda.jpg",
+    lat: 18.9186,
+    lng: -99.2216,
   },
 ];
 
