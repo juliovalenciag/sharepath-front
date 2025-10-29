@@ -64,7 +64,7 @@ export function PlaceSearch({ onPick }: { onPick: (p: Place) => void }) {
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          className="w-full h-10 pl-9 pr-9 rounded-md border bg-white/70 focus-visible:ring-2 outline-none"
+          className="w-full h-10 pl-9 pr-9 rounded-md border focus-visible:ring-2 outline-none"
           placeholder="Busca lugares (ej. Bellas Artes, Tolantongo...)"
         />
         {q && (
@@ -130,11 +130,11 @@ export function PlaceSearch({ onPick }: { onPick: (p: Place) => void }) {
                 </div>
               </div>
               <button
-                className="h-8 px-3 rounded-md border bg-white hover:bg-muted"
+                className="h-8 px-2 rounded-md border hover:bg-muted"
                 onClick={() => onPick(p)}
                 title="Añadir a tu plan"
               >
-                Añadir
+                + Añadir
               </button>
             </li>
           ))}
@@ -151,9 +151,7 @@ export function PlaceSearch({ onPick }: { onPick: (p: Place) => void }) {
         <span className="inline-flex items-center gap-1">
           <IconMapPin className="size-4" /> Ciudad de México
         </span>
-        <button className="inline-flex items-center gap-1 hover:text-foreground">
-          Más filtros <IconChevronDown className="size-4" />
-        </button>
+       
       </div>
     </div>
   );
