@@ -58,7 +58,7 @@ const data = {
     { title: "Buscar", url: "/search", icon: IconSearch },
   ],
   documents: [
-    { name: "Chats", url: "/dashboard/chats", icon: IconMessages },
+    { name: "Chats", url: "/viajero/chats", icon: IconMessages },
     {
       name: "Notificaciones",
       url: "/dashboard/notificaciones",
