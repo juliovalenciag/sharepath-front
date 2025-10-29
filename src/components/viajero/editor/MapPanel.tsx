@@ -1,38 +1,57 @@
+// components/viajero/editor/MapPanel.tsx
 "use client";
-
 import * as React from "react";
-import { IconMap, IconX } from "@tabler/icons-react";
-import { cn } from "@/lib/utils";
+import dynamic from "next/dynamic";
+import "leaflet/dist/leaflet.css";
 
-export function MapPanel({ onCloseMobile }: { onCloseMobile?: () => void }) {
+const Leaflet = dynamic(
+  async () => {
+    const L = await import("react-leaflet");
+    return L;
+  },
+  { ssr: false }
+);
+
+export default function MapPanel() {
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+  if (!mounted) return <div className="h-full w-full bg-muted" />;
+
+  // carga diferida para evitar import SSR
+  const {
+    MapContainer,
+    TileLayer,
+    Marker,
+    Popup,
+    ZoomControl,
+  } = require("react-leaflet");
+  const L = require("leaflet");
+  const markerIcon = new L.Icon({
+    iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+    iconRetinaUrl:
+      "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41],
+  });
+
   return (
-    <div className="relative h-full w-full">
-      {/* Header mini en móvil */}
-      <div className="md:hidden absolute inset-x-0 top-0 z-10 flex items-center justify-between px-4 py-3 bg-card/80 border-b backdrop-blur">
-        <div className="inline-flex items-center gap-2">
-          <IconMap className="size-4" />
-          <span className="text-sm font-medium">Mapa</span>
-        </div>
-        <button
-          onClick={onCloseMobile}
-          className="rounded-md border px-2 py-1 text-sm"
-        >
-          <IconX className="size-4" />
-        </button>
-      </div>
-
-      {/* Placeholder visual */}
-      <div className="h-full w-full grid place-items-center bg-[radial-gradient(ellipse_at_top,theme(colors.palette.blue)/12%,transparent_55%),linear-gradient(to_bottom,transparent,theme(colors.palette.dark)/6%)]">
-        <div className="text-center px-6">
-          <div className="mx-auto mb-3 size-12 rounded-full bg-palette-blue text-primary-foreground flex items-center justify-center shadow-lg">
-            <IconMap className="size-6" />
-          </div>
-          <p className="font-medium">Mapa próximamente</p>
-          <p className="text-sm text-muted-foreground">
-            Integraremos Mapbox/Google Maps aquí (capas de lugares y rutas).
-          </p>
-        </div>
-      </div>
-    </div>
+    <MapContainer
+      center={[19.4326, -99.1332]}
+      zoom={12}
+      zoomControl={false}
+      className="h-full w-full"
+    >
+      <TileLayer
+        attribution="&copy; OpenStreetMap"
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+      <ZoomControl position="bottomleft" />
+      <Marker position={[19.4326, -99.1332]} icon={markerIcon}>
+        <Popup>Ciudad de México</Popup>
+      </Marker>
+    </MapContainer>
   );
 }

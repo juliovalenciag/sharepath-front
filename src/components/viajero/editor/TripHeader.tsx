@@ -1,8 +1,6 @@
 "use client";
-
-import * as React from "react";
-import { IconSparkles } from "@tabler/icons-react";
-import { cn } from "@/lib/utils";
+import Image from "next/image";
+import { Card } from "@/components/ui/card";
 
 export function TripHeader({
   title,
@@ -12,34 +10,26 @@ export function TripHeader({
   subtitle?: string;
 }) {
   return (
-    <header className="relative">
-      <div className="h-28 md:h-32 w-full overflow-hidden">
-        <div className="h-full w-full bg-[url('/images/cdmx-hero.jpg')] bg-cover bg-center opacity-80" />
+    <div className="relative">
+      <div className="relative h-[140px] md:h-[180px] w-full overflow-hidden rounded-xl">
+        <Image
+          src="https://images.unsplash.com/photo-1583394838336-acd977736f90?q=80&w=1600&auto=format&fit=crop"
+          alt="Cover"
+          fill
+          priority
+          className="object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-background/40 via-background/20 to-transparent" />
       </div>
 
-      <div className="px-4 md:px-6 -mt-9 md:-mt-12">
-        <div className="rounded-2xl shadow-sm border bg-card p-4 md:p-5 max-w-[840px]">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-lg md:text-xl font-semibold">{title}</h1>
-              {subtitle && (
-                <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
-                  {subtitle}
-                </p>
-              )}
-            </div>
-            <button
-              className={cn(
-                "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm",
-                "hover:bg-muted"
-              )}
-            >
-              <IconSparkles className="size-4 text-palette-blue" />
-              Planifica inteligentemente
-            </button>
-          </div>
-        </div>
-      </div>
-    </header>
+      <Card className="-mt-10 ml-3 md:ml-4 max-w-[760px] px-4 py-3 md:px-5 md:py-4 rounded-xl shadow-lg bg-card/95 backdrop-blur">
+        <h1 className="text-xl md:text-2xl font-extrabold tracking-tight">
+          {title}
+        </h1>
+        {subtitle && (
+          <p className="text-sm text-muted-foreground">{subtitle}</p>
+        )}
+      </Card>
+    </div>
   );
 }

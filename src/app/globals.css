@@ -1,5 +1,51 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "leaflet/dist/leaflet.css";
+
+:root {
+  --editor-rail-w: 64px;
+}
+html,
+body,
+#__next {
+  height: 100%;
+}
+.leaflet-container {
+  background: var(--muted);
+}
+
+.z-rail {
+  z-index: 30;
+}
+.z-editor {
+  z-index: 20;
+}
+.z-map {
+  z-index: 10;
+}
+
+@media (max-width: 768px) {
+  .hide-mobile {
+    display: none !important;
+  }
+}
+
+.mask-fade-x {
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 16px,
+    #000 calc(100% - 16px),
+    transparent
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 16px,
+    #000 calc(100% - 16px),
+    transparent
+  );
+}
 
 @custom-variant dark (&:is(.dark *));
 

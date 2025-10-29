@@ -11,13 +11,14 @@ import { TripHeader } from "./TripHeader";
 import { PlaceSearch } from "./PlaceSearch";
 import { CategoryChips } from "./CategoryChips";
 import { DayCard } from "./DayCard";
-import { MapPanel } from "./MapPanel";
+
 import { DayRail } from "./DayRail";
 import {
   CATEGORIES,
   SUGGESTIONS,
   type Place,
 } from "@/lib/constants/suggestions";
+import MapPanel from "./MapPanel";
 
 export function EditorShell({
   region,
@@ -35,6 +36,7 @@ export function EditorShell({
   const [byDay, setByDay] = useState<Record<string, Place[]>>({});
   const [filterTag, setFilterTag] = useState<string | null>(null);
   const [mapOpenMobile, setMapOpenMobile] = useState(false);
+
 
   const headerSubtitle = useMemo(() => {
     const parts: string[] = [];
@@ -125,23 +127,15 @@ export function EditorShell({
                 ).slice(0, 6);
 
                 return (
-                  <DayCard
-                    key={d.key}
-                    dayIndex={idx}
-                    date={d.date}
-                    items={items}
-                    quick={quick}
-                    onSuggest={() => {
-                      const pick =
-                        SUGGESTIONS[
-                          Math.floor(Math.random() * SUGGESTIONS.length)
-                        ];
-                      addPlace(d.key, pick);
-                    }}
-                    onPickQuick={(p) => addPlace(d.key, p)}
-                    onMoveUp={(i) => move(d.key, i, i - 1)}
-                    onMoveDown={(i) => move(d.key, i, i + 1)}
-                    onRemove={(i) => removePlace(d.key, i)}
+                  <DayRail
+                    days={[
+                      { key: "d1", date: new Date(2025, 10, 1) },
+                      { key: "d2", date: new Date(2025, 10, 2) },
+                      { key: "d3", date: new Date(2025, 10, 3) },
+                      { key: "d4", date: new Date(2025, 10, 4) },
+                    ]}
+                    activeKey="d1"
+                    onPick={(idx) => console.log("ir a día", idx)}
                   />
                 );
               })}

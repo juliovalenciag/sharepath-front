@@ -5,80 +5,99 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
-export function DayRail({ days }: { days: { key: string; date?: Date }[] }) {
-  // expand on hover (desktop) / tap button (mobile)
-  const [expanded, setExpanded] = React.useState(false);
+export type RailDay = {
+  key: string;
+  date?: Date;
+  label?: string;
+  day?: number;
+};
+
+export function DayRail({
+  days,
+  activeKey,
+  onPick,
+  className,
+}: {
+  days: RailDay[];
+  activeKey?: string;
+  onPick?: (index: number) => void;
+  className?: string;
+}) {
+  const list = React.useMemo(
+    () =>
+      days.map((d) => {
+        const lbl = d.date
+          ? format(d.date, "EEE", { locale: es })
+          : d.label ?? "";
+        const dd = d.date ? Number(format(d.date, "d")) : d.day ?? 0;
+        return {
+          ...d,
+          _label: (lbl || "").toString(),
+          _day: Number.isFinite(dd) ? dd : 0,
+        };
+      }),
+    [days]
+  );
+  const active = Math.max(
+    0,
+    list.findIndex((x) => x.key === activeKey)
+  );
 
   return (
-    <nav
-      onMouseEnter={() => setExpanded(true)}
-      onMouseLeave={() => setExpanded(false)}
+    <div
       className={cn(
-        "group relative h-full border-r bg-card/70 backdrop-blur supports-[backdrop-filter]:bg-card/60 transition-[width] duration-200",
-        expanded ? "w-[240px]" : "w-[72px]"
+        "h-full w-[var(--editor-rail-w,64px)] flex flex-col items-center gap-2 py-3 border-r bg-background/90",
+        "supports-[backdrop-filter]:backdrop-blur",
+        className
       )}
     >
-      {/* Handle para móvil */}
-      <button
-        className="absolute -right-3 top-4 md:hidden z-10 rounded-full border bg-background px-2 py-1 text-xs"
-        onClick={() => setExpanded((v) => !v)}
-      >
-        {expanded ? "‹" : "›"}
-      </button>
-
-      <div className="h-full overflow-hidden">
-        <div className={cn("px-3 py-3 text-sm font-semibold")}>Resumen</div>
-        <ul className="space-y-2 px-2">
-          {days.map((d, i) => {
-            const date = d.date;
-            const labelShort = date
-              ? `${format(date, "EEE", { locale: es }).toUpperCase()} ${format(
-                  date,
-                  "dd",
-                  { locale: es }
-                )}`
-              : `DÍA ${i + 1}`;
-            const labelFull = date
-              ? `${format(date, "EEE dd 'de' MMM", { locale: es })}`
-              : `Día ${i + 1}`;
-
-            return (
-              <li key={d.key}>
-                <button
+      <ol className="flex-1 flex flex-col items-stretch gap-2">
+        {list.map((d, i) => {
+          const is = i === active;
+          const tip = `${d._label.slice(0, 3).toUpperCase()} ${String(
+            d._day
+          ).padStart(2, "0")}`;
+          return (
+            <li key={d.key}>
+              <button
+                type="button"
+                title={tip}
+                aria-label={tip}
+                onClick={() => onPick?.(i)}
+                className={cn(
+                  "relative w-11 h-11 rounded-full grid place-content-center text-xs border shadow-sm transition",
+                  is
+                    ? "bg-[var(--palette-blue)] text-[var(--primary-foreground)] border-transparent"
+                    : "bg-muted hover:bg-muted/80"
+                )}
+              >
+                <span className="leading-none font-semibold">
+                  {String(d._day).padStart(2, "0")}
+                </span>
+                <span
                   className={cn(
-                    "w-full rounded-lg border text-left transition-colors hover:bg-muted focus:outline-none",
-                    "grid items-center",
-                    expanded ? "grid-cols-[28px_1fr]" : "grid-cols-1"
+                    "absolute -left-1 -top-1 text-[9px] px-1 py-0.5 rounded",
+                    is
+                      ? "bg-[var(--palette-blue)] text-[var(--primary-foreground)]"
+                      : "bg-accent text-accent-foreground"
                   )}
                 >
-                  {/* punto / ícono */}
-                  <span className="flex items-center justify-center py-2">
-                    <span className="inline-flex size-2.5 rounded-full bg-palette-blue" />
-                  </span>
-                  {/* texto */}
-                  <span
-                    className={cn(
-                      "truncate pr-2",
-                      expanded ? "block" : "hidden"
-                    )}
-                  >
-                    {labelFull}
-                  </span>
-                  {/* comprimido */}
-                  <span
-                    className={cn(
-                      "text-xs py-2 text-center",
-                      expanded ? "hidden" : "block"
-                    )}
-                  >
-                    {labelShort}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-    </nav>
+                  {d._label.slice(0, 3).toUpperCase()}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+
+      <button
+        type="button"
+        className="mb-1 size-6 grid place-content-center rounded-md border bg-background text-xs"
+        title="(Opcional) colapsar"
+        aria-label="Colapsar"
+      >
+        »
+      </button>
+    </div>
   );
 }
