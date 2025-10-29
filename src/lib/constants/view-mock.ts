@@ -8,11 +8,60 @@ export const VIEW_ITINERARY_SAMPLE: Itinerary = {
   author: { name: "kelo" },
   createdAtISO: "2025-10-29",
   region: "Ciudad de México",
+  notes: [
+    {
+      id: "n-trip-1",
+      title: "Cambio de moneda",
+      content:
+        "Lleva efectivo para entradas pequeñas; muchas taquillas no aceptan tarjetas.",
+    },
+    {
+      id: "n-trip-2",
+      title: "Transporte",
+      content: "Tarjeta de Movilidad Integrada para metro y metrobús.",
+    },
+  ],
+  tasks: [
+    { id: "t-1", text: "Comprar seguro de viaje", done: true, scope: "trip" },
+    { id: "t-2", text: "Descargar mapas offline", scope: "trip" },
+  ],
+  budget: [
+    { label: "Entradas museos", amount: 650, currency: "MXN" },
+    { label: "Comidas", amount: 1200, currency: "MXN" },
+  ],
+  reservations: [
+    {
+      id: "r1",
+      kind: "hotel",
+      title: "Hotel Histórico Centro",
+      whenISO: "2025-11-01T15:00:00-06:00",
+      where: "Centro Hist.",
+      code: "HHC-8K2P",
+      links: [{ label: "Ver reserva", href: "#" }],
+    },
+    {
+      id: "r2",
+      kind: "tour",
+      title: "Tour Centro + Templo Mayor",
+      whenISO: "2025-11-01T10:00:00-06:00",
+      where: "Bellas Artes",
+      code: "TOUR-213A",
+    },
+  ],
+  safety: [
+    "Evita caminar solo muy tarde por calles poco iluminadas.",
+    "Usa apps oficiales de taxi o plataformas con placa verificada.",
+  ],
+  generalTips: [
+    "Compra boletos con antelación para evitar filas en Chapultepec.",
+    "Los lunes muchos museos cierran.",
+  ],
   days: [
     {
       key: "d1",
       dateISO: "2025-11-01",
       title: "Centro histórico y alrededores",
+      weather: { icon: "☀️", tmin: 11, tmax: 22, rainProb: 10, unit: "°C" },
       items: [
         {
           id: "bellas-artes",
@@ -22,15 +71,16 @@ export const VIEW_ITINERARY_SAMPLE: Itinerary = {
           img: "https://images.pexels.com/photos/12281148/pexels-photo-12281148.jpeg",
           lat: 19.4353,
           lng: -99.1412,
-          blurb: "Icono art déco con murales de Rivera y más.",
+          blurb: "Icono art déco con murales de Rivera.",
           summary:
-            "Dramatic marble performance hall & museum featuring murals by Diego Rivera & other notable artists.",
-          badges: ["Centro cultural", "Museo", "Art museum"],
-          rating: 4.8,
-          reviewsCount: 186651,
-          links: [
-            { label: "Sitio oficial", href: "https://palacio.inba.gob.mx" },
-            { label: "Google Maps", href: "https://maps.google.com" },
+            "Dramatic marble hall & museum featuring murals by Diego Rivera.",
+          badges: ["Centro cultural", "Museo"],
+          durationMin: 90,
+          bestTime: "Atardecer",
+          entryCost: { label: "Entrada", amount: 90, currency: "MXN" },
+          tips: [
+            "Llega 15 min antes del espectáculo",
+            "Mejor vista desde el café de Sears",
           ],
         },
         {
@@ -42,25 +92,45 @@ export const VIEW_ITINERARY_SAMPLE: Itinerary = {
           lat: 19.4359,
           lng: -99.1474,
           blurb: "El parque más antiguo de la ciudad.",
-          summary:
-            "Abierto 24 horas. Fuentes, árboles y un paseo perfecto para fotografías y descanso.",
+          durationMin: 40,
         },
+      ],
+      transport: [
+        {
+          fromId: "bellas-artes",
+          toId: "alameda",
+          mode: "walk",
+          distanceKm: 0.3,
+          timeMin: 6,
+          note: "Plano y con sombra",
+        },
+      ],
+      budget: [{ label: "Snacks/agua", amount: 80, currency: "MXN" }],
+      notes: [
+        {
+          id: "n-d1-1",
+          content: "Comprar postales en la Librería Porrúa (detrás de Palacio)",
+        },
+      ],
+      tasks: [
+        { id: "t-d1-1", text: "Foto nocturna en Bellas Artes", scope: "day" },
       ],
     },
     {
       key: "d2",
       dateISO: "2025-11-02",
       title: "Chapultepec y Reforma",
+      weather: { icon: "⛅️", tmin: 12, tmax: 21, rainProb: 20, unit: "°C" },
       items: [
         {
           id: "castillo",
-          name: "Museo Nacional de Historia - Castillo de Chapultepec",
+          name: "Castillo de Chapultepec",
           city: "CDMX",
           tag: "Historia",
           img: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Chapultepec_Castle.jpg/640px-Chapultepec_Castle.jpg",
           lat: 19.4209,
           lng: -99.1815,
-          blurb: "Castillo con vistas y salas históricas.",
+          blurb: "Vistas espectaculares.",
         },
         {
           id: "angel",
@@ -70,7 +140,17 @@ export const VIEW_ITINERARY_SAMPLE: Itinerary = {
           img: "https://upload.wikimedia.org/wikipedia/commons/7/78/Angel_Independencia.jpg",
           lat: 19.427,
           lng: -99.1677,
-          blurb: "Emblema de Reforma; vistas nocturnas espectaculares.",
+          blurb: "Ideal después del atardecer.",
+        },
+      ],
+      transport: [
+        {
+          fromId: "castillo",
+          toId: "angel",
+          mode: "uber",
+          distanceKm: 2.3,
+          timeMin: 9,
+          note: "Tráfico ligero domingo",
         },
       ],
     },
@@ -78,6 +158,7 @@ export const VIEW_ITINERARY_SAMPLE: Itinerary = {
       key: "d3",
       dateISO: "2025-11-03",
       title: "Templo Mayor y Zócalo",
+      weather: { icon: "🌦️", tmin: 11, tmax: 20, rainProb: 40, unit: "°C" },
       items: [
         {
           id: "templo-mayor",
@@ -87,7 +168,7 @@ export const VIEW_ITINERARY_SAMPLE: Itinerary = {
           img: "https://upload.wikimedia.org/wikipedia/commons/4/48/Templo_Mayor_Ruins.jpg",
           lat: 19.4342,
           lng: -99.1329,
-          blurb: "Sitio arqueológico mexica en el corazón de la ciudad.",
+          blurb: "Sitio mexica en el corazón de la ciudad.",
         },
       ],
     },
