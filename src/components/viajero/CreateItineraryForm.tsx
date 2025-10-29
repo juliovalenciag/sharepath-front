@@ -32,19 +32,8 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Card } from "@/components/ui/card";
-// --- (INICIO) Mejoras de importación ---
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-// --- (FIN) Mejoras de importación ---
 
-import DateRangePicker from "@/components/ui/date-range-picker"; // <-- Asumiendo que usas el componente mejorado del paso anterior
+import DateRangePicker from "@/components/ui/date-range-picker";
 
 /* ----------------------------- Datos y esquema ----------------------------- */
 
@@ -76,8 +65,13 @@ export default function CreateItineraryForm() {
   const router = useRouter();
   const [openRegion, setOpenRegion] = React.useState(false);
 
-  // <-- Mejora: Renombrado a 'form' para seguir la convención de shadcn
-  const form = useForm<FormValues>({
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       region: undefined,
@@ -85,15 +79,13 @@ export default function CreateItineraryForm() {
       end: undefined,
       visibility: "friends",
       companions: "",
-    },
+    } as any,
   });
 
-  // <-- Mejora: Obtenemos 'watch' y 'setValue' directamente de 'form'
-  const { watch, setValue } = form;
-
-  // Observamos 'start' y 'end' para el DateRangePicker, ya que es un campo compuesto
+  const region = watch("region");
   const start = watch("start");
   const end = watch("end");
+  const visibility = watch("visibility");
 
   function onSubmit(values: FormValues) {
     const params = new URLSearchParams();
@@ -101,14 +93,19 @@ export default function CreateItineraryForm() {
     if (values.start) params.set("start", values.start.toISOString());
     if (values.end) params.set("end", values.end.toISOString());
     params.set("visibility", values.visibility);
-    if (values.companions) params.set("companions", values.companions.trim());
 
-    router.push(`/viajero/itinerarios/constructor?${params.toString()}`);
+    const companions = values.companions
+      ?.split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (companions?.length) params.set("companions", companions.join(","));
+
+    router.push(`/viajero/itinerarios/crear?${params.toString()}`);
   }
 
   return (
     <Card className="mx-auto max-w-3xl border-border/60 bg-card/70 backdrop-blur-sm shadow-sm p-5 md:p-7">
-      {/* Encabezado (sin cambios, ya estaba bien) */}
+      {/* Encabezado con acento */}
       <div className="mb-6 text-center">
         <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">
           Crea un nuevo itinerario
@@ -120,229 +117,184 @@ export default function CreateItineraryForm() {
         <div className="mt-3 h-1 w-24 mx-auto rounded-full bg-palette-blue/90 dark:bg-palette-blue" />
       </div>
 
-      {/* <-- Mejora: Envolvemos todo en el componente <Form> de shadcn */}
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          {/* ¿A dónde? */}
-          {/* <-- Mejora: Usamos FormField para vincular el estado y los errores */}
-          <FormField
-            control={form.control}
-            name="region"
-            render={({ field }) => (
-              <FormItem className="space-y-2">
-                <FormLabel>¿A dónde?</FormLabel>
-                <Popover open={openRegion} onOpenChange={setOpenRegion}>
-                  <PopoverTrigger asChild>
-                    {/* <-- Mejora: FormControl envuelve el 'trigger' */}
-                    <FormControl>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        role="combobox"
-                        className={cn(
-                          "h-12 w-full justify-between text-left rounded-lg",
-                          !field.value && "text-muted-foreground" // <-- Usa field.value
-                        )}
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        {/* ¿A dónde? */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium">¿A dónde?</label>
+
+          <Popover open={openRegion} onOpenChange={setOpenRegion}>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                role="combobox"
+                className={cn(
+                  "h-12 w-full justify-between text-left rounded-lg",
+                  !region && "text-muted-foreground"
+                )}
+              >
+                <span className="inline-flex items-center gap-2">
+                  <IconMapPinFilled className="size-4 opacity-70" />
+                  {region
+                    ? REGIONS.find((r) => r.value === region)?.label
+                    : "p. ej. CDMX, EdoMex..."}
+                </span>
+              </Button>
+            </PopoverTrigger>
+
+            <PopoverContent className="p-0 w-[--radix-popover-trigger-width]">
+              <Command>
+                <div className="px-2 pt-2 pb-1">
+                  <CommandInput placeholder="Buscar destino..." />
+                </div>
+                <CommandList className="max-h-60 overflow-y-auto">
+                  <CommandEmpty>No hay coincidencias</CommandEmpty>
+                  <CommandGroup heading="Estados disponibles">
+                    {REGIONS.map((r) => (
+                      <CommandItem
+                        key={r.value}
+                        value={`${r.label} ${r.hint}`}
+                        onSelect={() => {
+                          setValue("region", r.value, { shouldValidate: true });
+                          setOpenRegion(false);
+                        }}
+                        className="flex items-center justify-between"
                       >
-                        <span className="inline-flex items-center gap-2">
-                          <IconMapPinFilled className="size-4 opacity-70" />
-                          {field.value // <-- Usa field.value
-                            ? REGIONS.find((r) => r.value === field.value)
-                                ?.label
-                            : "p. ej. CDMX, EdoMex..."}
+                        <span className="flex items-center gap-2">
+                          <span className="inline-flex size-2.5 rounded-full bg-palette-pink/90" />
+                          {r.label}
                         </span>
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-
-                  <PopoverContent className="p-0 w-[--radix-popover-trigger-width]">
-                    <Command>
-                      <div className="px-2 pt-2 pb-1">
-                        <CommandInput placeholder="Buscar destino..." />
-                      </div>
-                      <CommandList className="max-h-60 overflow-y-auto">
-                        <CommandEmpty>No hay coincidencias</CommandEmpty>
-                        <CommandGroup heading="Estados disponibles">
-                          {REGIONS.map((r) => (
-                            <CommandItem
-                              key={r.value}
-                              value={`${r.label} ${r.hint}`}
-                              onSelect={() => {
-                                field.onChange(r.value); // <-- Usa field.onChange
-                                setOpenRegion(false);
-                              }}
-                              className="flex items-center justify-between"
-                            >
-                              <span className="flex items-center gap-2">
-                                <span className="inline-flex size-2.5 rounded-full bg-palette-pink/90" />
-                                {r.label}
-                              </span>
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground uppercase">
-                                {r.hint}
-                              </span>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-
-                <FormDescription>
-                  Actualmente soportamos itinerarios en CDMX, Estado de México,
-                  Hidalgo, Morelos y Querétaro.
-                </FormDescription>
-                {/* <-- Mejora: FormMessage maneja los errores automáticamente */}
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Fechas + Visibilidad */}
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4">
-            {/* <-- Mejora: Usamos FormField para la estructura (label/description) */}
-            <FormField
-              control={form.control}
-              name="start" // Lo "colgamos" del campo 'start'
-              render={() => (
-                <FormItem className="space-y-2">
-                  <FormLabel>Fechas (opcional)</FormLabel>
-                  {/* <-- Mejora: DateRangePicker ahora recibe el trigger como hijo */}
-                  <DateRangePicker
-                    value={{ start, end }}
-                    onChange={(v) => {
-                      // El picker maneja dos campos, así que usamos setValue
-                      setValue("start", v.start ?? undefined);
-                      setValue(
-                        "end",
-                        v.end ??
-                          (v.start
-                            ? addDays(v.start as Date, 1) // Tu lógica original
-                            : undefined)
-                      );
-                    }}
-                    trigger={
-                      // <-- Mejora: Este es ahora el 'trigger'
-                      // Ya no es una función, es un nodo de React
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className={cn(
-                          "h-12 w-full justify-start rounded-lg font-normal",
-                          !start && !end && "text-muted-foreground"
-                        )}
-                      >
-                        <IconCalendar className="mr-2 size-4 opacity-70" />
-                        <span>
-                          {start
-                            ? `${format(start, "d 'de' MMM", {
-                                locale: es,
-                              })} — ${
-                                end
-                                  ? format(end, "d 'de' MMM", { locale: es })
-                                  : "…"
-                              }`
-                            : "Fecha de inicio — Fecha final"}
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground uppercase">
+                          {r.hint}
                         </span>
-                      </Button>
-                    }
-                  />
-                  <FormDescription>
-                    Puedes omitir fechas y definirlas más adelante.
-                  </FormDescription>
-                </FormItem>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+
+          {errors.region && (
+            <p className="text-sm text-red-600">{errors.region.message}</p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Actualmente soportamos itinerarios en CDMX, Estado de México,
+            Hidalgo, Morelos y Querétaro.
+          </p>
+        </div>
+
+        {/* Fechas + Visibilidad */}
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
+          {/* Calendario (rango) */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">
+              Fechas (opcional)
+            </label>
+
+            <DateRangePicker
+              value={{ start, end }}
+              onChange={(v) => {
+                setValue("start", v.start ?? undefined, {
+                  shouldValidate: false,
+                });
+                setValue(
+                  "end",
+                  v.end ?? (v.start ? addDays(v.start as Date, 1) : undefined),
+                  {
+                    shouldValidate: false,
+                  }
+                );
+              }}
+              trigger={({ open, setOpen }) => (
+                <button
+                  type="button"
+                  onClick={() => setOpen(!open)}
+                  className="h-12 w-full justify-start rounded-lg border px-3 inline-flex items-center gap-2 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-palette-blue/60 transition"
+                >
+                  <IconCalendar className="size-4 opacity-70" />
+                  <span
+                    className={cn(!start && !end && "text-muted-foreground")}
+                  >
+                    {start
+                      ? `${format(start, "d 'de' MMM", { locale: es })} — ${
+                          end ? format(end, "d 'de' MMM", { locale: es }) : "…"
+                        }`
+                      : "Fecha de inicio — Fecha final"}
+                  </span>
+                </button>
               )}
             />
 
-            {/* Visibilidad (segmented) */}
-            {/* <-- Mejora: Usamos FormField para 'visibility' */}
-            <FormField
-              control={form.control}
-              name="visibility"
-              render={({ field }) => (
-                <FormItem className="space-y-2">
-                  <FormLabel>Privacidad</FormLabel>
-                  <FormControl>
-                    {/* <-- Mejora: Botones dentro de FormControl */}
-                    <div className="grid grid-cols-3 rounded-lg border overflow-hidden">
-                      {[
-                        { key: "private", label: "Privado" },
-                        { key: "friends", label: "Amigos" },
-                        { key: "public", label: "Público" },
-                      ].map((opt) => (
-                        <button
-                          key={opt.key}
-                          type="button"
-                          onClick={() => field.onChange(opt.key as any)} // <-- Usa field.onChange
-                          className={cn(
-                            "px-3 text-sm transition-colors flex items-center justify-center",
-                            "h-12", // <-- Mejora: Altura consistente
-                            field.value === opt.key // <-- Usa field.value
-                              ? "bg-palette-blue text-primary-foreground"
-                              : "bg-background hover:bg-muted"
-                          )}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                  </FormControl>
-                  <FormDescription>
-                    Define quién podrá ver tu itinerario.
-                  </FormDescription>
-                </FormItem>
-              )}
+            <p className="text-xs text-muted-foreground">
+              Puedes omitir fechas y definirlas más adelante.
+            </p>
+          </div>
+
+          {/* Visibilidad (segmented) */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">Privacidad</label>
+            <div className="grid grid-cols-3 rounded-lg border overflow-hidden">
+              {[
+                { key: "private", label: "Privado" },
+                { key: "friends", label: "Amigos" },
+                { key: "public", label: "Público" },
+              ].map((opt) => (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => setValue("visibility", opt.key as any)}
+                  className={cn(
+                    "px-3 py-2 text-sm transition-colors",
+                    visibility === opt.key
+                      ? "bg-palette-blue text-primary-foreground"
+                      : "bg-background hover:bg-muted"
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Define quién podrá ver y reutilizar tu itinerario.
+            </p>
+          </div>
+        </div>
+
+        {/* Invitaciones */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium">
+            Invitar a compañeros de viaje (opcional)
+          </label>
+          <div className="relative">
+            <IconUsersGroup className="absolute left-2 top-1/2 -translate-y-1/2 size-4 opacity-60" />
+            <Input
+              {...register("companions")}
+              placeholder="Correos separados por coma"
+              className="pl-8 rounded-lg"
             />
           </div>
+          <p className="text-xs text-muted-foreground">
+            Ej.: ana@mail.com, luis@mail.com
+          </p>
+        </div>
 
-          {/* Invitaciones */}
-          {/* <-- Mejora: Usamos FormField para 'companions' */}
-          <FormField
-            control={form.control}
-            name="companions"
-            render={({ field }) => (
-              <FormItem className="space-y-2">
-                <FormLabel>
-                  Invitar a compañeros de viaje (opcional)
-                </FormLabel>
-                <FormControl>
-                  <div className="relative">
-                    <IconUsersGroup className="absolute left-3 top-1/2 -translate-y-1/2 size-4 opacity-60" />
-                    <Input
-                      placeholder="Correos separados por coma"
-                      className="pl-9 h-12 rounded-lg" // <-- Mejora: Altura consistente y más padding
-                      {...field} // <-- Mejora: Pasamos el 'field' completo
-                    />
-                  </div>
-                </FormControl>
-                <FormDescription>
-                  Ej.: ana@mail.com, luis@mail.com
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        <Separator />
 
-          <Separator />
-
-          {/* CTA (sin cambios) */}
-          <div className="flex flex-col items-center gap-3 pt-2">
-            <Button
-              type="submit" // <-- Mejora: 'type="submit"' explícito
-              className="h-12 px-8 text-base rounded-full bg-palette-blue hover:opacity-90 text-primary-foreground"
-            >
-              Comienza a planificar
-            </Button>
-            <button
-              type="button"
-              className="text-sm text-muted-foreground hover:text-foreground hover:underline"
-              onClick={() => router.push("/viajero/guias/nueva")}
-            >
-              o escribir una nueva guía
-            </button>
-          </div>
-        </form>
-      </Form>
+        {/* CTA */}
+        <div className="flex flex-col items-center gap-3">
+          <Button className="h-12 px-8 text-base rounded-full bg-palette-blue hover:opacity-90 text-primary-foreground">
+            Comienza a planificar
+          </Button>
+          <button
+            type="button"
+            className="text-sm text-muted-foreground hover:text-foreground hover:underline"
+            onClick={() => router.push("/viajero/guias/nueva")}
+          >
+            o escribir una nueva guía
+          </button>
+        </div>
+      </form>
     </Card>
   );
 }

@@ -154,12 +154,12 @@
 .rdrCalendarWrapper {
   background: var(--card) !important;
   color: var(--foreground) !important;
-  border: none !important; /* el popover ya da borde/sombra */
+  border: none !important;
   border-radius: var(--radius) !important;
   font-family: var(--font-sans);
 }
 
-/* Sin “date display” superior */
+/* Ocultar el display superior */
 .rdrDateDisplayWrapper {
   display: none !important;
 }
@@ -193,18 +193,17 @@
   width: 2.25rem;
   height: 2.25rem;
   color: var(--foreground) !important;
-  background: transparent; /* asegura base limpia */
   border-radius: var(--radius-md) !important;
   transition: all 150ms ease;
 }
 
-/* Días pasivos (otro mes) */
+/* Pasivos */
 .rdrDayPassive .rdrDayNumber span {
   color: var(--muted-foreground) !important;
   opacity: 0.6;
 }
 
-/* Hover (fuera del rango actual) */
+/* Hover (fuera de rango) */
 .rdrDay:not(.rdrDayPassive):not(.rdrDayInRange):not(.rdrDayStartEdge):not(
     .rdrDayEndEdge
   )
@@ -213,37 +212,34 @@
   background: var(--accent) !important;
 }
 
-/* “Hoy” con punto rosa */
+/* Hoy con punto rosa */
 .rdrDayToday .rdrDayNumber span::after {
   content: "";
   position: absolute;
   left: 50%;
   bottom: 4px;
-  translate: -50% 0;
+  transform: translateX(-50%);
   width: 5px;
   height: 5px;
   border-radius: 9999px;
   background: var(--palette-pink) !important;
 }
-/* Oculta el punto rosa si hoy es inicio/fin/seleccionado */
 .rdrDayToday.rdrDayStartEdge .rdrDayNumber span::after,
 .rdrDayToday.rdrDayEndEdge .rdrDayNumber span::after,
 .rdrDayToday.rdrDaySelected .rdrDayNumber span::after {
   background: transparent !important;
 }
 
-/* === RANGO SELECCIONADO (clases correctas) === */
-
-/* Rango intermedio (entre inicio y fin) */
+/* Rango seleccionado (fondo suave) */
 .rdrDayInRange .rdrDayNumber span {
   background: color-mix(
     in oklch,
-    var(--palette-blue) 28%,
+    var(--palette-blue) 18%,
     transparent
   ) !important;
 }
 
-/* Día de inicio, fin o único seleccionado (sólido) */
+/* Extremos / día seleccionado (sólido) */
 .rdrDayStartEdge .rdrDayNumber span,
 .rdrDayEndEdge .rdrDayNumber span,
 .rdrDaySelected .rdrDayNumber span {
@@ -252,38 +248,7 @@
   font-weight: 600;
 }
 
-/* Previsualización del rango mientras arrastras/eliges */
-.rdrDayInPreview .rdrDayNumber span {
-  background: color-mix(
-    in oklch,
-    var(--palette-blue) 18%,
-    transparent
-  ) !important;
-}
-.rdrDayStartPreview .rdrDayNumber span,
-.rdrDayEndPreview .rdrDayNumber span {
-  outline: 2px dashed color-mix(in oklch, var(--palette-blue) 70%, transparent);
-  outline-offset: 2px;
-  background: color-mix(
-    in oklch,
-    var(--palette-blue) 12%,
-    transparent
-  ) !important;
-}
-
-/* Accesibilidad: foco de teclado en el día */
-.rdrDayNumber span:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-
-/* Días deshabilitados */
-.rdrDayDisabled .rdrDayNumber span {
-  color: var(--muted-foreground) !important;
-  opacity: 0.4;
-}
-
-/* Navegación (mes anterior/siguiente) */
+/* Navegación */
 .rdrNextPrevButton {
   background: var(--card) !important;
   border: 1px solid var(--border) !important;
