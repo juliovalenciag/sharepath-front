@@ -12,12 +12,20 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Datos mejorados
 const publicaciones = [
   {
     id: 1,
     titulo: "Fin de Semana Cultural en el Centro Histórico",
+    estado: "CDMX",
     usuario: {
       nombre: "Carlos Rodríguez",
       fotoPerfil: "https://st5.depositphotos.com/18273866/65276/i/950/depositphotos_652763588-stock-photo-one-man-young-adult-caucasian.jpg",
@@ -64,6 +72,7 @@ const publicaciones = [
   {
     id: 2,
     titulo: "Tour Gastronómico por la Roma-Condesa",
+    estado: "CDMX",
     usuario: {
       nombre: "Ana Martínez",
       fotoPerfil: "https://b2472105.smushcdn.com/2472105/wp-content/uploads/2023/09/Poses-Perfil-Profesional-Mujeres-ago.-10-2023-1-819x1024.jpg?lossy=1&strip=1&webp=1",
@@ -173,6 +182,7 @@ function PublicacionItem({ publicacion }) {
           />
           <div>
             <h3 className="font-medium">{publicacion.usuario.nombre}</h3>
+            <p className="text-sm text-muted-foreground">{publicacion.estado}</p>
           </div>
         </div>
 
@@ -296,23 +306,33 @@ function PublicacionItem({ publicacion }) {
 // Componente principal
 export default function Publicacion() {
   const [query, setQuery] = useState("");
+  const [estadoSeleccionado, setEstadoSeleccionado] = useState("todos");
 
   const handleSearchChange = (e) => {
     setQuery(e.target.value);
   };
+  const handleEstadoChange = (e) => {
+    setEstadoSeleccionado(e.target.value);
+  };
 
-  const publicacionesFiltradas = publicaciones.filter((publicacion) =>
-    publicacion.usuario.nombre.toLowerCase().includes(query.toLowerCase()) ||
-    publicacion.titulo.toLowerCase().includes(query.toLowerCase()) ||
-    publicacion.itinerario.some(item => 
-      item.ubicacion.toLowerCase().includes(query.toLowerCase()) ||
-      item.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase()))
-    )
-  );
+  const publicacionesFiltradas = publicaciones.filter((publicacion) => {
+    const coincideTexto =
+      publicacion.usuario.nombre.toLowerCase().includes(query.toLowerCase()) ||
+      publicacion.titulo.toLowerCase().includes(query.toLowerCase()) ||
+      publicacion.itinerario.some((item) =>
+        item.ubicacion.toLowerCase().includes(query.toLowerCase())
+      );
+
+    const coincideEstado =
+      estadoSeleccionado === "todos" ||
+      publicacion.estado === estadoSeleccionado;
+
+    return coincideTexto && coincideEstado;
+  });
+
 
   return (
     <div className="container mx-auto py-6 px-4">
-      {/* Formulario de búsqueda */}
       <div className="flex flex-col sm:flex-row gap-3 justify-between items-center mb-8">
         <div>
           <h1 className="text-2xl font-bold">Itinerarios de Viaje</h1>
@@ -320,28 +340,44 @@ export default function Publicacion() {
             Descubre experiencias compartidas por viajeros
           </p>
         </div>
-        <div className="flex w-full sm:w-auto gap-2">
+
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          {/* Buscador */}
           <Input
             placeholder="Buscar itinerarios..."
             value={query}
             onChange={handleSearchChange}
             className="flex-1 sm:w-64"
           />
-          <Button type="button">
-            Buscar
-          </Button>
+          {/* Selector de estado */}
+          <Select value={estadoSeleccionado} onValueChange={setEstadoSeleccionado}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Selecciona un estado" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos</SelectItem>
+              <SelectItem value="CDMX">CDMX</SelectItem>
+              <SelectItem value="EDOMEX">EDOMEX</SelectItem>
+              <SelectItem value="Hidalgo">Hidalgo</SelectItem>
+              <SelectItem value="Morelos">Morelos</SelectItem>
+              <SelectItem value="Queretaro">Querétaro</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Button type="button">Buscar</Button>
         </div>
       </div>
 
-      {/* Lista de publicaciones */}
       <div className="space-y-6">
         {publicacionesFiltradas.length > 0 ? (
-          publicacionesFiltradas.map((publicacion) => (
-            <PublicacionItem key={publicacion.id} publicacion={publicacion} />
+          publicacionesFiltradas.map((p) => (
+            <PublicacionItem key={p.id} publicacion={p} />
           ))
         ) : (
           <div className="text-center py-8">
-            <p className="text-muted-foreground">No se encontraron itinerarios</p>
+            <p className="text-muted-foreground">
+              No se encontraron itinerarios
+            </p>
           </div>
         )}
       </div>
