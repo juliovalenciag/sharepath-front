@@ -357,9 +357,10 @@ export default function Publicacion() {
             <SelectContent>
               <SelectItem value="todos">Todos</SelectItem>
               <SelectItem value="CDMX">CDMX</SelectItem>
-              <SelectItem value="Jalisco">Jalisco</SelectItem>
-              <SelectItem value="Yucatán">Yucatán</SelectItem>
-              <SelectItem value="Oaxaca">Oaxaca</SelectItem>
+              <SelectItem value="EDOMEX">EDOMEX</SelectItem>
+              <SelectItem value="Hidalgo">Hidalgo</SelectItem>
+              <SelectItem value="Morelos">Morelos</SelectItem>
+              <SelectItem value="Queretaro">Querétaro</SelectItem>
             </SelectContent>
           </Select>
 
