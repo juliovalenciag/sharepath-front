@@ -8,6 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { toast } from "sonner";
+import Login from "@/components/Google/Login";
+import { GoogleOAuthProvider } from "@react-oauth/google"; // API DE GOOGLE OAUTH 
+
 
 export default function SignInPage() {
   const [correo, setCorreo] = useState("");
@@ -67,6 +70,7 @@ export default function SignInPage() {
 
   // --- ESTRUCTURA Y DISEÑO (JSX) ---
   return (
+    <GoogleOAuthProvider clientId="934272342967-it58ahq1jmjt347vm7t1mopi7hnql9dl.apps.googleusercontent.com">  
     <main className="flex min-h-screen w-full items-center justify-center bg-muted/40 p-4">
        <div className="flex w-full max-w-4xl min-h-[600px] overflow-hidden rounded-2xl shadow-2xl">
         
@@ -141,17 +145,9 @@ export default function SignInPage() {
                 <span className="mx-4 text-xs text-muted-foreground">o</span>
                 <div className="flex-grow border-t border-border"></div>
               </div>
-
-              <Button type="button" variant="outline" className="w-full py-6" disabled={isLoading}>
-                <Image 
-                  src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" 
-                  alt="Google logo"
-                  width={22}
-                  height={22}
-                  className="mr-3"
-                />
-                Iniciar Sesión con Google
-              </Button>
+              {/* Funcion de google */}
+              <div className="flex justify-center"><Login /></div>
+              
 
               <p className="mt-8 text-sm text-muted-foreground">
                 ¿Aún no tienes una cuenta?{" "}
@@ -164,6 +160,7 @@ export default function SignInPage() {
         </div>
       </div>
     </main>
+    </GoogleOAuthProvider>
   );
 }
 
