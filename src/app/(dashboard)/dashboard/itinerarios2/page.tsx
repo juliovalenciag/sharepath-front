@@ -3,7 +3,7 @@ const datosPublicacion = {
   id: "t1",
   tituloPrincipal: "Tepoztlan, Morelos",
   subtitulo: "Pueblo Mágico de Tepoztlan",
-  calificacion: 4.5,
+  calificacion: 2.5,
   fechaInicio: "2024-08-01",
   detallesLugar: "Este lugar es conocido por su rica cultura y hermosos paisajes.",
   dias: [
