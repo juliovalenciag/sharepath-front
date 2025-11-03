@@ -8,9 +8,10 @@ import { SUGGESTIONS } from "@/lib/constants/mock";
 function Section({
   children,
   className = "",
-}: React.PropsWithChildren<{ className?: string }>) {
+  ...rest
+}: React.PropsWithChildren<React.HTMLAttributes<HTMLElement>>) {
   return (
-    <section className={`max-w-7xl mx-auto px-4 md:px-6 ${className}`}>
+    <section {...rest} className={`max-w-7xl mx-auto px-4 md:px-6 ${className}`}>
       {children}
     </section>
   );

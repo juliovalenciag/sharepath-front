@@ -16,7 +16,7 @@ export default function BuscarViajeroPage() {
     <div className={styles.pageContainer}>
       {/* Encabezado  */}
       <div className={styles.header}>
-        <Link href="/chats" className={styles.backButton}>
+        <Link href="/viajero" className={styles.backButton}>
           <FiArrowLeft size={24} />
         </Link>
         <h1 className={styles.title}>Buscar viajero</h1>

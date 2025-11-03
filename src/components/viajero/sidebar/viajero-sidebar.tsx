@@ -55,7 +55,7 @@ const data = {
   navSecondary: [
     { title: "Configuración", url: "/dashboard/settings", icon: IconSettings },
     { title: "Obtener Ayuda", url: "/help", icon: IconHelp },
-    { title: "Buscar", url: "/search", icon: IconSearch },
+    { title: "Añadir amigos", url: "/viajero/buscar-viajero", icon: IconUsers },
   ],
   documents: [
     { name: "Chats", url: "/viajero/chats", icon: IconMessages },

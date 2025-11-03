@@ -79,8 +79,8 @@ export default function SignUpPage() {
     toast.promise(promise, {
       loading: "Creando tu cuenta...",
       success: (data) => {
-        setTimeout(() => router.push("/sign-in"), 3000);
-        return "¡Registro exitoso! Serás redirigido para iniciar sesión.";
+        setTimeout(() => router.push("/preferencias"), 3000);
+        return "¡Registro exitoso! Serás redirigido para darnos tus preferencias.";
       },
       error: (error) => error.message,
       finally: () => setIsLoading(false),
