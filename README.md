@@ -17,6 +17,10 @@ npm run dev
 # or
 pnpm dev
 ```
+For API GOOGLE 
+```bash
+npm i @react-oauth/google
+npm install google-auth-library --save
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
