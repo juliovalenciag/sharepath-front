@@ -129,9 +129,11 @@ export default function SignInPage() {
                   </button>
                 </div>
               </div>
-
+  
               <div className="mb-6 text-right">
-                <Link href="#" className="text-sm text-muted-foreground hover:text-primary hover:underline">
+                <Link href="/recover-password"
+                className="text-sm text-muted-foreground hover:text-primary hover:underline"
+                >
                   Olvidé mi contraseña
                 </Link>
               </div>

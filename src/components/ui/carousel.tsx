@@ -9,6 +9,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 
+// Tipos
 type CarouselApi = UseEmblaCarouselType[1]
 type UseCarouselParameters = Parameters<typeof useEmblaCarousel>
 type CarouselOptions = UseCarouselParameters[0]
@@ -30,8 +31,10 @@ type CarouselContextProps = {
   canScrollNext: boolean
 } & CarouselProps
 
+// Contexto
 const CarouselContext = React.createContext<CarouselContextProps | null>(null)
 
+// Hook para usar el contexto
 function useCarousel() {
   const context = React.useContext(CarouselContext)
 
@@ -42,6 +45,7 @@ function useCarousel() {
   return context
 }
 
+// Componente principal del Carrusel
 function Carousel({
   orientation = "horizontal",
   opts,
@@ -58,13 +62,14 @@ function Carousel({
     },
     plugins
   )
+
   const [canScrollPrev, setCanScrollPrev] = React.useState(false)
   const [canScrollNext, setCanScrollNext] = React.useState(false)
 
-  const onSelect = React.useCallback((api: CarouselApi) => {
-    if (!api) return
-    setCanScrollPrev(api.canScrollPrev())
-    setCanScrollNext(api.canScrollNext())
+  const onSelect = React.useCallback((currentApi: CarouselApi) => {
+    if (!currentApi) return
+    setCanScrollPrev(currentApi.canScrollPrev())
+    setCanScrollNext(currentApi.canScrollNext())
   }, [])
 
   const scrollPrev = React.useCallback(() => {
@@ -88,19 +93,25 @@ function Carousel({
     [scrollPrev, scrollNext]
   )
 
+  // Efecto para pasar la API a la prop `setApi`
   React.useEffect(() => {
     if (!api || !setApi) return
     setApi(api)
   }, [api, setApi])
 
+  // Efecto para manejar el estado de los botones de navegación (canScrollPrev/Next)
   React.useEffect(() => {
     if (!api) return
-    onSelect(api)
+    onSelect(api) // Establecer el estado inicial
+
+    // Suscribirse a los eventos de Embla Carousel
     api.on("reInit", onSelect)
     api.on("select", onSelect)
 
+    // Función de limpieza
     return () => {
-      api?.off("select", onSelect)
+      api.off("select", onSelect)
+      api.off("reInit", onSelect) // Es buena práctica limpiar también reInit
     }
   }, [api, onSelect])
 
@@ -108,10 +119,9 @@ function Carousel({
     <CarouselContext.Provider
       value={{
         carouselRef,
-        api: api,
+        api,
         opts,
-        orientation:
-          orientation || (opts?.axis === "y" ? "vertical" : "horizontal"),
+        orientation: orientation || (opts?.axis === "y" ? "vertical" : "horizontal"),
         scrollPrev,
         scrollNext,
         canScrollPrev,
@@ -132,6 +142,7 @@ function Carousel({
   )
 }
 
+// Componente para el contenedor de los ítems
 function CarouselContent({ className, ...props }: React.ComponentProps<"div">) {
   const { carouselRef, orientation } = useCarousel()
 
@@ -153,6 +164,7 @@ function CarouselContent({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+// Componente para cada ítem dentro del carrusel
 function CarouselItem({ className, ...props }: React.ComponentProps<"div">) {
   const { orientation } = useCarousel()
 
@@ -171,6 +183,7 @@ function CarouselItem({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+// Componente para el botón de navegación "Anterior"
 function CarouselPrevious({
   className,
   variant = "outline",
@@ -201,6 +214,7 @@ function CarouselPrevious({
   )
 }
 
+// Componente para el botón de navegación "Siguiente"
 function CarouselNext({
   className,
   variant = "outline",
