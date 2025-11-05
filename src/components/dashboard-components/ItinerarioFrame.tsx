@@ -59,13 +59,13 @@ const ItinerarioFrame: React.FC<ItinerarioFrameProps> = ({ itinerario }) => {
             
             <div className="w-1/3 p-4 flex flex-col justify-center">
                 <Estrellas calificacion={itinerario.calificacion} />
-                <h1 className="text-3xl font-bold text-blue-400 mb-2">
+                <h1 className="text-3xl font-bold text-[var(--palette-blue)] mb-2">
                 {itinerario.tituloPrincipal}
                 </h1>
                 <h2 className="text-xl font-semibold mb-6">
                 {itinerario.subtitulo}
                 </h2>
-                <p className="text-blue-400 mb-2">
+                <p>
                 Fecha de inicio {itinerario.fechaInicio}
                 </p>
                 <p className="text-sm">
