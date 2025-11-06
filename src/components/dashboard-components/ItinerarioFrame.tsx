@@ -21,9 +21,7 @@ interface ItinerarioFrameProps {
   itinerario: ItinerarioPrincipal; // Recibe la estructura completa
 }
 import { Star } from "lucide-react";
-  const handleVerDetalles = (id: number) => {
-    router.push(`/viajero/itinerarios/${id}/ver`);
-  };
+
 
 const ItinerarioFrame: React.FC<ItinerarioFrameProps> = ({ itinerario }) => {
     const [showNewDialog, setShowNewDialog] = useState(false)
@@ -31,14 +29,10 @@ const ItinerarioFrame: React.FC<ItinerarioFrameProps> = ({ itinerario }) => {
       const startDate = new Date(itinerario.fechaInicio);
   const numberOfDays = itinerario.dias.length;
 
-  // Verificamos si la fecha de inicio es válida
   const isValidDate = !isNaN(startDate.getTime());
 
-  // Calculamos la fecha de fin. Si la duración es 1 día, la fecha de fin es la misma que la de inicio.
-  // addDays(startDate, 0) devuelve el mismo día.
   const endDate = isValidDate ? addDays(startDate, numberOfDays - 1) : new Date();
 
-  // Creamos el objeto de rango para 'react-day-picker'
   const dateRange: DateRange | undefined = isValidDate
     ? {
         from: startDate,
@@ -54,6 +48,11 @@ const ItinerarioFrame: React.FC<ItinerarioFrameProps> = ({ itinerario }) => {
         { locale: es }
       )}`
     : "Fechas no disponibles";
+    const router = useRouter(); 
+
+  const handleVerDetalles = (id: number) => {
+    router.push(`/viajero/itinerarios/${id}/ver`);
+  };
   // --- FIN LÓGICA CALENDARIO ---
   return (
     <>
@@ -99,7 +98,7 @@ const ItinerarioFrame: React.FC<ItinerarioFrameProps> = ({ itinerario }) => {
                 </p>
                 <Button
                 className="mt-4 bg-blue-900 hover:bg-blue-800 text-white px-6 py-2 rounded-lg shadow-md"
-                onClick={() => handleVerDetalles(pub.id)} // Pasa el id dinámicamente
+                onClick={() => handleVerDetalles(itinerario.id)} // Pasa el id dinámicamente
               >
                 Ver detalles
               </Button>
