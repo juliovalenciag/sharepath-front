@@ -7,21 +7,22 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FiEye, FiEyeOff } from "react-icons/fi";
-import { toast } from "sonner"; 
+import { toast } from "sonner";
+import Login from "@/components/Google/Login";
+import { GoogleOAuthProvider } from "@react-oauth/google"; // API DE GOOGLE OAUTH 
+
 
 export default function SignInPage() {
-
   const [correo, setCorreo] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false); 
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true); 
+    setIsLoading(true);
 
-    
     const promise = fetch("https://harol-lovers.up.railway.app/auth", {
       method: "PUT",
       headers: {
@@ -30,36 +31,46 @@ export default function SignInPage() {
       body: JSON.stringify({ correo, password }),
     }).then(async (res) => {
         if (!res.ok) {
-            
             const errorData = await res.json();
-            throw new Error(errorData.message || 'Ocurrió un error.');
+            throw new Error(errorData.message || 'Ocurrió un error al iniciar sesión.');
         }
-        return res.json(); 
+        return res.json();
     });
 
     toast.promise(promise, {
       loading: "Iniciando sesión...",
       success: (data) => {
-        if (data && data.token) {
+        if (data && data.token && data.usuario) {
             localStorage.setItem("authToken", data.token);
-            setTimeout(() => router.push("/dashboard"), 1000); 
+            
+            // --- NUEVA LÓGICA DE REDIRECCIÓN BASADA EN ROL ---
+            const userRole = data.usuario.role; // Obtenemos el rol del usuario
+            let redirectPath = '/dashboard'; // Ruta por defecto para usuarios normales
+
+            if (userRole === 'admin') {
+                redirectPath = '/admin-dashboard'; // Ruta para administradores
+            }
+            // Si hay otros roles, podrías añadir más 'else if' aquí
+
+            setTimeout(() => router.push(redirectPath), 1000); 
+            // -----------------------------------------------
+
             return "¡Bienvenido de vuelta!";
         }
-        
-        throw new Error("Respuesta inválida del servidor.");
+        throw new Error("Respuesta inválida del servidor: Token o usuario no encontrados.");
       },
       error: (error) => {
-       
         return error.message || "Credenciales incorrectas o error de red.";
       },
       finally: () => {
-        setIsLoading(false); 
+        setIsLoading(false);
       }
     });
   };
 
   // --- ESTRUCTURA Y DISEÑO (JSX) ---
   return (
+    <GoogleOAuthProvider clientId="934272342967-it58ahq1jmjt347vm7t1mopi7hnql9dl.apps.googleusercontent.com">  
     <main className="flex min-h-screen w-full items-center justify-center bg-muted/40 p-4">
        <div className="flex w-full max-w-4xl min-h-[600px] overflow-hidden rounded-2xl shadow-2xl">
         
@@ -136,17 +147,9 @@ export default function SignInPage() {
                 <span className="mx-4 text-xs text-muted-foreground">o</span>
                 <div className="flex-grow border-t border-border"></div>
               </div>
-
-              <Button type="button" variant="outline" className="w-full py-6" disabled={isLoading}>
-                <Image 
-                  src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" 
-                  alt="Google logo"
-                  width={22}
-                  height={22}
-                  className="mr-3"
-                />
-                Iniciar Sesión con Google
-              </Button>
+              {/* Funcion de google */}
+              <div className="flex justify-center"><Login /></div>
+              
 
               <p className="mt-8 text-sm text-muted-foreground">
                 ¿Aún no tienes una cuenta?{" "}
@@ -159,6 +162,7 @@ export default function SignInPage() {
         </div>
       </div>
     </main>
+    </GoogleOAuthProvider>
   );
 }
 

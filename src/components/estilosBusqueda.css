@@ -1,0 +1,4 @@
+/* Para que el texto de la barra de busqueda sea negro aunque se cambie a modo claro u oscuro */
+.leaflet-geosearch-bar {
+    color: black;
+}

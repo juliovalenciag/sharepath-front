@@ -15,12 +15,14 @@ import {
   IconCalendarFilled,
   IconMessages,
   IconCompassFilled,
+  IconMapPinFilled,
 } from "@tabler/icons-react";
 
 import { NavDocuments } from "@/components/dashboard-components/nav-documents";
 import { NavMain } from "@/components/dashboard-components/nav-main";
 import { NavSecondary } from "@/components/dashboard-components/nav-secondary";
 import { NavUser } from "@/components/dashboard-components/nav-user";
+
 import {
   Sidebar,
   SidebarContent,
@@ -38,13 +40,9 @@ const data = {
     avatar: "profile.png",
   },
   navMain: [
-    { title: "Inicio", url: "/", icon: IconHomeFilled },
-    { title: "Descubre", url: "/dashboard/descubre", icon: IconCompassFilled },
-    {
-      title: "Itinerario",
-      url: "/dashboard/itinerario",
-      icon: IconCalendarFilled,
-    },
+    { title: "Inicio", url: "/dashboard", icon: IconHomeFilled },
+    { title: "Itinerarios", url: "/dashboard/itinerarios", icon: IconCalendarFilled, },
+    { title: "Ver Mapa", url: "/dashboard/vermapa", icon: IconMapPinFilled },
   ],
   navClouds: [
     {
@@ -83,7 +81,7 @@ const data = {
   ],
   documents: [
     { name: "Chats", url: "/dashboard/chats", icon: IconMessages },
-    { name: "Amigos", url: "/dashboard/amigos", icon: IconUsers },
+    { name: "Notificaciones", url: "/dashboard/notificaciones", icon: IconUsers },
   ],
 };
 
@@ -97,7 +95,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              {/* ✅ Usa Link de Next para navegación cliente */}
+              {/* Usa Link de Next para navegación cliente */}
               <Link href="/" className="flex items-center gap-2">
                 <IconInnerShadowTop className="!size-5" />
                 <span className="text-base font-semibold">Share Path</span>

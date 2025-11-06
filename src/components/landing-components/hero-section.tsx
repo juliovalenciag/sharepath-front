@@ -11,7 +11,21 @@ export default function HeroSection() {
     <>
       {/* <HeroHeader /> */}
       <main className="overflow-x-hidden">
-        <section>
+        <section className="relative overflow-hidden">
+          {/* Video del Hero */}
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute top-0 left-0 w-full h-full object-cover -z-20"
+          >
+            <source src="/videos/video_bandera.mp4" type="video/mp4"/>
+            Tu navegador no soporta el tag de video
+          </video>
+
+        <div className="absolute top-0 left-0 w-full h-full bg-black/20 dark:bg-black/60 -z-10"></div>
+
           <div className="pb-24 pt-12 md:pb-32 lg:pb-56 lg:pt-44">
             <div className="relative mx-auto flex max-w-6xl flex-col px-6 lg:block">
               <div className="mx-auto max-w-lg text-center lg:ml-0 lg:w-1/2 lg:text-left">
@@ -43,13 +57,13 @@ export default function HeroSection() {
                   </Button>
                 </div>
               </div>
-              <Image
+              {/* <Image
                 className="-z-10 order-first ml-auto h-56 w-full object-cover invert sm:h-96 lg:absolute lg:inset-0 lg:-right-20 lg:-top-96 lg:order-last lg:h-max lg:w-2/3 lg:object-contain dark:mix-blend-lighten dark:invert-0"
                 src="https://res.cloudinary.com/dg4jhba5c/image/upload/v1741605150/abstract-bg_wq4f8w.jpg"
                 alt="Abstract Object"
                 height="4000"
                 width="3000"
-              />
+              /> */}
             </div>
           </div>
         </section>

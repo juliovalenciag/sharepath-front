@@ -1,5 +1,8 @@
 "use client"
 
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   IconCreditCard,
   IconDotsVertical,
@@ -28,6 +31,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { url } from "inspector";
 
 export function NavUser({
   user,
@@ -38,7 +42,13 @@ export function NavUser({
     avatar: string
   }
 }) {
-  const { isMobile } = useSidebar()
+  const { isMobile } = useSidebar();
+  const pathname = usePathname();
+
+  const menuItems = [
+    { title: "Cuenta", url: "/dashboard/cuenta", icon: IconUserCircle},
+    { title: "Notificaciones", url: "/dashboard/notificaciones", icon: IconNotification},
+  ];
 
   return (
     <SidebarMenu>
@@ -83,24 +93,39 @@ export function NavUser({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <IconUserCircle />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconCreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconNotification />
-                Notifications
-              </DropdownMenuItem>
+              {menuItems.map((item) => {
+                const isActive =
+                  pathname === item.url || pathname.startsWith(item.url);
+                const Icon = item.icon;
+
+                return (
+                  <DropdownMenuItem
+                    asChild
+                    key={item.title}
+                    className={`flex items-center gap-2 ${
+                      isActive
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                        : "hover:bg-sidebar-accent/60"
+                    }`}
+                  >
+                    <Link href={item.url}>
+                      <Icon className="size-4" />
+                      {item.title}
+                    </Link>
+                  </DropdownMenuItem>
+                );
+              })}
             </DropdownMenuGroup>
+
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <IconLogout />
-              Log out
+
+            <DropdownMenuItem asChild>
+              <Link href="/login" className="flex items-center gap-2">
+                <IconLogout />
+                Log out
+              </Link>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
