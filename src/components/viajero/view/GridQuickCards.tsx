@@ -5,7 +5,7 @@ import { clsx } from "clsx";
 
 export default function GridQuickCards() {
   return (
-    <section className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+    <section className="grid md:grid-cols-2 xl:grid-cols-2 gap-4">
       <TripStats />
       <WeatherCard />
 

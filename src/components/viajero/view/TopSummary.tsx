@@ -6,9 +6,8 @@ import QuickNotes from "./QuickNotes";
 
 export default function TopSummary() {
   return (
-    <section className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+    <section>
       <MiniCalendar />
-      <TripChecklist />
     </section>
   );
 }
