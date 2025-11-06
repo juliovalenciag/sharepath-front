@@ -34,13 +34,13 @@
     "@tanstack/react-table": "^8.21.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-<<<<<<< HEAD
+
     "embla-carousel": "^8.6.0",
-=======
+
 
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
->>>>>>> main
+
     "embla-carousel-react": "^8.6.0",
     "google-auth-library": "^10.4.2",
     "gsap": "^3.13.0",
