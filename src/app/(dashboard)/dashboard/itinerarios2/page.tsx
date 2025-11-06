@@ -39,7 +39,7 @@ export default function PublicacionPage() {
             <div className="mt-4">
               <Button
                 className="mt-4 bg-blue-900 hover:bg-blue-800 text-white px-6 py-2 rounded-lg shadow-md"
-                onClick={() => handleVerDetalles(pub.id)} // 👈 Pasa el id dinámicamente
+                onClick={() => handleVerDetalles(pub.id)} // Pasa el id dinámicamente
               >
                 Ver detalles
               </Button>

@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { SUGGESTIONS } from "@/lib/constants/mock";
 
+import Estrellas from "@/components/dashboard-components/estrellas";
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,7 @@ const publicaciones = [
     id: 1,
     titulo: "Fin de Semana Cultural en el Centro Histórico",
     estado: "CDMX",
+    calificacion:5,
     usuario: {
       nombre: "Carlos Rodríguez",
       fotoPerfil: "https://st5.depositphotos.com/18273866/65276/i/950/depositphotos_652763588-stock-photo-one-man-young-adult-caucasian.jpg",
@@ -78,6 +80,7 @@ const publicaciones = [
     id: 2,
     titulo: "Tour Gastronómico por la Roma-Condesa",
     estado: "CDMX",
+    calificacion: 4.7,
     usuario: {
       nombre: "Ana Martínez",
       fotoPerfil: "https://b2472105.smushcdn.com/2472105/wp-content/uploads/2023/09/Poses-Perfil-Profesional-Mujeres-ago.-10-2023-1-819x1024.jpg?lossy=1&strip=1&webp=1",
@@ -172,9 +175,11 @@ function PublicacionItem({ publicacion }) {
           <CarouselNext className="absolute right-2 top-1/2 transform -translate-y-1/2 z-10" />
         </Carousel>
       </div>
-
       {/* Información de la publicación */}
       <div className="md:w-1/2 space-y-4">
+       <Estrellas
+                initial={Number(publicacion.calificacion) || 0}
+                onRate={(valor) => console.log("Nueva calificación:", valor)}/>
         {/* Título del itinerario */}
         <h2 className="text-xl font-semibold">{publicacion.titulo}</h2>
 
