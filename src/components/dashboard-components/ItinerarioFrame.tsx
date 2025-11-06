@@ -42,16 +42,11 @@ const ItinerarioFrame: React.FC<ItinerarioFrameProps> = ({ itinerario }) => {
         <div className="p-2 flex rounded-lg min-h-[300px] w-full">
             
             <div className="w-1/3 p-4 flex flex-col justify-center">
-<<<<<<< HEAD
                 <Estrellas
                 initial={Number(itinerario.calificacion) || 0}
                 onRate={(valor) => console.log("Nueva calificación:", valor)}/>
 
                 <h1 className="text-3xl font-bold text-blue-400 mb-2">
-=======
-                <Estrellas calificacion={itinerario.calificacion} />
-                <h1 className="text-3xl font-bold text-[var(--palette-blue)] mb-2">
->>>>>>> main
                 {itinerario.tituloPrincipal}
                 </h1>
                 <h2 className="text-xl font-semibold mb-6">
