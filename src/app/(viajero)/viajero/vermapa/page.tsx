@@ -1,55 +1,105 @@
 'use client';
 
+// Importamos useState, useMemo. Ya no necesitamos useEffect aquí.
+import { useState, useMemo } from 'react';
+// 1. Volvemos a las importaciones locales de NPM
+// Esto funcionará DESPUÉS de que ejecutes: npm install leaflet react-leaflet leaflet-defaulticon-compatibility
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-defaulticon-compatibility';
 import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css';
 
+
+// 2. Actualizamos la interfaz para incluir la categoría
 export interface lugar {
   id: number;
   nombre: string;
   lat: number;
   lng: number;
+  categoria: string; // Añadimos el campo categoría
 }
 
+// 2. Creamos una lista de lugares más completa con categorías
 const lugaresEjemplo: lugar[] = [
-  { id: 1, nombre: 'Museo Frida Kahlo', lat: 19.3552, lng: -99.1620 },
-  { id: 2, nombre: 'Coyoacán Centro', lat: 19.3486, lng: -99.1619 },
-  { id: 3, nombre: 'Parque Hundido', lat: 19.3752, lng: -99.1826 },
-  { id: 4, nombre: 'Museo Soumaya', lat: 19.4401, lng: -99.2042 },
-  { id: 5, nombre: 'Xochimilco Embarcadero', lat: 19.2676, lng: -99.1062 },
+  { id: 1, nombre: 'Museo Frida Kahlo', lat: 19.3552, lng: -99.1620, categoria: 'Museos' },
+  { id: 2, nombre: 'Coyoacán Centro', lat: 19.3486, lng: -99.1619, categoria: 'Barrios' },
+  { id: 3, nombre: 'Parque Hundido', lat: 19.3752, lng: -99.1826, categoria: 'Parques' },
+  { id: 4, nombre: 'Museo Soumaya', lat: 19.4401, lng: -99.2042, categoria: 'Museos' },
+  { id: 5, nombre: 'Xochimilco Embarcadero', lat: 19.2676, lng: -99.1062, categoria: 'Atracciones' },
+  { id: 6, nombre: 'Castillo de Chapultepec', lat: 19.4204, lng: -99.1818, categoria: 'Museos' },
+  { id: 7, nombre: 'Parque México', lat: 19.4098, lng: -99.1729, categoria: 'Parques' },
+  { id: 8, nombre: 'Palacio de Bellas Artes', lat: 19.4352, lng: -99.1412, categoria: 'Museos' },
+  { id: 9, nombre: 'Angel de la Independencia', lat: 19.4270, lng: -99.1677, categoria: 'Monumentos' },
 ];
 
 export default function Mapa() {
   const posicionInicial: [number, number] = [19.375, -99.160];
   const zoomInicial = 12;
 
+  // 3. Añadimos un estado para saber qué categoría está seleccionada
+  // Empezamos con 'Todos' para mostrarlos todos al inicio
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string>('Todos');
+
+  // 4. Obtenemos la lista de categorías únicas usando useMemo
+  // Esto evita que se recalcule en cada render
+  const categorias = useMemo(() => {
+    // Usamos un Set para obtener valores únicos
+    const cats = new Set(lugaresEjemplo.map(l => l.categoria));
+    // Convertimos el Set a un Array y añadimos 'Todos' al principio
+    return ['Todos', ...Array.from(cats)];
+  }, []); // El array vacío [] significa que esto solo se calcula una vez
+
+  // 5. Filtramos los lugares que se van a mostrar
+  // Usamos useMemo para que solo se recalcule si la categoría seleccionada cambia
+  const lugaresFiltrados = useMemo(() => {
+    // Si la categoría es 'Todos', devolvemos la lista completa
+    if (categoriaSeleccionada === 'Todos') {
+      return lugaresEjemplo;
+    }
+    // Si no, filtramos la lista por la categoría
+    return lugaresEjemplo.filter(lugar => lugar.categoria === categoriaSeleccionada);
+  }, [categoriaSeleccionada]); // Esta función se vuelve a ejecutar si 'categoriaSeleccionada' cambia
+
+
   return (
     <div className="relative w-full h-screen">
+      
+      {/* 6. Botones de filtro por categoría */}
+      {/* Los colocamos arriba, centrados, sobre el mapa */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 flex flex-wrap justify-center gap-2 z-10 bg-white p-2 rounded-lg shadow-lg">
+        {categorias.map(categoria => (
+          <button
+            key={categoria}
+            onClick={() => setCategoriaSeleccionada(categoria)}
+            // Estilo condicional para resaltar el botón activo
+            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors
+              ${categoriaSeleccionada === categoria
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+          >
+            {/* Capitalizamos la primera letra para que se vea mejor */}
+            {categoria.charAt(0).toUpperCase() + categoria.slice(1)}
+          </button>
+        ))}
+      </div>
+
       <MapContainer center={posicionInicial} zoom={zoomInicial} scrollWheelZoom={true} className="w-full h-full z-0">
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {lugaresEjemplo.map((lugar, index) => (
+        {/* 7. Renderizamos solo los marcadores filtrados */}
+        {lugaresFiltrados.map((lugar) => (
           <Marker key={lugar.id} position={[lugar.lat, lugar.lng]}>
             <Popup>
-              <strong>{index + 1}</strong>. {lugar.nombre}
+              <strong>{lugar.nombre}</strong> <br />
+              Categoría: {lugar.categoria}
             </Popup>
           </Marker>
         ))}
       </MapContainer>
-
-      {/* Botones flotantes */}
-      <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
-        <button className="bg-blue-600 text-white px-4 py-2 rounded-full shadow hover:bg-blue-700">
-          Añadir lugar
-        </button>
-        <button className="bg-red-500 text-white px-4 py-2 rounded-full shadow hover:bg-red-600">
-          Limpiar mapa
-        </button>
-      </div>
     </div>
   );
 }

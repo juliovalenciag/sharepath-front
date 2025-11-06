@@ -57,5 +57,4 @@ export default function Mapa(props: MapProps) {
       </L.Popup>
     </L.Marker>
   </L.MapContainer>
- abf5e16404d6701c2067fcbbef4d463cd7b22909
 }
