@@ -2,13 +2,14 @@
 
 // Importamos useState, useMemo. Ya no necesitamos useEffect aquí.
 import { useState, useMemo } from 'react';
+import { CirclePlus } from 'lucide-react';
 // 1. Volvemos a las importaciones locales de NPM
 // Esto funcionará DESPUÉS de que ejecutes: npm install leaflet react-leaflet leaflet-defaulticon-compatibility
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-defaulticon-compatibility';
 import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css';
-
+import {Button} from '@/components/ui/button';
 
 // 2. Actualizamos la interfaz para incluir la categoría
 export interface lugar {
@@ -35,7 +36,7 @@ const lugaresEjemplo: lugar[] = [
 export default function Mapa() {
   const posicionInicial: [number, number] = [19.375, -99.160];
   const zoomInicial = 12;
-
+  
   // 3. Añadimos un estado para saber qué categoría está seleccionada
   // Empezamos con 'Todos' para mostrarlos todos al inicio
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string>('Todos');
@@ -63,26 +64,23 @@ export default function Mapa() {
 
   return (
     <div className="relative w-full h-screen">
-      
-      {/* 6. Botones de filtro por categoría */}
-      {/* Los colocamos arriba, centrados, sobre el mapa */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 flex flex-wrap justify-center gap-2 z-10 bg-white p-2 rounded-lg shadow-lg">
-        {categorias.map(categoria => (
-          <button
-            key={categoria}
-            onClick={() => setCategoriaSeleccionada(categoria)}
-            // Estilo condicional para resaltar el botón activo
-            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors
-              ${categoriaSeleccionada === categoria
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-          >
-            {/* Capitalizamos la primera letra para que se vea mejor */}
-            {categoria.charAt(0).toUpperCase() + categoria.slice(1)}
-          </button>
-        ))}
-      </div>
+        
+    <div className="absolute top-4 left-1/2 -translate-x-1/2 flex flex-wrap justify-center gap-2 z-5 p-2 rounded-lg shadow-lg">
+    {categorias.map((categoria) => (
+      <Button
+        key={categoria}
+        onClick={() => setCategoriaSeleccionada(categoria)}
+        variant={categoriaSeleccionada === categoria ? "default" : "outline"}
+        className={`text-sm font-medium px-3 py-1 ${
+          categoriaSeleccionada === categoria
+            ? "bg-[var(--palette-blue)] text-white hover:bg-[var(--palette-blue)]"
+            : "text-gray-700 border-gray-300 hover:bg-gray-100"
+        }`}
+      >
+        {categoria.charAt(0).toUpperCase() + categoria.slice(1)}
+      </Button>
+    ))}
+  </div>
 
       <MapContainer center={posicionInicial} zoom={zoomInicial} scrollWheelZoom={true} className="w-full h-full z-0">
         <TileLayer
@@ -96,6 +94,10 @@ export default function Mapa() {
             <Popup>
               <strong>{lugar.nombre}</strong> <br />
               Categoría: {lugar.categoria}
+              <Button
+              variant="ghost" size="icon">
+                <CirclePlus />
+              </Button>
             </Popup>
           </Marker>
         ))}
