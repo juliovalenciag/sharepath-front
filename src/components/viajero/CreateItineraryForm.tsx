@@ -195,17 +195,25 @@ export default function CreateItineraryForm() {
             <DateRangePicker
               value={{ start, end }}
               onChange={(v) => {
-                setValue("start", v.start ?? undefined, {
-                  shouldValidate: false,
-                });
-                setValue(
-                  "end",
-                  v.end ?? (v.start ? addDays(v.start as Date, 1) : undefined),
-                  {
-                    shouldValidate: false,
-                  }
-                );
-              }}
+              const newStart = v.start ?? undefined;
+              let newEnd = v.end ?? undefined; 
+
+              if (newStart && newEnd) {
+                const diffInTime = newEnd.getTime() - newStart.getTime();
+                const diffInDays = diffInTime / (1000 * 3600 * 24);
+
+                if (diffInDays > 6) {
+                  newEnd = addDays(newStart, 6);
+                }
+              }
+              setValue("start", newStart, {
+                shouldValidate: false,
+              });
+              setValue("end", newEnd, {
+                shouldValidate: false,
+              });
+
+            }}
               trigger={({ open, setOpen }) => (
                 <button
                   type="button"

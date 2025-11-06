@@ -31,11 +31,6 @@ export default function TripPlan() {
             min: "6 mins",
           },
         ]}
-        dayCosts={[
-          { k: "Snacks/agua", v: 80 },
-          { k: "Metro", v: 15 },
-        ]}
-        transfersText="0.6 mi · 11 mins a pie total"
       />
       <DayCard
         dateLabel="Domingo, 2 de nov."

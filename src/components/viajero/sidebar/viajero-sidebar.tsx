@@ -82,7 +82,7 @@ export function ViajeroSidebar(props: React.ComponentProps<typeof Sidebar>) {
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
               <Link
-                href="/"
+                href="/viajero"
                 className="flex items-center gap-2 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
               >
                 <IconInnerShadowTop className="!size-5" />

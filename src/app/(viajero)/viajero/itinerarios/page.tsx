@@ -4,7 +4,7 @@ const datosPublicacion = {
   tituloPrincipal: "Mi primer itinerario en Tepozotlan",
   subtitulo: "Pueblo Mágico de Tepoztlan",
   calificacion: 2.5,
-  fechaInicio: "2024-08-01",
+  fechaInicio: "2024-08-10",
   detallesLugar: "Este lugar es conocido por su rica cultura y hermosos paisajes.",
   dias: [
     { id: 1, dia: "Día 1", categoria: "Hotel", titulo: "Posada del Tepozteco", urlImagen: "/img/tepozteco1.jpg", calificacion:"3.2"},
