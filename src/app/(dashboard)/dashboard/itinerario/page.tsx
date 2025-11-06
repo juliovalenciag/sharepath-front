@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
-import { FiSearch, FiPlus } from "react-icons/fi";
+import { useState, useEffect } from "react";
+import { FiPlus } from "react-icons/fi";
 
 export default function Page() {
   const [search, setSearch] = useState("");
@@ -14,8 +14,18 @@ export default function Page() {
     { dia: "Día 6", tipo: "Naturaleza", lugar: "Ex Convento de la Natividad", experiencia: "Experiencia", img: "/img/tepozteco6.jpg", rating: 5 },
   ];
 
+  // Quita scroll del body y html
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+    };
+  }, []);
+
   return (
-    <div className="flex flex-col min-h-screen bg-gray-100 overflow-hidden">
+    <div className="flex flex-col h-screen bg-gray-100 overflow-hidden">
       {/* Barra superior */}
       <header className="bg-gray-200 flex justify-between items-center px-4 py-2 shadow">
         <h1 className="text-xl font-semibold">Itinerario</h1>
@@ -24,9 +34,9 @@ export default function Page() {
         </button>
       </header>
 
-      {/* Contenido principal */}
-      <main className="flex-1 bg-white relative">
-        {/* Sección azul con el título fijo */}
+      {/* Contenido principal sin scroll global */}
+      <main className="flex-1 bg-white relative overflow-x-auto overflow-y-hidden">
+
         <div className="bg-[#0c2442] text-white rounded-t-2xl p-8 h-full flex flex-col">
           {/* Título fijo */}
           <div className="sticky top-0 bg-[#0c2442] z-10 pb-4">
@@ -35,12 +45,12 @@ export default function Page() {
             <p className="font-semibold text-gray-300">Detalles del lugar:</p>
           </div>
 
-          {/* Fichas con scroll horizontal (solo las fichas se mueven) */}
-          <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent mt-6">
+          {/* Fichas con barra de desplazamiento visible */}
+          <div className="flex gap-6 overflow-x-auto mt-6 pb-6 px-1">
             {itinerarios.map((it, index) => (
               <div
                 key={index}
-                className="bg-white text-gray-800 min-w-[260px] rounded-2xl shadow-md hover:shadow-lg transition overflow-hidden"
+                className="bg-white text-gray-800 min-w-[260px] rounded-2xl shadow-md hover:shadow-lg transition overflow-hidden flex-shrink-0"
               >
                 <img
                   src={it.img}
