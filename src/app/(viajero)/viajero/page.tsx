@@ -177,9 +177,12 @@ function PublicacionItem({ publicacion }) {
       </div>
       {/* Información de la publicación */}
       <div className="md:w-1/2 space-y-4">
-       <Estrellas
+      {/*Calificacion y reporte de un itinerario */}
+        <div>
+          <Estrellas
                 initial={Number(publicacion.calificacion) || 0}
                 onRate={(valor) => console.log("Nueva calificación:", valor)}/>
+        </div>
         {/* Título del itinerario */}
         <h2 className="text-xl font-semibold">{publicacion.titulo}</h2>
 

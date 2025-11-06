@@ -7,12 +7,10 @@ export default function GridQuickCards() {
   return (
     <section className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
       <TripStats />
-      <WhereStay />
       <WeatherCard />
 
       <QuickActions />
       <SocialPulse />
-      <TransportTips />
     </section>
   );
 }
@@ -23,14 +21,13 @@ function TripStats() {
   const stats = [
     { label: "Días", value: "4", hint: "31 oct – 4 nov" },
     { label: "Actividades", value: "12", hint: "Museos, parques, comida" },
-    { label: "Presupuesto", value: "1,850 MXN", hint: "Estimado total" },
   ];
   return (
     <Card
       title="Resumen del viaje"
       className="bg-gradient-to-br from-[oklch(0.97_0.02_240)] to-[oklch(0.94_0.04_230)] dark:from-[oklch(0.26_0.02_240)] dark:to-[oklch(0.22_0.04_230)]"
     >
-      <ul className="grid grid-cols-3 gap-3">
+      <ul className="grid grid-cols-2 gap-3">
         {stats.map((s) => (
           <li
             key={s.label}

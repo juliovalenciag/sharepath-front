@@ -14,16 +14,13 @@ export function DayCard({
   dateLabel,
   weather,
   items,
-  dayCosts = [],
   transfersText,
 }: {
   dateLabel: string;
   weather?: { icon: string; temp: string; note: string };
   items: Item[];
-  dayCosts?: { k: string; v: number }[];
   transfersText?: string;
 }) {
-  const dayTotal = dayCosts.reduce((s, r) => s + r.v, 0);
   return (
     <article className="rounded-[var(--radius-lg)] ring-1 ring-border bg-card/80 overflow-hidden">
       <header className="px-4 md:px-5 py-3 flex items-center justify-between bg-[oklch(0.97_0.02_250)]/60 dark:bg-[oklch(0.20_0.02_250)]/60">
@@ -98,23 +95,6 @@ export function DayCard({
               <p className="text-xs text-muted-foreground">{transfersText}</p>
             </div>
           )}
-          <div className="p-3 rounded-lg ring-1 ring-border">
-            <p className="text-sm font-medium mb-2">Costos del día</p>
-            <div className="space-y-1 text-sm">
-              {dayCosts.map((r) => (
-                <div key={r.k} className="flex items-center justify-between">
-                  <span className="text-muted-foreground">{r.k}</span>
-                  <span className="font-medium">{r.v} MXN</span>
-                </div>
-              ))}
-              {dayCosts.length > 0 && (
-                <div className="pt-2 mt-2 border-t flex items-center justify-between font-semibold">
-                  <span>Total</span>
-                  <span>{dayTotal} MXN</span>
-                </div>
-              )}
-            </div>
-          </div>
           <div className="p-3 rounded-lg ring-1 ring-border">
             <p className="text-sm font-medium mb-2">Notas rápidas</p>
             <ul className="list-disc pl-4 text-sm">
