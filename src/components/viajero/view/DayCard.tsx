@@ -95,13 +95,6 @@ export function DayCard({
               <p className="text-xs text-muted-foreground">{transfersText}</p>
             </div>
           )}
-          <div className="p-3 rounded-lg ring-1 ring-border">
-            <p className="text-sm font-medium mb-2">Notas rápidas</p>
-            <ul className="list-disc pl-4 text-sm">
-              <li>Tomar fotos frente al Palacio al atardecer.</li>
-              <li>Reservar café cercano para descansar.</li>
-            </ul>
-          </div>
         </aside>
       </div>
     </article>

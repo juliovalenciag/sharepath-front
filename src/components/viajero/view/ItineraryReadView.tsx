@@ -12,7 +12,8 @@ const StickyMapPanel = dynamic(() => import("./StickyMapPanel"), {
 
 export default function ItineraryReadView() {
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[1fr_minmax(520px,640px)] gap-6 px-4 md:px-6 py-6">
+    // xl:grid-cols-[1fr_minmax(520px,640px)] className modificado por el mapa sticky
+    <div className="grid grid-cols-1  gap-6 px-4 md:px-6 py-6">
       {/* Columna izquierda: contenido scrolleable */}
       <div className="space-y-6">
         <HeroHeader />
@@ -22,9 +23,9 @@ export default function ItineraryReadView() {
       </div>
 
       {/* Columna derecha: mapa STICKY */}
-      <aside className="xl:block hidden">
+      {/* {<aside className="xl:block hidden">
         <StickyMapPanel />
-      </aside>
+      </aside>} */}
     </div>
   );
 }
