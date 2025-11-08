@@ -114,7 +114,7 @@ export default function CreateItineraryForm() {
           Elige destino, (opcional) fechas y privacidad. Luego ajustamos el
           itinerario.
         </p>
-        <div className="mt-3 h-1 w-24 mx-auto rounded-full bg-palette-blue/90 dark:bg-palette-blue" />
+        <div className="mt-3 h-1 w-24 mx-auto rounded-full bg-blue-600/90 dark:bg-palette-blue" />
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
@@ -255,7 +255,7 @@ export default function CreateItineraryForm() {
                   className={cn(
                     "px-3 py-2 text-sm transition-colors",
                     visibility === opt.key
-                      ? "bg-palette-blue text-primary-foreground"
+                      ? "bg-blue-600 text-primary-foreground"
                       : "bg-background hover:bg-muted"
                   )}
                 >
@@ -291,7 +291,7 @@ export default function CreateItineraryForm() {
 
         {/* CTA */}
         <div className="flex flex-col items-center gap-3">
-          <Button className="h-12 px-8 text-base rounded-full bg-palette-blue hover:opacity-90 text-primary-foreground">
+          <Button className="h-12 px-8 text-base rounded-full bg-blue-600 hover:opacity-90 text-primary-foreground">
             Comienza a planificar
           </Button>
           <button

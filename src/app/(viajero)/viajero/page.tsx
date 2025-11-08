@@ -329,7 +329,7 @@ function Section({
 }
 const btn = {
   primary:
-    "inline-flex items-center justify-center h-11 px-5 rounded-[var(--radius)] bg-[var(--palette-blue)] text-[var(--primary-foreground)] hover:opacity-90 transition",
+    "inline-flex items-center justify-center h-11 px-5 rounded-[var(--radius)] bg-blue-600 text-[var(--primary-foreground)] hover:opacity-90 transition",
   ghost:
     "inline-flex items-center justify-center h-11 px-5 rounded-[var(--radius)] border hover:bg-muted transition",
 };
@@ -406,12 +406,9 @@ export default function ViajeroLanding() {
         <div className="absolute inset-0 opacity-[.12] bg-[url('https://images.pexels.com/photos/14071000/pexels-photo-14071000.jpeg')] bg-cover bg-center" />
         <Section className="relative pt-10 md:pt-16 pb-10">
           <div className="max-w-3xl">
-            <span className="inline-flex items-center gap-2 text-xs md:text-sm px-2.5 py-1 rounded-full border bg-card/70 backdrop-blur">
-              ✈️ Social + Planner • Comparte, sigue y planifica en equipo
-            </span>
             <h1 className="mt-3 text-3xl md:text-5xl font-extrabold tracking-tight">
               Tu viaje,{" "}
-              <span className="text-[var(--palette-blue)]">perfectamente</span>{" "}
+              <span className="text-blue-600">perfectamente</span>{" "}
               planificado.
             </h1>
             <p className="mt-3 text-muted-foreground max-w-prose">

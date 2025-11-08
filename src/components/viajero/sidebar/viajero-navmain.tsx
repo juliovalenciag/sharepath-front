@@ -27,7 +27,7 @@ function longestMatchingHref(pathname: string, items: Item[]) {
   for (const it of items) {
     if (!it.url || it.url === "#") continue;
     const b = clean(it.url);
-    if (a === b || a.startsWith(b + "/")) {
+    if (a === b) {
       if (!best || b.length > best.length) best = b;
     }
   }
@@ -37,7 +37,7 @@ function longestMatchingHref(pathname: string, items: Item[]) {
 export function ViajeroNavMain({ items }: { items: Item[] }) {
   const pathname = usePathname();
   const activeHref = longestMatchingHref(pathname, items);
-
+  const isActiveCTA = pathname === "/viajero/itinerarios/nuevo";
   return (
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
@@ -47,27 +47,22 @@ export function ViajeroNavMain({ items }: { items: Item[] }) {
             <SidebarMenuButton
               tooltip="Crear Itineraio"
               asChild
-              className={cn(
-                "min-w-8 duration-200 ease-linear",
-                "bg-palette-blue text-palette-white",
-                "hover:bg-palette-dark",
-                "focus-visible:ring-2 focus-visible:ring-sidebar-ring"
-              )}
+            className={cn(
+              "min-w-8 duration-200 ease-linear",
+              "hover:from-blue-700 hover:to-blue-500",
+              "focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+              "shadow-lg border border-blue-700 rounded-md",
+              isActiveCTA
+              ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+              : "bg-transparent text-blue-600 border-blue-700"
+
+            )}
             >
-              <Link href="/viajero/itinerarios/nuevo">
-                <IconCirclePlusFilled />
-                <span>Crear Itinerario viajero</span>
+              <Link href="/viajero/itinerarios/nuevo" className="flex items-center gap-2 px-3 py-2">
+                <IconCirclePlusFilled className={cn(isActiveCTA ? "text-white" : "text-blue-600")} />
+                <span className={cn(isActiveCTA ? "text-white" : "text-blue-600")}><strong>Crear Itinerario</strong></span>
               </Link>
             </SidebarMenuButton>
-
-            <Button
-              size="icon"
-              variant="outline"
-              className="size-8 group-data-[collapsible=icon]:opacity-0 focus-visible:ring-2 focus-visible:ring-sidebar-ring"
-              aria-label="Calendario"
-            >
-              <IconCalendarWeekFilled />
-            </Button>
           </SidebarMenuItem>
         </SidebarMenu>
 
@@ -86,13 +81,9 @@ export function ViajeroNavMain({ items }: { items: Item[] }) {
                   tooltip={item.title}
                   className={cn(
                     "justify-start transition-colors",
-                    // estilo base
                     "bg-transparent text-foreground",
-                    // hover (ya estaba bien)
                     "hover:bg-sidebar-accent hover:text-sidebar-foreground",
-                    active &&
-                      "data-[active]:bg-sidebar-primary data-[active]:text-sidebar-primary-foreground data-[active]:shadow-sm",
-                    // borde sutil
+                    "data-[active=true]:bg-blue-600 data-[active=true]:text-white ",
                     "border border-border"
                   )}
                 >

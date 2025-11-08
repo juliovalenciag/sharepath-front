@@ -61,52 +61,54 @@ const ItinerarioFrame: React.FC<ItinerarioFrameProps> = ({ itinerario }) => {
             <div className="w-1/3 p-4 flex flex-col justify-center">
                 <Estrellas value={itinerario.calificacion} />
 
-                <h1 className="text-3xl font-bold text-blue-400 mb-2">
+                <h2 className="text-3xl font-bold text-shadow-blue-600 mb-2">
                 {itinerario.tituloPrincipal}
-                </h1>
-                <h2 className="text-xl font-semibold mb-6">
-                {itinerario.subtitulo}
                 </h2>
-          <div className="mb-4">
-            <Label className="text-sm font-medium">Fechas del viaje</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"ghost"}
-                  className="w-full justify-start text-left font-normal mt-1"
-                  disabled={!isValidDate} 
-                >
-                  <CalendarIcon className="h-4 w-4" />
-                  {displayDateRange}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="range"
-                  selected={dateRange}
-                  defaultMonth={dateRange?.from} 
-                  numberOfMonths={1} 
-                  disabled={true}
-                  className="rounded-md border"
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-                <p className="text-sm">
-                Detalles del lugar: {itinerario.detallesLugar}
-                </p>
-                <Button
-                className="mt-4 bg-blue-900 hover:bg-blue-800 text-white px-6 py-2 rounded-lg shadow-md"
-                onClick={() => handleVerDetalles(itinerario.id)} // Pasa el id dinámicamente
-              >
-                Ver detalles
-              </Button>
-            </div>
-
-            <div className="w-2/3 flex items-center">
-                <DiasCarousel dias={itinerario.dias} />
-            </div>
+                <h3 className="text-xl font-semibold mb-6">
+                {itinerario.subtitulo}
+                </h3>
+              <div className="mb-4">
+                <Label className="text-sm font-medium">Fechas del viaje</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"ghost"}
+                        className="w-full justify-start text-left font-normal mt-1"
+                        disabled={!isValidDate} 
+                      >
+                        <CalendarIcon className="h-4 w-4" />
+                        {displayDateRange}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="range"
+                        selected={dateRange}
+                        defaultMonth={dateRange?.from} 
+                        numberOfMonths={1} 
+                        disabled={true}
+                        className="rounded-md border"
+                      />
+                    </PopoverContent>
+                  </Popover>
+              
+                    {/* <p className="text-sm">
+                    Detalles del lugar: {itinerario.detallesLugar}
+                    </p> */}
+                    <Button
+                    size="sm"
+                    className="mt-4 bg-blue-600 hover:bg-blue-800 text-white px-3 py-2 rounded-lg w-auto h-auto text-base"
+                    onClick={() => handleVerDetalles(itinerario.id)} // Pasa el id dinámicamente
+                  >
+                    Ver detalles
+                    </Button>
+                </div>
+                </div>
+                <div className="w-2/3 flex items-center">
+                    <DiasCarousel dias={itinerario.dias} />
+                </div>
+              
+              
         </div>
 
     </>
