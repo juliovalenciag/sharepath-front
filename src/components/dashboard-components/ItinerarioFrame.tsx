@@ -96,12 +96,6 @@ const ItinerarioFrame: React.FC<ItinerarioFrameProps> = ({ itinerario }) => {
                 <p className="text-sm">
                 Detalles del lugar: {itinerario.detallesLugar}
                 </p>
-                <Button
-                className="mt-4 bg-blue-900 hover:bg-blue-800 text-white px-6 py-2 rounded-lg shadow-md"
-                onClick={() => handleVerDetalles(itinerario.id)} // Pasa el id dinámicamente
-              >
-                Ver detalles
-              </Button>
             </div>
 
             <div className="w-2/3 flex items-center">

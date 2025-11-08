@@ -1,4 +1,4 @@
-// components/DiasCarousel.tsx
+"use client";
 
 import DiaCard from "./DiaCard";
 import {
@@ -14,8 +14,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { MoreHorizontal, CheckCircle2, XCircle } from "lucide-react";
+import { useState } from "react";
 
 interface DiaDetalle {
   id: number;
@@ -31,33 +40,71 @@ interface DiasCarouselProps {
   tituloItinerario?: string;
 }
 
-const CarouselDias: React.FC<DiasCarouselProps> = ({
-  dias,
-  tituloItinerario,
-}) => {
-  const { toast } = useToast();
+const CarouselDias: React.FC<DiasCarouselProps> = ({ dias, tituloItinerario }) => {
+  const [openConfirm, setOpenConfirm] = useState(false);
+  const [alerta, setAlerta] = useState<{ mensaje: string; error: boolean } | null>(null);
 
-  const handleAccion = (accion: string) => {
-    toast({
-      title: "",
-      description: `Has elegido ${accion.toLowerCase()} el itinerario${
-        tituloItinerario ? ` "${tituloItinerario}"` : ""
-      }.`,
-      variant: "default",
-    });
+  // Mostrar alerta flotante (parte superior derecha)
+  const mostrarAlerta = (texto: string, esError = false) => {
+    setAlerta({ mensaje: texto, error: esError });
+    setTimeout(() => setAlerta(null), 2000);
   };
 
-  const handleError = (mensaje: string) => {
-    toast({
-      title: "",
-      description: mensaje,
-      variant: "destructive",
-    });
+  const handleEliminar = () => {
+    setOpenConfirm(true);
+  };
+
+  const confirmarEliminacion = () => {
+    setOpenConfirm(false);
+    mostrarAlerta("Has eliminado un itinerario");
+  };
+
+  const cancelarEliminacion = () => {
+    setOpenConfirm(false);
+    mostrarAlerta("Operación cancelada", true);
   };
 
   return (
     <div className="relative w-full">
-      {/* Botón de los tres puntitos, bien separado arriba */}
+      {/* ALERTA PEQUEÑA FLOTANTE */}
+      {alerta && (
+        <div
+          className={`fixed top-6 right-6 z-50 px-4 py-2 rounded-md shadow-md text-sm flex items-center gap-2 border transition-all duration-300 ${
+            alerta.error
+              ? "bg-gray-100 text-gray-700 border-gray-300"
+              : "bg-green-100 text-green-800 border-green-300"
+          }`}
+        >
+          {alerta.error ? (
+            <XCircle className="h-4 w-4 text-gray-600" />
+          ) : (
+            <CheckCircle2 className="h-4 w-4 text-green-600" />
+          )}
+          <span>{alerta.mensaje}</span>
+        </div>
+      )}
+
+      {/* DIÁLOGO DE CONFIRMACIÓN */}
+      <Dialog open={openConfirm} onOpenChange={setOpenConfirm}>
+        <DialogContent className="text-center">
+          <DialogHeader>
+            <DialogTitle>Confirmar eliminación</DialogTitle>
+            <DialogDescription>
+              ¿Seguro que deseas eliminar este itinerario?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex justify-center gap-4">
+            <Button variant="outline" onClick={cancelarEliminacion} className="w-24">
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={confirmarEliminacion} className="w-24">
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Botón de los tres puntitos */}
       <div className="flex justify-end pr-6 pt-2 mb-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -66,20 +113,16 @@ const CarouselDias: React.FC<DiasCarouselProps> = ({
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-40">
-            <DropdownMenuItem onClick={() => handleAccion("Editar")}>
+            <DropdownMenuItem onClick={() => { /* Editar sin alerta */ }}>
               Editar
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-red-600 focus:text-red-700"
-              onClick={() =>
-                confirm("¿Seguro que deseas eliminar este itinerario?")
-                  ? handleAccion("Eliminar")
-                  : handleError("Operación cancelada")
-              }
+              onClick={handleEliminar}
             >
               Eliminar
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleAccion("Compartir")}>
+            <DropdownMenuItem onClick={() => { /* Compartir sin alerta */ }}>
               Compartir
             </DropdownMenuItem>
           </DropdownMenuContent>

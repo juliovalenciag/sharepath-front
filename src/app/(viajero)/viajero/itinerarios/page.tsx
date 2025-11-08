@@ -1,4 +1,5 @@
 import ItinerarioFrame from "@/components/dashboard-components/ItinerarioFrame";
+
 const datosPublicacion = {
   id: "t1",
   tituloPrincipal: "Mi primer itinerario en Tepozotlan",
