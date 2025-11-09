@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 
 import { Textarea } from "@/components/ui/textarea"
 import Estrellas from "@/components/ui/Estrellas";
-
+import { Loader2 } from "lucide-react"; //  Icono de carga animado
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -50,12 +50,30 @@ const ItinerarioFrame: React.FC<ItinerarioFrameProps> = ({ itinerario }) => {
     : "Fechas no disponibles";
     const router = useRouter(); 
 
-  const handleVerDetalles = (id: number) => {
-    router.push(`/viajero/itinerarios/${id}/ver`);
+    const handleVerDetalles = (id: number) => {
+    setMostrarAlerta(true);
+    setTimeout(() => {
+      setMostrarAlerta(false);
+      router.push(`/viajero/itinerarios/${id}/ver`);
+    }, 2000);
   };
+  const [mostrarAlerta, setMostrarAlerta] = useState(false);
   // --- FIN LÓGICA CALENDARIO ---
   return (
     <>
+      {mostrarAlerta && (
+          <div
+            className="fixed top-4 right-4 bg-gray-100 text-gray-800 text-sm px-4 py-2 rounded-lg shadow-md flex items-center gap-2 z-50 border border-gray-300"
+          >
+            <Loader2 className="animate-spin h-4 w-4 text-gray-600" />
+            <div className="flex flex-col">
+              <p className="font-semibold text-gray-700">Redirigiendo...</p>
+              <p className="text-xs text-gray-500">
+                Abriendo los detalles del itinerario
+              </p>
+            </div>
+          </div>
+        )}
         <div className="p-2 flex rounded-lg min-h-[300px] w-full">
             
             <div className="w-1/3 p-4 flex flex-col justify-center">
@@ -107,8 +125,6 @@ const ItinerarioFrame: React.FC<ItinerarioFrameProps> = ({ itinerario }) => {
                 <div className="w-2/3 flex items-center">
                     <DiasCarousel dias={itinerario.dias} />
                 </div>
-              
-              
         </div>
 
     </>

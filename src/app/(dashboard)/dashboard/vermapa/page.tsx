@@ -1,4 +1,3 @@
-
 "use client";
 
 import dynamic from "next/dynamic";
@@ -29,12 +28,11 @@ const Mapa = dynamic(() => import("@/components/map"), {
 });
 
 export default function Home() {
-  const posicionInicial: [number, number] = [19.504, -99.146];
-  const zoomInicial = 16;
+  const posicionInicial: [number, number] = [19.5043, -99.1470];
+  const zoomInicial = 17;
 
   const [itinerario, defItinerario] = useState<lugar[]>([]);
 
-  /* Ver que hace este codigo */
   const agregarLugar = (lugar: lugar) =>
   {
     if (!itinerario.find((elemento) => elemento.id === lugar.id))
@@ -49,7 +47,7 @@ export default function Home() {
   }
 
   return (
-    <main className="flex flex-row w-full h-screen">
+    <main className="flex flex-row w-full h-full items-center">
       <div className="w-full flex flex-col justify-center h-screen md:w-1/3 p-4 overflow-y-auto">
         <h2 className="text-2xl font-bold mb-4">Lugares Turisticos</h2>
 
@@ -74,7 +72,7 @@ export default function Home() {
           </button>
       </div>
 
-      <div className="w-full md:w-2/3 h-full">
+      <div className="w-full md:w-2/3 h-3/4 rounded-xl overflow-hidden">
         <Mapa
           posicion={posicionInicial}
           zoom={zoomInicial}
