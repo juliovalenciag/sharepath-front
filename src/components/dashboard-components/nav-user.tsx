@@ -46,8 +46,8 @@ export function NavUser({
   const pathname = usePathname();
 
   const menuItems = [
-    { title: "Cuenta", url: "/dashboard/cuenta", icon: IconUserCircle},
-    { title: "Notificaciones", url: "/dashboard/notificaciones", icon: IconNotification},
+    { title: "Cuenta", url: "/viajero/cuenta", icon: IconUserCircle},
+    { title: "Notificaciones", url: "/viajero/notificaciones", icon: IconNotification},
   ];
 
   return (

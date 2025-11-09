@@ -215,7 +215,7 @@ export default function EditAccountPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row justify-between gap-4 mt-4">
-            <Link href="/dashboard/cuenta/editar/cambContr">
+            <Link href="/viajero/cuenta/editar/cambContr">
                   <Button variant="secondary" className="w-full sm:w-auto">
                     Cambiar contraseña
                   </Button>
