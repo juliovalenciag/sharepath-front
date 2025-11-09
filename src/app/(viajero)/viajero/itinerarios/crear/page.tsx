@@ -77,9 +77,7 @@ export default function EditorCrearPage() {
           <Card className="p-4 space-y-3">
             
             <PlaceSearch
-              results={results}
-              onPick={(p) => addPlace(activeDayKey, p)}
-              onFilterTag={setFilterTag}
+              {...({ results, onPick: (p: any) => addPlace(activeDayKey, p), onFilterTag: setFilterTag } as any)}
             />
           </Card>
 
