@@ -31,13 +31,14 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { ViajeroNavMain } from "./viajero-navmain";
+import {useState, useEffect} from "react";
 
+interface UserData{
+  username: string;
+  correo: string;
+  foto_url: string;
+}
 const data = {
-  user: {
-    name: "Harol",
-    email: "harol@hater.com",
-    avatar: "profile.png",
-  },
   navMain: [
     { title: "Inicio", url: "/viajero", icon: IconHomeFilled },
     {
@@ -47,14 +48,8 @@ const data = {
     },
     { title: "Ver Mapa", url: "/viajero/vermapa", icon: IconMapPinFilled },
   ],
-  navClouds: [
-    { title: "Capture", icon: IconCamera, isActive: true, url: "#", items: [] },
-    { title: "Proposal", icon: IconFileDescription, url: "#", items: [] },
-    { title: "Prompts", icon: IconFileAi, url: "#", items: [] },
-  ],
   navSecondary: [
     { title: "Configuración", url: "/dashboard/settings", icon: IconSettings },
-    { title: "Obtener Ayuda", url: "/help", icon: IconHelp },
     { title: "Añadir amigos", url: "/viajero/buscar-viajero", icon: IconUsers },
   ],
   documents: [
@@ -68,6 +63,28 @@ const data = {
 };
 
 export function ViajeroSidebar(props: React.ComponentProps<typeof Sidebar>) {
+  const [user, setUser] = useState<UserData | null>(null);
+  useEffect (()=>{
+    const fetchUserData = async () => {
+      try{
+        const res= await fetch("https://harol-lovers.up.railway.app/user", { 
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            token: localStorage.getItem('authToken') || ""
+          }
+        });
+        if (!res.ok){
+          throw new Error ("No se pudieron obtener los datos del usuario");
+        }
+        const data= await res.json();
+        setUser(data);
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    };
+    fetchUserData()
+    }, []);
   return (
     <Sidebar
       collapsible="icon"
@@ -102,7 +119,7 @@ export function ViajeroSidebar(props: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       <SidebarFooter>
-        <NavUser user={data.user} />
+        {user ? (<NavUser user={user} />) : (<div className="p-4 text-sm text-center">Cargando usuario...</div>)}
       </SidebarFooter>
     </Sidebar>
   );

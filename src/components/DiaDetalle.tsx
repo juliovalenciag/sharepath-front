@@ -2,15 +2,14 @@ import React from 'react'
 import { Card, CardContent, CardDescription, CardTitle } from './ui/card'
 import { GripVertical, Trash2, Star} from 'lucide-react'
 import Image from 'next/image'
+import { Input } from './ui/input'
 export default function DiaDetalle() {
   return (
     <div>
         <Card className="p-2 m-3">
             <CardContent className="flex gap-4 items-center">
-                {/* Ícono de agarre */}
                 <GripVertical className="text-gray-400 w-5 h-5 cursor-grab" />
 
-                {/* Imagen: 1/3 */}
                 <div className="w-1/3">
                 <Image
                     src="/img/bellas_artes.jpg"
@@ -29,7 +28,7 @@ export default function DiaDetalle() {
                 </CardTitle>
                 <CardDescription className="text-sm text-gray-600 mt-2">
                     <span className='flex gap-2'><Star className='text-dark text-sm'></Star>4.5</span>
-                    Uno de los recintos culturales más emblemáticos de México, ubicado en el corazón de la CDMX.
+                    <Input type="text" placeholder="Añadir una descripción (Opcional)" className='border-0 m-2'></Input>
                 </CardDescription>
                 </div>
             </CardContent>

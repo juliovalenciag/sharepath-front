@@ -1,104 +1,233 @@
 "use client";
-import * as React from "react";
-import dynamic from "next/dynamic";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
-
-import { Card } from "@/components/ui/card";
+import React from "react";
+import { useState } from "react";
+import Mapa from "@/components/map";
 import { TripHeader } from "@/components/viajero/editor/TripHeader";
-import { CategoryChips } from "@/components/viajero/editor/CategoryChips";
-import { PlaceSearch } from "@/components/viajero/editor/PlaceSearch";
-import { DaySection } from "@/components/viajero/editor/DaySection";
-import { PlaceDetailPanel } from "@/components/viajero/editor/PlaceDetailPanel";
+import { Button } from "@/components/ui/button";
+import DiaDetalle from "@/components/DiaDetalle";
+import { CalendarDays, Settings2} from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import LugarRecomendado from "@/components/LugarRecomendado";
 
-import { useTrip } from "@/stores/trip-store";
-import { SUGGESTIONS } from "@/lib/constants/mock";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+// ---
 
-const MapPanel = dynamic(() => import("@/components/viajero/editor/MapPanel"), {
-  ssr: false,
-});
+export interface lugar {
+  id: number | string; 
+  nombre: string;
+  lat: number;
+  lng: number;
+}
 
-export default function EditorCrearPage() {
-  const region = "Ciudad de México";
-  const start = new Date(2025, 10, 1);
-  const end = new Date(2025, 10, 4);
-  const nights = 3;
 
-  const { days, activeDayKey, setActiveDay, addPlace, selectPlace } = useTrip();
-  const subtitle = `${region} • ${format(start, "d 'de' MMM", {
-    locale: es,
-  })} — ${format(end, "d 'de' MMM", { locale: es })} (${nights} noches)`;
+const lugaresTuristicos: lugar[] = [
+  { id: 1, nombre: "Museo de Antropología", lat: 19.426, lng: -99.1863 },
+  { id: 2, nombre: "Palacio de Bellas Artes", lat: 19.4352, lng: -99.1412 },
+  { id: 3, nombre: "Castillo de Chapultepec", lat: 19.4204, lng: -99.1816 },
+];
 
-  const [filterTag, setFilterTag] = React.useState<string | null>(null);
-  const results = filterTag
-    ? SUGGESTIONS.filter((x) => x.tag === filterTag)
-    : SUGGESTIONS;
+interface Dia {
+  id: number | string;
+  nombre: string;
+  lugares: lugar[];
+  calificacion: number;
+}
+
+function SelectorDias({
+  dias,
+  diaActivoId,
+  setDiaActivoId,
+}: {
+  dias: Dia[];
+  diaActivoId: number | string;
+  setDiaActivoId: (id: number | string) => void;
+}) {
+  return (
+    <div className="space-y-4 p-3">
+      <div className="flex gap-2">
+        {dias.map((dia) => (
+          <Button
+            key={dia.id}
+            variant={diaActivoId === dia.id ? "default" : "outline"}
+            onClick={() => setDiaActivoId(dia.id)}
+          >
+            {dia.nombre}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SortableDiaDetalle({ lugar }: { lugar: lugar }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: lugar.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    touchAction: 'none' 
+  };
 
   return (
-    <div className="grid h-[calc(100dvh-64px)] grid-cols-1 md:grid-cols-[76px_minmax(0,1fr)_minmax(420px,48%)]">
-      {/* Rail de días */}
-      <aside className="hidden md:flex flex-col items-center gap-2 border-r py-3 bg-background">
-        {days.map((d) => {
-          const label = format(d.date, "EEE", { locale: es })
-            .slice(0, 3)
-            .toUpperCase();
-          const dayno = format(d.date, "dd");
-          const active = d.key === activeDayKey;
-          return (
-            <button
-              key={d.key}
-              title={`${label} ${dayno}`}
-              onClick={() => setActiveDay(d.key)}
-              className={`relative w-11 h-11 rounded-full grid place-content-center border text-xs
-                         ${
-                           active
-                             ? "bg-foreground text-background"
-                             : "bg-muted hover:bg-muted/80"
-                         }`}
-            >
-              <span className="leading-none font-semibold">{dayno}</span>
-              <span
-                className={`absolute -left-1 -top-1 text-[9px] px-1 py-0.5 rounded ${
-                  active ? "bg-foreground text-background" : "bg-muted"
-                }`}
-              >
-                {label}
-              </span>
-            </button>
-          );
-        })}
-      </aside>
-
-      {/* Columna central */}
-      <main className="min-w-0 border-r bg-background relative">
-        <TripHeader title="Crea tu itinerario" subtitle={subtitle} />
-
-        <div className="px-4 md:px-6 py-4 space-y-6 h-[calc(100%-160px)] overflow-auto">
-          <Card className="p-4 space-y-3">
-            
-            <PlaceSearch
-              results={results}
-              onPick={(p) => addPlace(activeDayKey, p)}
-              onFilterTag={setFilterTag}
-            />
-          </Card>
-
-          {days.map((d) => (
-            <DaySection
-              key={d.key}
-              dayKey={d.key}
-              date={d.date}
-              recommended={results.slice(0, 8)}
-            />
-          ))}
-        </div>
-      </main>
-
-      {/* Mapa + panel de detalle */}
-      <aside className="relative bg-muted/20">
-        <MapPanel />
-        <PlaceDetailPanel />
-      </aside>
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <DiaDetalle lugar={lugar} />
     </div>
+  );
+}
+
+export default function Page() {
+  const posicionInicial: [number, number] = [19.5043, -99.147];
+  const zoomInicial = 17;
+  const [itinerario, defItinerario] = useState<lugar[]>([]);
+  const [diasData, setDiasData] = useState<Dia[]>([
+    {
+      id: 1,
+      nombre: "Día 1",
+      lugares: [lugaresTuristicos[0], lugaresTuristicos[1]],
+      calificacion: 4.5,
+    },
+    { id: 2, nombre: "Día 2", lugares: [lugaresTuristicos[2]], calificacion: 4.0 },
+    { id: 3, nombre: "Día 3", lugares: [], calificacion: 5.0 },
+  ]);
+  
+  const [diaActivoId, setDiaActivoId] = useState<number | string>(1);
+
+  const diaActual = diasData.find((d) => d.id === diaActivoId);
+  const lugaresActivos = diaActual ? diaActual.lugares : [];
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  function handleDragEnd(event: any) {
+    const { active, over } = event;
+
+    if (active.id !== over.id) {
+      setDiasData((dias) => {
+        const diaIndex = dias.findIndex((d) => d.id === diaActivoId);
+        if (diaIndex === -1) return dias; 
+
+        const oldIndex = dias[diaIndex].lugares.findIndex(
+          (l) => l.id === active.id
+        );
+        const newIndex = dias[diaIndex].lugares.findIndex(
+          (l) => l.id === over.id
+        );
+
+        const nuevosLugares = arrayMove(dias[diaIndex].lugares, oldIndex, newIndex);
+        const nuevosDiasData = [...dias];
+        nuevosDiasData[diaIndex] = {
+          ...nuevosDiasData[diaIndex],
+          lugares: nuevosLugares,
+        };
+
+        return nuevosDiasData;
+      });
+    }
+  }
+
+  const agregarLugar = (lugar: lugar) => {
+    setDiasData(dias => {
+        // (Aquí falta la lógica para agregar 'lugar'
+        // a 'dias[diaActivoIndex].lugares' si no existe)
+        console.log("Añadir", lugar, "a día", diaActivoId);
+        // Esta es solo una demo, la lógica de 'defItinerario'
+        // para el mapa puede ser separada.
+        return dias;
+    });
+
+    if (!itinerario.find((elemento) => elemento.id === lugar.id)) {
+      defItinerario((itinerarioAnt) => [...itinerarioAnt, lugar]);
+    }
+  };
+
+  return (
+    <>
+      <div className="flex h-[calc(100dvh-64px)] overflow-hidden">
+        <div className="w-1/2 h-full overflow-y-auto">
+          <TripHeader
+            title="Mi primer itinerario con Iker"
+            subtitle="No entiendo por que subtitulo"
+          ></TripHeader>
+          <div className="flex items-center gap-2 text-sm justify-center p-2">
+          <h2 className="text- p-2">Plan de viaje</h2>
+          {/* Botones de acción del día */}
+          <Button
+            variant="ghost"
+            className="h-auto p-2 text-primary hover:text-primary/80 transition-colors hidden sm:inline-flex"
+          >
+            <CalendarDays className="size-4 mr-1" />
+            Sugerir ruta
+          </Button>
+          <Separator orientation="vertical" className="h-4 hidden sm:block" />
+          <Button
+            variant="ghost"
+            className="h-auto p-2 text-primary hover:text-primary/80 transition-colors hidden sm:inline-flex"
+          >
+            <Settings2 className="size-4 mr-1" />
+            Optimizar ruta{" "}
+            
+          </Button>
+          </div>
+
+          <SelectorDias
+            dias={diasData}
+            diaActivoId={diaActivoId}
+            setDiaActivoId={setDiaActivoId}
+          />
+
+          <LugarRecomendado></LugarRecomendado>
+
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={lugaresActivos.map(lugar => lugar.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {lugaresActivos.map((lugar) => (
+                <SortableDiaDetalle key={lugar.id} lugar={lugar} />
+              ))}
+            </SortableContext>
+          </DndContext>
+          
+        </div>
+
+        <div className="w-1/2 h-full relative">
+          <Mapa
+            posicion={posicionInicial}
+            zoom={zoomInicial}
+            itinerario={itinerario} 
+            onAddLugar={agregarLugar}
+          />
+        </div>
+      </div>
+    </>
   );
 }

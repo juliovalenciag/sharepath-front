@@ -83,7 +83,7 @@ export function ViajeroNavMain({ items }: { items: Item[] }) {
                     "justify-start transition-colors",
                     "bg-transparent text-foreground",
                     "hover:bg-sidebar-accent hover:text-sidebar-foreground",
-                    "data-[active=true]: data-[active=true]:text-black data-[active=true]:font-bold",
+                    "data-[active=true]: data-[active=true]:text-black data-[active=true]:font-bold data-[active=true]:bg-gray-200",
                     "border border-border"
                   )}
                 >
@@ -95,7 +95,7 @@ export function ViajeroNavMain({ items }: { items: Item[] }) {
                   ) : (
                     <Link
                       href={item.url}
-                      className="flex items-center gap-2 px-3 py-2 w-full rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+                      className="flex items-center gap-2 py-2 w-full rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
                     >
                       {item.icon && <item.icon />}
                       <span>{item.title}</span>
