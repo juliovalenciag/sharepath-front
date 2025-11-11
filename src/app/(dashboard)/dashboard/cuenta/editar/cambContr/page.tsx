@@ -13,7 +13,7 @@ export default function CambiarContraseñaPage() {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-    // Validaciones básicas
+    // Validaciones para una contraseña
     if (!oldPassword || !newPassword || !confirmPassword) {
       alert("Por favor llena todos los campos.");
       return;
@@ -29,28 +29,46 @@ export default function CambiarContraseñaPage() {
 
     setLoading(true);
     try {
-      const res = await fetch("https://harol-lovers.up.railway.app/user/password", {
-        method: "PUT",
+
+      //Verificar la contraseña
+      const verifypas = await fetch("https://harol-lovers.up.railway.app/user/verify-password", {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           token: localStorage.getItem("authToken") || "",
         },
         body: JSON.stringify({
-          oldPassword,
-          newPassword,
+          password: oldPassword
         }),
       });
 
-      if (res.ok) {
-        alert("Contraseña actualizada correctamente.");
+      if (!verifypas.ok) {
+        alert("La contraseña actual no coincide");
+        setLoading(false);
+        return;
+      } 
+
+      //Actualizar la contraseña
+      const updatepas = await fetch("https://harol-lovers.up.railway.app/user/update-password", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          token: localStorage.getItem("authToken") || "",
+        },
+        body: JSON.stringify({newPassword}),
+      });
+
+      if(updatepas.ok) {
+        alert("Contraseña actualizada correctamente");
         router.push("/dashboard/cuenta");
       } else {
-        const msg = await res.text();
+        const msg = await updatepas.text();
         alert("Error al cambiar la contraseña: " + msg);
       }
+
     } catch (error) {
       console.error(error);
-      alert("Hubo un problema al cambiar la contraseña.");
+      alert("Hubo un problema al cambiar la contraseña");
     } finally {
       setLoading(false);
     }
