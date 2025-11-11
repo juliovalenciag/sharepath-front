@@ -62,9 +62,9 @@ export default function page() {
   };
   return (
     <>
-      <div className="flex h-full">
+      <div className="flex h-[calc(100dvh-64px)]">
         <div className="w-1/2">
-        <ScrollArea className="h-[calc(100dvh-64px)]">
+        <ScrollArea className="h-full">
           <TripHeader
             title="Mi primer itinerario con Iker"
             subtitle="No entiendo por que subtitulo"
@@ -99,7 +99,7 @@ export default function page() {
           </ScrollArea>
         </div>
         
-        <div className="w-1/2 bg-green-500 absoulute z-0">
+        <div className="w-1/2 h-full absoulute z-0">
           <Mapa
             posicion={posicionInicial}
             zoom={zoomInicial}

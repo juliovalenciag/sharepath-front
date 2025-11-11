@@ -83,7 +83,7 @@ export function ViajeroNavMain({ items }: { items: Item[] }) {
                     "justify-start transition-colors",
                     "bg-transparent text-foreground",
                     "hover:bg-sidebar-accent hover:text-sidebar-foreground",
-                    "data-[active=true]:bg-blue-600 data-[active=true]:text-white ",
+                    "data-[active=true]: data-[active=true]:text-black data-[active=true]:font-bold",
                     "border border-border"
                   )}
                 >
