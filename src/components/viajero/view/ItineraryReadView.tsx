@@ -1,42 +1,72 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Map, Zap } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import MuseumIcon from "@/components/icons/MuseumIcon";
 import TreeIcon from "@/components/icons/TreeIcon";
 import BrushIcon from "@/components/icons/BrushIcon";
+import { title } from "process";
+import { description } from "@/components/dashboard-components/chart-area-interactive";
+import { id } from "date-fns/locale";
 
-const contentCards = [
-	{
-		id: 1,
-		title: "Palacio de Bellas Artes",
-		description: "Av. Juarez S/N, Centro Histórico, Ciudad de México, CDMX",
-		imageUrl:
-			"https://www.gob.mx/cms/uploads/press/main_image/265770/post_Bellas_Artes.jpeg",
-	},
-	{
-		id: 2,
-		title: "Bosque de Chapultepec",
-		description: " Miguel Hidalgo, Ciudad de México, CDMX",
-		imageUrl:
-			"https://cdn1.matadornetwork.com/blogs/2/2019/08/Bosque-de-Chapultepec.jpg",
-	},
-	{
-		id: 3,
-		title: "Museo Soumaya",
-		description:
-			"Blvd. Miguel de Cervantes Saavedra, Granada, Miguel Hidalgo, 11529 Ciudad de México, CDMX",
-		imageUrl:
-			"https://images.adsttc.com/media/images/5295/42d3/e8e4/4ead/2a00/0016/newsletter/014_Soumaya_Image_by_Rafael_Gamo_05.jpg?1385513634",
-	},
-];
+
+const contentCards = {
+	1: [
+		{
+			id: 1,
+			title: "Palacio de Bellas Artes",
+			description: "Av. Juarez S/N, Centro Histórico, Ciudad de México, CDMX",
+			imageUrl: "https://www.gob.mx/cms/uploads/press/main_image/265770/post_Bellas_Artes.jpeg",
+		},
+		{
+			id: 2,
+			title: "Bosque de Chapultepec",
+			description: " Miguel Hidalgo, Ciudad de México, CDMX",
+			imageUrl: "https://cdn1.matadornetwork.com/blogs/2/2019/08/Bosque-de-Chapultepec.jpg",
+		},
+	],
+	2: [
+		{
+			id: 3,
+			title: "Museo Soumaya",
+			description: "Blvd. Miguel de Cervantes Saavedra, Granada, Miguel Hidalgo, 11529 Ciudad de México, CDMX",
+			imageUrl: "https://images.adsttc.com/media/images/5295/42d3/e8e4/4ead/2a00/0016/newsletter/014_Soumaya_Image_by_Rafael_Gamo_05.jpg?1385513634",
+		},
+	],
+	3: [
+		{
+			id: 4,
+			title: "Angel de la independencia",
+			description: "Av. P.º de la Reforma 342-Piso 27, Juárez, Cuauhtémoc, 06600 Ciudad de México, CDMX",
+			imageUrl: "https://i0.wp.com/historico.alcaldiacuauhtemoc.mx/wp-content/uploads/2020/01/cuauchtemocAngel-de-la-Independencia-destacada.jpg?fit=528%2C453&ssl=1",
+		}
+	],
+	4:[
+		{
+			id: 5,
+			title: "Torre latinoamericana",
+			description: "Eje Central Lázaro Cárdenas 2-piso 44, Col. Centro, Centro, Cuauhtémoc, 06000 Ciudad de México, CDMX",
+			imageUrl: "https://mexicocity.cdmx.gob.mx/wp-content/uploads/2023/11/Torre-Latinoamericana.jpg",
+		}
+	],
+	5: [
+		{
+			id: 6,
+			title: "Museo Nacional de Antropología",
+			description: "Av. P.º de la Reforma s/n, Polanco, Bosque de Chapultepec I Secc, Miguel Hidalgo, 11560 Ciudad de México, CDMX",
+			imageUrl: "https://mna.inah.gob.mx/images/huellas/Paraguas-1200x800.jpg",
+		}
+	],
+
+};
 
 function TripStats() {
 	const stats = [
 		{ label: "Días", value: "5", hint: "31 oct – 4 nov" },
 		{ label: "Lugares", value: "10", hint: "Museos, parques, arte" },
 	];
+	
 
 	return (
 		<Card className="h-full bg-gradient-to-br from-[oklch(0.97_0.02_240)] to-[oklch(0.94_0.04_230)] dark:from-[oklch(0.26_0.02_240)] dark:to-[oklch(0.22_0.04_230)]">
@@ -79,6 +109,7 @@ function TripStats() {
 // --- Componente Principal de la Aplicación ---
 
 export default function ItineraryReadView() {
+	const [selecDay, setSelecDay] = useState(1);
 	return (
 		<div className="min-h-screen bg-gray-50 p-4 md:p-8 font-sans">
 			<main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -95,7 +126,12 @@ export default function ItineraryReadView() {
 							<button
 								key={n}
 								type="button"
-								className="px-3 py-1 rounded-md bg-white border border-gray-200 text-sm font-medium hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+								onClick={() => setSelecDay(n)}
+								className={`px-3 py-1 rounded-md border text-sm font-medium
+									${selecDay === n
+										? "bg-indigo-500 text-white"
+										: "bg-white border-gray-200 hover:bg-indigo-50"}
+								`}
 							>
 								Día {n}
 							</button>
@@ -103,7 +139,7 @@ export default function ItineraryReadView() {
 					</div>
 
 					{/* Lista de Tarjetas */}
-					{contentCards.map((item) => (
+					{contentCards[selecDay].map((item) => (
 						<Card key={item.id} className="p-0 overflow-hidden">
 							<div className="flex flex-col md:flex-row-reverse items-stretch">
 								<div className="md:w-2/5 flex-shrink-0">
