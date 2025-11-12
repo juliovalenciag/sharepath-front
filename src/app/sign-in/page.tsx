@@ -45,7 +45,7 @@ export default function SignInPage() {
             
             // --- NUEVA LÓGICA DE REDIRECCIÓN BASADA EN ROL ---
             const userRole = data.usuario.role; // Obtenemos el rol del usuario
-            let redirectPath = '/dashboard'; // Ruta por defecto para usuarios normales
+            let redirectPath = '/viajero'; // Ruta por defecto para usuarios normales
 
             if (userRole === 'admin') {
                 redirectPath = '/admin-dashboard'; // Ruta para administradores

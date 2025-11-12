@@ -4,8 +4,8 @@ import CreateItineraryForm from "@/components/viajero/CreateItineraryForm";
 
 export default function NuevaRutaPage() {
   return (
-    <main className="min-h-[calc(100dvh-64px)] flex items-start md:items-center justify-center px-4 py-10">
-      <div className="w-full max-w-3xl">
+    <main className="h-full flex items-start md:items-center justify-center">
+      <div className="w-full max-w-5xl px-3 md:px-0">
         <CreateItineraryForm />
       </div>
     </main>
