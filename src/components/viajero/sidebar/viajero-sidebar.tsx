@@ -40,7 +40,7 @@ interface UserData{
 }
 const data = {
   navMain: [
-    { title: "Inicio", url: "/viajero", icon: IconHomeFilled },
+    { title: "Descubre", url: "/viajero", icon: IconHomeFilled },
     {
       title: "Itinerarios",
       url: "/viajero/itinerarios",
