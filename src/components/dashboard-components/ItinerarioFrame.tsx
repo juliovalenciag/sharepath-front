@@ -26,12 +26,12 @@ import { Star } from "lucide-react";
 const ItinerarioFrame: React.FC<ItinerarioFrameProps> = ({ itinerario }) => {
     const [showNewDialog, setShowNewDialog] = useState(false)
     const [showShareDialog, setShowShareDialog] = useState(false)
-      const startDate = new Date(itinerario.fechaInicio);
+      const startDate = new Date(itinerario.fechaInicio + "T00:00:00");
   const numberOfDays = itinerario.dias.length;
 
   const isValidDate = !isNaN(startDate.getTime());
 
-  const endDate = isValidDate ? addDays(startDate, numberOfDays - 1) : new Date();
+  const endDate = isValidDate ? addDays(startDate , numberOfDays - 2) : new Date();
 
   const dateRange: DateRange | undefined = isValidDate
     ? {
