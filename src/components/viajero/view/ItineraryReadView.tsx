@@ -37,9 +37,9 @@ const contentCards = {
 	3: [
 		{
 			id: 4,
-			title: "Angel de la independencia",
+			title: "Ángel de la independencia",
 			description: "Av. P.º de la Reforma 342-Piso 27, Juárez, Cuauhtémoc, 06600 Ciudad de México, CDMX",
-			imageUrl: "https://i0.wp.com/historico.alcaldiacuauhtemoc.mx/wp-content/uploads/2020/01/cuauchtemocAngel-de-la-Independencia-destacada.jpg?fit=528%2C453&ssl=1",
+			imageUrl: "https://mxc.com.mx/wp-content/uploads/2024/08/angel-independencia-e1536352810218.jpg-7.jpg",
 		}
 	],
 	4:[
