@@ -1,24 +1,19 @@
 "use client";
 
 import React, { useState } from "react";
-import { Map, Zap } from "lucide-react";
+import { Map } from "lucide-react";
+import dynamic from "next/dynamic";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import MuseumIcon from "@/components/icons/MuseumIcon";
 import TreeIcon from "@/components/icons/TreeIcon";
 import BrushIcon from "@/components/icons/BrushIcon";
-import { title } from "process";
-import { description } from "@/components/dashboard-components/chart-area-interactive";
-import { id } from "date-fns/locale";
-<<<<<<< HEAD
-import dynamic from "next/dynamic";
 
 // Carga dinámica en cliente para evitar SSR
 const ItineraryMap = dynamic(() => import("@/components/viajero/view/ItineraryMap"), { ssr: false });
-=======
->>>>>>> 3905cf5849cad1fb15b313e2793f13e3657e764f
 
 
-const contentCards = {
+
+const contentCards: Record<number, Array<{id: number; title?: string; description?: string; imageUrl?: string}>> = {
 	1: [
 		{
 			id: 1,
@@ -44,15 +39,9 @@ const contentCards = {
 	3: [
 		{
 			id: 4,
-<<<<<<< HEAD
-			title: "Angel de la independencia",
-			description: "Av. P.º de la Reforma 342-Piso 27, Juárez, Cuauhtémoc, 06600 Ciudad de México, CDMX",
-			imageUrl: "https://i0.wp.com/historico.alcaldiacuauhtemoc.mx/wp-content/uploads/2020/01/cuauchtemocAngel-de-la-Independencia-destacada.jpg?fit=528%2C453&ssl=1",
-=======
-			title: "Ángel de la independencia",
-			description: "Av. P.º de la Reforma 342-Piso 27, Juárez, Cuauhtémoc, 06600 Ciudad de México, CDMX",
-			imageUrl: "https://mxc.com.mx/wp-content/uploads/2024/08/angel-independencia-e1536352810218.jpg-7.jpg",
->>>>>>> 3905cf5849cad1fb15b313e2793f13e3657e764f
+			title: "Galería de Arte Moderno",
+			description: "Centro Histórico, Ciudad de México, CDMX",
+			imageUrl: "https://placehold.co/400x300/3b82f6/ffffff?text=Galería+de+Arte",
 		}
 	],
 	4:[
@@ -123,29 +112,31 @@ function TripStats() {
 
 export default function ItineraryReadView() {
 	const [selecDay, setSelecDay] = useState(1);
-<<<<<<< HEAD
 
-	// Mapeo simple de los items mock a objetos con lat/lng para el mapa.
+	// Mapeo simple 
 	// Coordenadas aproximadas en Ciudad de México para demostrar la ruta.
-	const placesForMap = contentCards[selecDay].map((it) => {
+	const placesForMap = contentCards[selecDay]?.map((it) => {
 		// valores por defecto si no existe lat/lng
 		const lookup: Record<number, { lat: number; lng: number }> = {
 			1: { lat: 19.435, lng: -99.1416 }, // Palacio de Bellas Artes
 			2: { lat: 19.4204, lng: -99.1819 }, // Bosque de Chapultepec
 			3: { lat: 19.4347, lng: -99.2037 }, // Museo Soumaya (Polanco)
-			4: { lat: 19.4270, lng: -99.1677 }, // Ángel de la Independencia
+			4: { lat: 19.4270, lng: -99.1677 }, // Galería de Arte Moderno
 			5: { lat: 19.4333, lng: -99.1415 }, // Torre Latinoamericana
 			6: { lat: 19.4260, lng: -99.1860 }, // Museo Nacional de Antropología
 		};
 		const coord = lookup[it.id as number];
 		return {
 			id: String(it.id),
-			name: it.title,
-			city: it.description,
+			name: it.title || "",
+			city: it.description || "",
+			tag: "lugar",
+			img: it.imageUrl || "",
 			lat: coord?.lat ?? 19.4326,
 			lng: coord?.lng ?? -99.1332,
 		};
-	});
+	}) || [];
+
 	return (
 		<div className="min-h-screen bg-gray-50 p-4 md:p-8 font-sans">
 			<main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -174,38 +165,8 @@ export default function ItineraryReadView() {
 						))}
 					</div>
 
-=======
-	return (
-		<div className="min-h-screen bg-gray-50 p-4 md:p-8 font-sans">
-			<main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-				{/* COLUMNA IZQUIERDA: Título y Tarjetas de Contenido */}
-				<div className="lg:col-span-1 space-y-6">
-					{/* Título Principal de la Columna */}
-					<h1 className="text-3xl font-extrabold text-gray-900 border-b-4 border-indigo-500 pb-2">
-						Mi primer itinerario
-					</h1>
-
-					{/* Botones de días*/}
-					<div className="flex gap-2 mt-3">
-						{[1, 2, 3, 4, 5].map((n) => (
-							<button
-								key={n}
-								type="button"
-								onClick={() => setSelecDay(n)}
-								className={`px-3 py-1 rounded-md border text-sm font-medium
-									${selecDay === n
-										? "bg-indigo-500 text-white"
-										: "bg-white border-gray-200 hover:bg-indigo-50"}
-								`}
-							>
-								Día {n}
-							</button>
-						))}
-					</div>
-
->>>>>>> 3905cf5849cad1fb15b313e2793f13e3657e764f
 					{/* Lista de Tarjetas */}
-					{contentCards[selecDay].map((item) => (
+					{contentCards[selecDay]?.map((item) => (
 						<Card key={item.id} className="p-0 overflow-hidden">
 							<div className="flex flex-col md:flex-row-reverse items-stretch">
 								<div className="md:w-2/5 flex-shrink-0">
@@ -245,7 +206,6 @@ export default function ItineraryReadView() {
 				{/* COLUMNA DERECHA: Mapa y Tarjeta de Información */}
 				<div className="lg:col-span-2 space-y-6">
 					<div className="grid grid-cols-1 gap-6 h-full">
-<<<<<<< HEAD
 						{/* 1. Área del Mapa (real) */}
 						<div className="flex flex-col h-[350px] md:h-[450px] bg-gray-100 border-4 border-gray-300 rounded-xl overflow-hidden shadow-2xl">
 							<div className="p-4 bg-gray-800 text-white font-semibold flex items-center">
@@ -254,16 +214,6 @@ export default function ItineraryReadView() {
 							</div>
 							<div className="flex-grow">
 								<ItineraryMap places={placesForMap} />
-=======
-						{/* 1. Área del Mapa (Placeholder) */}
-						<div className="flex flex-col h-[350px] md:h-[450px] bg-gray-100 border-4 border-gray-300 rounded-xl overflow-hidden shadow-2xl">
-							<div className="p-4 bg-gray-800 text-white font-semibold flex items-center">
-								<Map className="w-5 h-5 mr-2" />
-								Vista de Mapa (Simulada)
-							</div>
-							<div className="flex-grow flex items-center justify-center text-gray-500 text-xl italic bg-gray-200">
-								[Aquí iría el mapa interactivo]
->>>>>>> 3905cf5849cad1fb15b313e2793f13e3657e764f
 							</div>
 						</div>
 						<TripStats />

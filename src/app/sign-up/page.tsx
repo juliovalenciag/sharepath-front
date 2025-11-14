@@ -17,22 +17,68 @@ import { FiEye, FiEyeOff } from "react-icons/fi";
 
 // 1. Definimos el "contrato" de validación con Zod
 const formSchema = z.object({
-  nombre_completo: z.string().min(2, {
-    message: "El nombre debe tener al menos 2 caracteres.",
-  }),
-  correo: z.string().email({
-    message: "El correo debe ser un correo electrónico válido.",
-  }),
-  password: z.string().refine((password) => {
-    // Regex para validar: al menos 1 mayúscula, 1 minúscula, 1 número y 1 símbolo
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
-    return passwordRegex.test(password);
-  },{
-    message: "La contraseña debe tener más caracteres, incluyendo mayúscula, minúscula, número y símbolo.",
-  }),
-  username: z.string().min(5, {
-    message: "El username debe tener al menos 5 caracteres.",
-  }),
+  nombre_completo: z.string()
+    .min(10, {
+      message: "El nombre debe tener al menos 10 caracteres.",
+    })
+    .refine((name) => {
+      // Solo acepta letras y espacios, no números ni caracteres especiales
+      const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
+      return nameRegex.test(name);
+    }, {
+      message: "El nombre solo debe contener letras, sin números ni caracteres especiales.",
+    })
+    .refine((name) => {
+      // No debe contener múltiples espacios consecutivos o puntos inválidos
+      const invalidPattern = /\s{2,}|\.\s|\s\./;
+      return !invalidPattern.test(name);
+    }, {
+      message: "El nombre no puede contener múltiples espacios consecutivos o puntos inválidos.",
+    }),
+  
+  correo: z.string()
+    .min(1, {
+      message: "El correo es requerido.",
+    })
+    .refine((email) => {
+      // Valida: @gmail.com, @hotmail.com, @alumno.ipn.mx
+      const emailRegex = /^[^\s@]+@(gmail\.com|hotmail\.com|alumno\.ipn\.mx|[^\s@]+\.com)$/i;
+      return emailRegex.test(email);
+    }, {
+      message: "El correo debe terminar con @gmail.com, @hotmail.com, @alumno.ipn.mx.",
+    }),
+  
+  password: z.string()
+    .min(8, {
+      message: "La contraseña debe tener mínimo 8 caracteres.",
+    })
+    .refine((password) => {
+      // Debe contener mayúscula, minúscula, número y caracteres especiales válidos (#, $, _, ?, ¿)
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$_?¿]).{8,}$/;
+      return passwordRegex.test(password);
+    }, {
+      message: "La contraseña debe contener mayúscula, minúscula, número y un carácter especial válido (#, $, _, ?, ¿).",
+    }),
+  
+  username: z.string()
+    .min(5, {
+      message: "El username debe tener al menos 5 caracteres.",
+    })
+    .refine((username) => {
+      // Debe iniciar con una letra, no con número ni carácter especial
+      const startsWithLetter = /^[a-zA-Z]/.test(username);
+      return startsWithLetter;
+    }, {
+      message: "El username debe comenzar con una letra.",
+    })
+    .refine((username) => {
+      // No debe contener múltiples espacios consecutivos o puntos inválidos
+      const invalidPattern = /\s{2,}|\.\s|\s\./;
+      return !invalidPattern.test(username);
+    }, {
+      message: "El username no puede contener múltiples espacios consecutivos o puntos inválidos.",
+    }),
+  
   foto: z.instanceof(File).optional(),
 });
 
