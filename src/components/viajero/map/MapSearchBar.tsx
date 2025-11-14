@@ -1,65 +1,81 @@
 "use client";
-import { cn } from "@/lib/utils";
+import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { PLACES } from "@/lib/constants/mock-itinerary-data";
 
 type Props = {
-  className?: string;
   value: { q: string; category: string | null; radiusKm: number };
-  onChange: (v: { q: string; category: string | null; radiusKm: number }) => void;
+  onChange: (v: Partial<Props["value"]>) => void;
   onClear: () => void;
+  className?: string;
 };
+const categories = Array.from(new Set(PLACES.map((p) => p.category)));
 
-export default function MapSearchBar({ className, value, onChange, onClear }: Props) {
-  const set = (patch: Partial<typeof value>) => onChange({ ...value, ...patch });
-
+export default function MapSearchBar({
+  value,
+  onChange,
+  onClear,
+  className,
+}: Props) {
   return (
-    <div className={cn("w-full max-w-[960px] rounded-xl bg-background/90 shadow-lg backdrop-blur p-3 space-y-2", className)}>
-      {/* barra de búsqueda a todo el ancho */}
-      <Input
-        placeholder="Busca museos, tacos, miradores..."
-        value={value.q}
-        onChange={(e) => set({ q: e.target.value })}
-        className="h-11"
-      />
-      {/* filtros debajo */}
-      <div className="flex items-center gap-2">
-        <Select
-          value={value.category ?? "__all"}
-          onValueChange={(v) => set({ category: v === "__all" ? null : v })}
-        >
-          <SelectTrigger className="w-40"><SelectValue placeholder="Todas" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__all">Todas</SelectItem>
-            <SelectItem value="museo">Museo</SelectItem>
-            <SelectItem value="parque">Parque</SelectItem>
-            <SelectItem value="avenida">Avenida</SelectItem>
-            <SelectItem value="histórico">Histórico</SelectItem>
-            <SelectItem value="arte">Arte</SelectItem>
-            <SelectItem value="pueblo mágico">Pueblo mágico</SelectItem>
-            <SelectItem value="viñedo">Viñedo</SelectItem>
-            <SelectItem value="religioso">Religioso</SelectItem>
-            <SelectItem value="zona arqueológica">Zona arqueológica</SelectItem>
-            <SelectItem value="cafetería">Cafetería</SelectItem>
-            <SelectItem value="bar">Bar</SelectItem>
-            <SelectItem value="gastronomía">Gastronomía</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={String(value.radiusKm)}
-          onValueChange={(v) => set({ radiusKm: Number(v) })}
-        >
-          <SelectTrigger className="w-28"><SelectValue placeholder="Radio" /></SelectTrigger>
-          <SelectContent>
-            {[10,15,25,35,50].map(km => (
-              <SelectItem key={km} value={String(km)}>{km} km</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Button variant="ghost" onClick={onClear} className="ml-auto">Limpiar</Button>
+    <div className={className}>
+      {/* barra de búsqueda ancho completo */}
+      <div className="rounded-xl bg-background shadow-lg border p-2">
+        <Input
+          value={value.q}
+          onChange={(e) => onChange({ q: e.target.value })}
+          placeholder="Busca museos, tacos, miradores…"
+          className="h-10"
+        />
+        {/* filtros debajo */}
+        <div className="mt-2 grid grid-cols-2 sm:flex sm:items-center gap-2">
+          <Select
+            value={value.category ?? "Todas"}
+            onValueChange={(v) =>
+              onChange({ category: v === "Todas" ? null : v })
+            }
+          >
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="Categoría" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Todas">Todas</SelectItem>
+              {categories.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={String(value.radiusKm)}
+            onValueChange={(v) => onChange({ radiusKm: Number(v) })}
+          >
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="Radio" />
+            </SelectTrigger>
+            <SelectContent>
+              {["5", "10", "15", "25", "50"].map((r) => (
+                <SelectItem key={r} value={r}>
+                  {r} km
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="sm:ml-auto">
+            <Button variant="ghost" className="h-9" onClick={onClear}>
+              Limpiar
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );

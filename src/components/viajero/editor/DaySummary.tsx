@@ -1,26 +1,48 @@
 "use client";
-import { useItineraryStore } from "@/lib/useItineraryStore";
+import * as React from "react";
 import { Card } from "@/components/ui/card";
-
-function kmAndMin(places: number) {
-  if (places <= 1) return { km: 0, min: 0 };
-  // Mock compacto
-  const km = (places - 1) * 2.1;
-  const min = Math.round(km * 3);
-  return { km: Number(km.toFixed(1)), min };
-}
+import { Button } from "@/components/ui/button";
+import { useItineraryStore } from "@/lib/useItineraryStore";
 
 export default function DaySummary() {
-  const active = useItineraryStore(s => s.activeDay());
-  const count = active?.places.length ?? 0;
-  const { km, min } = kmAndMin(count);
+  const day = useItineraryStore((s) => s.activeDay());
+  const setShowRoute = useItineraryStore((s) => s.setShowRoute);
+  const optimizeDayOrder = useItineraryStore((s) => s.optimizeDayOrder);
+  if (!day) return null;
+
+  const distKm = (day.places.length * 2.1).toFixed(1); // mock
+  const mins = (day.places.length * 6 + 1) * 3; // mock
 
   return (
-    <Card className="mx-3 mt-2 p-3">
-      <div className="flex flex-wrap items-center justify-center gap-3 text-sm">
-        <span className="rounded-full border px-3 py-1">Dist.: <b>{km} km</b></span>
-        <span className="rounded-full border px-3 py-1">Traslado: <b>{min} min</b></span>
-        <span className="rounded-full border px-3 py-1"><b>{count}</b> lugares</span>
+    <Card className="mx-3 mb-3 p-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-6 text-sm sm:text-base">
+          <div>
+            Dist.: <b>{distKm} km</b>
+          </div>
+          <div>
+            Traslado: <b>{mins} min</b>
+          </div>
+          <div>{day.places.length} lugares</div>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowRoute(true)}>
+            Mostrar ruta del día
+          </Button>
+          <Button
+            onClick={() => {
+              const idx = Math.max(
+                0,
+                prompt("¿Por dónde te gustaría empezar? (índice 1..N)")
+                  ? Number(prompt)
+                  : 0
+              );
+              optimizeDayOrder(day.id, isNaN(idx) ? 0 : idx - 1);
+            }}
+          >
+            Optimizar ruta
+          </Button>
+        </div>
       </div>
     </Card>
   );

@@ -1,39 +1,43 @@
-import React from 'react'
-import { Card, CardContent, CardDescription, CardTitle } from './ui/card'
-import { GripVertical, Trash2, Star} from 'lucide-react'
-import Image from 'next/image'
-import { Input } from './ui/input'
-export default function DiaDetalle() {
+"use client";
+import Image from "next/image";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
+import { useItineraryStore } from "@/lib/useItineraryStore";
+import type { Place } from "@/lib/constants/mock-itinerary-data";
+
+export default function DiaDetalle({ place }: { place: Place }) {
+  const dayId = useItineraryStore((s) => s.activeDayId);
+  const remove = useItineraryStore((s) => s.removePlaceFromDay);
   return (
-    <div>
-        <Card className="p-2 m-3">
-            <CardContent className="flex gap-4 items-center">
-                <GripVertical className="text-gray-400 w-5 h-5 cursor-grab" />
-
-                <div className="w-1/3">
-                <Image
-                    src="/img/bellas_artes.jpg"
-                    alt="Bellas Artes"
-                    width={400}
-                    height={200}
-                    className="rounded-md w-full h-auto object-cover"
-                />
-                </div>
-
-                {/* Texto: 2/3 */}
-                <div className="w-2/3 flex flex-col justify-center">
-                <CardTitle className="text-xl font-semibold flex gap-2 justify-between">
-                    Palacio de Bellas Artes
-                    <Trash2 className="text-red-500"></Trash2>
-                </CardTitle>
-                <CardDescription className="text-sm text-gray-600 mt-2">
-                    <span className='flex gap-2'><Star className='text-dark text-sm'></Star>4.5</span>
-                    <Input type="text" placeholder="Añadir una descripción (Opcional)" className='border-0 m-2'></Input>
-                </CardDescription>
-                </div>
-            </CardContent>
-            </Card>
-            
-    </div>
-  )
+    <Card className="m-3 p-3">
+      <div className="flex items-center gap-3">
+        <div className="h-16 w-20 overflow-hidden rounded-md bg-muted">
+          {place.foto_url && (
+            <Image
+              src={place.foto_url}
+              width={160}
+              height={120}
+              alt={place.nombre}
+              className="h-full w-full object-cover"
+            />
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-semibold">{place.nombre}</p>
+          <p className="text-xs text-muted-foreground">
+            {place.category} • ⭐ {place.google_score.toFixed(1)} (
+            {place.total_reviews.toLocaleString()})
+          </p>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => remove(dayId, place.id_api_place)}
+        >
+          <Trash2 className="h-4 w-4 text-red-500" />
+        </Button>
+      </div>
+    </Card>
+  );
 }

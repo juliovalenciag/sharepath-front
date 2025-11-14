@@ -219,7 +219,7 @@ export default function CalendarRangeInline({
 
       {/* Presets */}
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <button
+        {/* <button
           type="button"
           className="text-xs px-2 py-1 rounded-md border hover:bg-muted"
           onClick={() => {
@@ -228,7 +228,7 @@ export default function CalendarRangeInline({
           }}
         >
           Fin de semana
-        </button>
+        </button> */}
         <button
           type="button"
           className="text-xs px-2 py-1 rounded-md border hover:bg-muted"

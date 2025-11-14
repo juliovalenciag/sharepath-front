@@ -1,11 +1,11 @@
 "use client";
-import React from "react";
+import * as React from "react";
 import dynamic from "next/dynamic";
 import {
   DndContext,
   closestCenter,
-  PointerSensor,
   KeyboardSensor,
+  PointerSensor,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
@@ -54,12 +54,22 @@ function SortableDiaDetalle({ place }: { place: Place }) {
   };
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <DiaDetalle place={place} />
+      {/* <DiaDetalle place={place} /> */}
     </div>
   );
 }
 
 export default function Page() {
+  // init (sólo 1 vez por si venías con store vacío)
+  const initializedRef = React.useRef(false);
+  const initDraft = useItineraryStore((s) => s.initDraft);
+  React.useEffect(() => {
+    if (!initializedRef.current) {
+      initDraft();
+      initializedRef.current = true;
+    }
+  }, [initDraft]);
+
   const {
     days,
     activeDayId,
@@ -76,16 +86,27 @@ export default function Page() {
     toggleMapMobile,
     states,
     activeDay,
-    initDraft,
+    clearFilters,
+    setShowRoute,
+    showRoute,
   } = useItineraryStore();
 
-  // init si no hay días
-  React.useEffect(() => {
-    if (!days.length) initDraft({ days: 2 });
-  }, [days.length, initDraft]);
+  const current = activeDay(); // puede ser null al primer render
+  const center = centerForStates(states);
 
-  const day = activeDay();
-  const safePlaces = day?.places ?? [];
+  // búsqueda (se muestran resultados/markers solo si hay búsqueda activa)
+  const searchActive = Boolean(filters.q || filters.category);
+  const results = React.useMemo(() => {
+    if (!searchActive) return [];
+    return suggestPlacesByRadius(
+      states,
+      filters.radiusKm,
+      filters.q,
+      filters.category as any
+    ).slice(0, 50);
+  }, [states, filters, searchActive]);
+
+  const markers = searchActive ? results : [];
 
   // DnD
   const sensors = useSensors(
@@ -94,29 +115,20 @@ export default function Page() {
   );
   function onDragEnd(e: any) {
     const { active, over } = e;
-    if (!over || active.id === over.id) return;
-    const oldIndex = safePlaces.findIndex((p) => p.id_api_place === active.id);
-    const newIndex = safePlaces.findIndex((p) => p.id_api_place === over.id);
+    if (!over || !current) return;
+    if (active.id === over.id) return;
+    const oldIndex = current.places.findIndex(
+      (p) => p.id_api_place === active.id
+    );
+    const newIndex = current.places.findIndex(
+      (p) => p.id_api_place === over.id
+    );
     if (oldIndex < 0 || newIndex < 0) return;
     useItineraryStore
       .getState()
       .movePlaceWithinDay(activeDayId, oldIndex, newIndex);
   }
 
-  // Búsqueda: results solo si hay query/filtro
-  const hasQuery = Boolean(filters.q.trim() || filters.category);
-  const center = centerForStates(states);
-  const results = React.useMemo(() => {
-    if (!hasQuery) return [];
-    return suggestPlacesByRadius(
-      states,
-      filters.radiusKm,
-      filters.q,
-      filters.category as any
-    ).slice(0, 60);
-  }, [states, filters, hasQuery]);
-
-  const markers = hasQuery ? results : []; // mapa limpio si no hay query
   const [placeOpen, setPlaceOpen] = React.useState<Place | null>(null);
   React.useEffect(() => {
     if (!selectedPlaceId) return setPlaceOpen(null);
@@ -126,14 +138,14 @@ export default function Page() {
 
   return (
     <div className="flex h-[calc(100dvh-64px)] overflow-hidden">
-      {/* IZQUIERDA: 55% para aire visual */}
-      <div className="w-full lg:w-[55%] h-full overflow-y-auto">
+      {/* IZQUIERDA – editor (menos ancho) */}
+      <div className="w-full xl:w-[52%] h-full overflow-y-auto relative z-10">
         <TripHeader
           title="Editor de itinerario"
           subtitle="Ajusta tu plan por días"
         />
 
-        {/* acciones */}
+        {/* Acciones */}
         <div className="flex items-center gap-2 justify-center p-3">
           <Button
             variant="secondary"
@@ -146,7 +158,7 @@ export default function Page() {
           <Button
             variant="secondary"
             className="hidden sm:inline-flex"
-            onClick={() => optimizeDayOrder(activeDayId)}
+            onClick={() => optimizeDayOrder(activeDayId, 0)}
           >
             <Settings2 className="size-4 mr-1" /> Optimizar orden
           </Button>
@@ -165,7 +177,9 @@ export default function Page() {
           >
             <Trash2 className="w-4 h-4 mr-1" /> Eliminar día
           </Button>
-          <div className="ml-auto lg:hidden">
+
+          {/* Toggle mapa móvil */}
+          <div className="ml-auto xl:hidden">
             <Button
               size="sm"
               variant="outline"
@@ -176,12 +190,12 @@ export default function Page() {
           </div>
         </div>
 
-        {/* selector de días */}
+        {/* Tabs de días */}
         <div className="px-3">
           <div className="flex gap-2 overflow-x-auto pb-2">
             {days.map((d, i) => (
               <Button
-                key={`${d.id}-${i}`}
+                key={d.id}
                 variant={activeDayId === d.id ? "default" : "outline"}
                 onClick={() => setActiveDay(d.id)}
                 className="shrink-0"
@@ -192,10 +206,10 @@ export default function Page() {
           </div>
         </div>
 
-        {/* resumen compacto */}
+        {/* Resumen compacto horizontal */}
         <DaySummary />
 
-        {/* lista DnD */}
+        {/* Lista del día (DnD) */}
         <div role="list" aria-label="Lugares del día">
           <DndContext
             sensors={sensors}
@@ -203,16 +217,16 @@ export default function Page() {
             onDragEnd={onDragEnd}
           >
             <SortableContext
-              items={safePlaces.map((p) => p.id_api_place)}
+              items={(current?.places ?? []).map((p) => p.id_api_place)}
               strategy={verticalListSortingStrategy}
             >
-              {safePlaces.length ? (
-                safePlaces.map((p) => (
+              {current?.places?.length ? (
+                current.places.map((p) => (
                   <SortableDiaDetalle key={p.id_api_place} place={p} />
                 ))
               ) : (
                 <Card className="m-3 p-4 text-sm text-muted-foreground">
-                  Día sin lugares. Busca en el mapa o usa <b>Sugerir ruta</b>.
+                  Día sin lugares. Busca a la derecha o usa <b>Sugerir ruta</b>.
                 </Card>
               )}
             </SortableContext>
@@ -220,32 +234,34 @@ export default function Page() {
         </div>
       </div>
 
-      {/* DERECHA: mapa y búsqueda */}
+      {/* DERECHA – mapa + búsqueda */}
       <div
-        className={`fixed inset-0 z-40 bg-background lg:static lg:z-auto lg:w-[45%] lg:h-full ${
-          showMapOnMobile ? "block" : "hidden lg:block"
+        className={`fixed inset-0 z-40 bg-background xl:static xl:z-auto xl:w-[48%] xl:h-full ${
+          showMapOnMobile ? "block" : "hidden xl:block"
         }`}
       >
         <div className="h-full relative">
           <MapSearchBar
             value={filters}
-            onChange={(v) => setFilters(v as any)}
-            onClear={() => setFilters({ q: "", category: null })}
-            className="absolute left-1/2 top-3 -translate-x-1/2 w-[95%] z-[600]"
+            onChange={(v) => setFilters(v)}
+            onClear={() => {
+              clearFilters();
+              setShowRoute(false);
+            }}
+            className="absolute left-1/2 top-3 -translate-x-1/2 w-[95%] sm:w-[680px] z-[600]"
           />
 
-          {/* resultados: columna sobre el mapa */}
-          {hasQuery && (
-            <div className="absolute left-4 top-[110px] z-[500]">
-              <MapResultsPanel
-                results={results}
-                onOpenPlace={(id) => setSelectedPlace(id)}
-              />
-            </div>
-          )}
+          {/* Panel de resultados – sólo si hay búsqueda */}
+          <div className="hidden 2xl:block absolute left-4 top-[132px] z-[500]">
+            <MapResultsPanel
+              results={results}
+              onOpenPlace={(id) => setSelectedPlace(id)}
+              hidden={!searchActive}
+            />
+          </div>
 
-          {/* cerrar mapa en móvil */}
-          <div className="lg:hidden absolute right-3 top-3 z-[600]">
+          {/* botón cerrar mapa móvil */}
+          <div className="xl:hidden absolute right-3 top-3 z-[600]">
             <Button
               size="icon"
               variant="outline"
@@ -256,18 +272,19 @@ export default function Page() {
             </Button>
           </div>
 
+          {/* Mapa */}
           <Mapa
             center={[center.lat, center.lng]}
             zoom={12}
             markers={markers}
-            selectedId={selectedPlaceId ?? undefined}
+            path={showRoute ? current?.places ?? [] : undefined}
             onMarkerClick={(id) => setSelectedPlace(id)}
           />
         </div>
       </div>
 
-      {/* panel de lugar */}
-      {placeOpen && (
+      {/* Modal de lugar */}
+      {!!placeOpen && (
         <PlaceInfoPanel
           place={placeOpen}
           onClose={() => setSelectedPlace(null)}

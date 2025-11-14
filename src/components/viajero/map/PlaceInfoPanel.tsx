@@ -1,8 +1,7 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import * as React from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import {
   Select,
   SelectTrigger,
@@ -10,8 +9,8 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import { Place } from "@/lib/constants/mock-itinerary-data";
 import { useItineraryStore } from "@/lib/useItineraryStore";
-import type { Place } from "@/lib/constants/mock-itinerary-data";
 
 export default function PlaceInfoPanel({
   place,
@@ -20,95 +19,76 @@ export default function PlaceInfoPanel({
   place: Place;
   onClose: () => void;
 }) {
-  const days = useItineraryStore((s) => s.days);
   const activeDayId = useItineraryStore((s) => s.activeDayId);
+  const days = useItineraryStore((s) => s.days);
   const addPlaceToActive = useItineraryStore((s) => s.addPlaceToActive);
   const movePlaceToDay = useItineraryStore((s) => s.movePlaceToDay);
 
-  // ✅ inicializa con un id válido; no hay valores vacíos en Select
-  const [toDay, setToDay] = useState<string>(activeDayId);
-
-  useEffect(() => {
-    setToDay(activeDayId);
-  }, [activeDayId]);
+  const [toDay, setToDay] = React.useState<string>(activeDayId);
+  React.useEffect(() => setToDay(activeDayId), [activeDayId]);
 
   return (
-    <div className="fixed inset-0 z-[1000] bg-black/40">
-      <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-2xl rounded-t-2xl bg-background p-4 shadow-xl md:top-1/2 md:-translate-y-1/2 md:rounded-2xl">
-        <div className="flex items-start justify-between gap-4">
-          <h3 className="text-xl font-bold">{place.nombre}</h3>
-          <Button variant="ghost" size="sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[1000]">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="absolute left-1/2 top-1/2 w-[95%] sm:w-[860px] -translate-x-1/2 -translate-y-1/2 bg-background rounded-2xl shadow-xl border p-5">
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="text-xl font-semibold">{place.nombre}</h3>
+          <button className="text-sm text-muted-foreground" onClick={onClose}>
             Cerrar
-          </Button>
+          </button>
         </div>
 
-        <Card className="mt-3 overflow-hidden">
-          {place.foto_url && (
+        {place.foto_url && (
+          <div className="relative w-full h-64 sm:h-80 rounded-xl overflow-hidden mb-4 bg-muted">
             <Image
               src={place.foto_url}
               alt={place.nombre}
-              width={1200}
-              height={600}
-              className="h-48 w-full object-cover"
+              fill
+              className="object-cover"
             />
-          )}
-          <div className="p-4">
-            <p className="text-sm text-muted-foreground">
-              {place.category} • ⭐ {place.google_score.toFixed(1)} (
-              {place.total_reviews.toLocaleString()})
-            </p>
-            <p className="mt-2">{place.short_desc}</p>
-
-            {!!place.tags?.length && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {place.tags.map((t) => (
-                  <span
-                    key={t}
-                    className="rounded-full border px-2 py-0.5 text-xs"
-                  >
-                    {t}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-              <Button
-                className="flex-1"
-                onClick={() => {
-                  addPlaceToActive(place);
-                  onClose();
-                }}
-              >
-                Añadir al día actual
-              </Button>
-
-              <div className="flex flex-1 items-center gap-2">
-                <Select value={toDay} onValueChange={setToDay}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Elegir día…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {days.map((d, i) => (
-                      <SelectItem key={`${d.id}-${i}`} value={d.id}>
-                        {d.nombre}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    movePlaceToDay(place.id_api_place, toDay);
-                    onClose();
-                  }}
-                >
-                  Añadir / Mover
-                </Button>
-              </div>
-            </div>
           </div>
-        </Card>
+        )}
+
+        <div className="text-sm text-muted-foreground">
+          {place.category} • ⭐ {place.google_score} (
+          {place.total_reviews.toLocaleString()})
+        </div>
+        {place.short_desc && <p className="mt-2">{place.short_desc}</p>}
+
+        <div className="mt-4 flex flex-col sm:flex-row gap-2">
+          <Button
+            className="sm:flex-1"
+            onClick={() => {
+              addPlaceToActive(place);
+              onClose();
+            }}
+          >
+            Añadir al día actual
+          </Button>
+
+          <Select value={toDay} onValueChange={setToDay}>
+            <SelectTrigger className="w-full sm:w-[220px]">
+              <SelectValue placeholder="Elegir día…" />
+            </SelectTrigger>
+            <SelectContent>
+              {days.map((d) => (
+                <SelectItem key={d.id} value={d.id}>
+                  {d.nombre}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Button
+            variant="outline"
+            onClick={() => {
+              movePlaceToDay(place.id_api_place, toDay);
+              onClose();
+            }}
+          >
+            Añadir / Mover
+          </Button>
+        </div>
       </div>
     </div>
   );
