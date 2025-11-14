@@ -26,8 +26,7 @@ export default function BuscarViajeroPage() {
       const response = await fetch(`${API_URL}/user/search?q=${term}`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          token: token,
         }
       });
 
