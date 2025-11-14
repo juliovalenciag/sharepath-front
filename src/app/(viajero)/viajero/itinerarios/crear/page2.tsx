@@ -38,7 +38,7 @@ export interface Actividad {
   lng: number;
   description?: string; // <-- Campo para el backend
   start_time?: string; // <-- Campo para el backend
-  end_time?: string;   // <-- Campo para el backend
+  end_time?: string; // <-- Campo para el backend
 }
 
 interface Dia {
@@ -57,10 +57,14 @@ interface Dia {
 function SortableDiaDetalle({
   lugar,
   onActivityChange, // <-- 1. ACEPTA la prop
-  onDelete,         // <-- 2. Acepta onDelete (para el próximo paso)
+  onDelete, // <-- 2. Acepta onDelete (para el próximo paso)
 }: {
   lugar: Actividad;
-  onActivityChange: (id: string | number, field: keyof Actividad, value: any) => void;
+  onActivityChange: (
+    id: string | number,
+    field: keyof Actividad,
+    value: any
+  ) => void;
   onDelete: (id: string | number) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } =
@@ -75,9 +79,9 @@ function SortableDiaDetalle({
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       {/* 3. PASA las props a DiaDetalle */}
-      <DiaDetalle 
-        lugar={lugar} 
-        onActivityChange={onActivityChange} 
+      <DiaDetalle
+        lugar={lugar}
+        onActivityChange={onActivityChange}
         onDelete={onDelete}
       />
     </div>
@@ -123,7 +127,7 @@ function Page() {
   const [pageTitle, setPageTitle] = useState("Nuevo Itinerario");
   const [diasData, setDiasData] = useState<Dia[]>([]);
   const [diaActivoId, setDiaActivoId] = useState<number | string>(1);
-  
+
   const [itinerario, defItinerario] = useState<Actividad[]>([]);
   const posicionInicial: [number, number] = [19.5043, -99.147];
   const zoomInicial = 17;
@@ -144,32 +148,31 @@ function Page() {
       for (let i = 0; i < numDias; i++) {
         const fechaDia = addDays(startDate, i);
         nuevosDias.push({
-      id: i + 1,
-      nombre: format(fechaDia, "d MMM", { locale: es }), 
-      fecha: fechaDia,
-      lugares: [],
-    });
+          id: i + 1,
+          nombre: format(fechaDia, "d MMM", { locale: es }),
+          fecha: fechaDia,
+          lugares: [],
+        });
       }
       setDiasData(nuevosDias);
-      setDiaActivoId(1); 
+      setDiaActivoId(1);
     }
-    
+
     // (Aquí también podrías leer 'regions' y centrar el mapa)
     // const regions = searchParams.get('regions')?.split(',');
-    
   }, [searchParams]); // Se ejecuta 1 vez cuando los params están listos
 
   // --- Lógica de DND (Drag and Drop) ---
   const diaActual = diasData.find((d) => d.id === diaActivoId);
   const lugaresActivos = diaActual ? diaActual.lugares : [];
   const sensors = useSensors(
-  useSensor(PointerSensor),
-  useSensor(KeyboardSensor, {
-    coordinateGetter: sortableKeyboardCoordinates,
-  })
-);
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
-    function handleDragEnd(event: any) {
+  function handleDragEnd(event: any) {
     const { active, over } = event;
     if (active.id !== over.id) {
       setDiasData((dias) => {
@@ -181,7 +184,11 @@ function Page() {
         const newIndex = dias[diaIndex].lugares.findIndex(
           (l) => l.id === over.id
         );
-        const nuevosLugares = arrayMove(dias[diaIndex].lugares, oldIndex, newIndex);
+        const nuevosLugares = arrayMove(
+          dias[diaIndex].lugares,
+          oldIndex,
+          newIndex
+        );
         const nuevosDiasData = [...dias];
         nuevosDiasData[diaIndex] = {
           ...nuevosDiasData[diaIndex],
@@ -189,38 +196,44 @@ function Page() {
         };
         return nuevosDiasData;
       });
-    }}
-    // ... (tu función handleSaveItinerary)
-    const handleActivityChange = (
-      lugarId: string | number,
-      field: keyof Actividad, // El campo a cambiar ('description', 'start_time', etc.)
-      value: any // El nuevo valor
-    ) => {
-      setDiasData(currentDias => {
-        const diaIndex = currentDias.findIndex(d => d.id === diaActivoId);
-        if (diaIndex === -1) return currentDias;
+    }
+  }
+  // ... (tu función handleSaveItinerary)
+  const handleActivityChange = (
+    lugarId: string | number,
+    field: keyof Actividad, // El campo a cambiar ('description', 'start_time', etc.)
+    value: any // El nuevo valor
+  ) => {
+    setDiasData((currentDias) => {
+      const diaIndex = currentDias.findIndex((d) => d.id === diaActivoId);
+      if (diaIndex === -1) return currentDias;
 
-        const nuevosDias = [...currentDias];
-        const nuevosLugares = nuevosDias[diaIndex].lugares.map(lugar =>
-          lugar.id === lugarId
-            ? { ...lugar, [field]: value } // Actualiza el campo dinámicamente
-            : lugar
-        );
-        
-        nuevosDias[diaIndex] = { ...nuevosDias[diaIndex], lugares: nuevosLugares };
-        return nuevosDias;
-      });
-    };  
+      const nuevosDias = [...currentDias];
+      const nuevosLugares = nuevosDias[diaIndex].lugares.map((lugar) =>
+        lugar.id === lugarId
+          ? { ...lugar, [field]: value } // Actualiza el campo dinámicamente
+          : lugar
+      );
+
+      nuevosDias[diaIndex] = {
+        ...nuevosDias[diaIndex],
+        lugares: nuevosLugares,
+      };
+      return nuevosDias;
+    });
+  };
 
   // --- 4. LÓGICA DE AGREGAR LUGAR (MODIFICADA) ---
   const agregarLugar = (lugar: Actividad) => {
     // Añade el lugar al DÍA ACTIVO
-    setDiasData(currentDias => {
-      const diaIndex = currentDias.findIndex(d => d.id === diaActivoId);
+    setDiasData((currentDias) => {
+      const diaIndex = currentDias.findIndex((d) => d.id === diaActivoId);
       if (diaIndex === -1) return currentDias; // No hacer nada si no hay día activo
 
       // Evitar duplicados en ESE día
-      const lugarYaExiste = currentDias[diaIndex].lugares.find(l => l.id === lugar.id);
+      const lugarYaExiste = currentDias[diaIndex].lugares.find(
+        (l) => l.id === lugar.id
+      );
       if (lugarYaExiste) return currentDias;
 
       // Añadir lugar al día activo (inmutable)
@@ -237,30 +250,33 @@ function Page() {
       defItinerario((itinerarioAnt) => [...itinerarioAnt, lugar]);
     }
   };
-  
+
   const handleDelete = (lugarId: string | number) => {
-    setDiasData(currentDias => {
+    setDiasData((currentDias) => {
       // Encuentra el día activo
-      const diaIndex = currentDias.findIndex(d => d.id === diaActivoId);
+      const diaIndex = currentDias.findIndex((d) => d.id === diaActivoId);
       if (diaIndex === -1) return currentDias;
 
       // Crea una copia inmutable de los días
       const nuevosDias = [...currentDias];
-      
+
       // Filtra el array de 'lugares' para QUITAR el que tiene el 'lugarId'
       const nuevosLugares = nuevosDias[diaIndex].lugares.filter(
         (lugar) => lugar.id !== lugarId
       );
-      
+
       // Actualiza el día con la nueva lista de lugares
-      nuevosDias[diaIndex] = { ...nuevosDias[diaIndex], lugares: nuevosLugares };
-      
+      nuevosDias[diaIndex] = {
+        ...nuevosDias[diaIndex],
+        lugares: nuevosLugares,
+      };
+
       return nuevosDias;
     });
-    
+
     // Opcional: También puedes quitarlo del estado 'itinerario' del mapa
-    defItinerario(itinerarioAnt => 
-      itinerarioAnt.filter(lugar => lugar.id !== lugarId)
+    defItinerario((itinerarioAnt) =>
+      itinerarioAnt.filter((lugar) => lugar.id !== lugarId)
     );
   };
 
@@ -269,43 +285,44 @@ function Page() {
     console.log("Estado final:", diasData);
 
     // Transformamos el estado 'diasData' al JSON del backend
-    const actividades = diasData.flatMap(dia => 
-      dia.lugares.map(lugar => ({
+    const actividades = diasData.flatMap((dia) =>
+      dia.lugares.map((lugar) => ({
         // Asignamos la fecha del día como 'start_time'
-        start_time: format(dia.fecha, "yyyy-MM-dd"), 
-        end_time: format(dia.fecha, "yyyy-MM-dd"), // Opcional, puedes ajustarlo
+        fecha: format(dia.fecha, "yyyy-MM-dd"),
         description: lugar.description || `Visita a ${lugar.nombre}`, // Fallback
-        lugarId: String(lugar.id) // Aseguramos que sea string
+        lugarId: String(lugar.id), // Aseguramos que sea string
       }))
     );
 
     const payload = {
       title: pageTitle,
-      actividades: actividades
+      actividades: actividades,
     };
 
     console.log("Enviando al backend:", JSON.stringify(payload, null, 2));
 
     try {
-      const response = await fetch('/api/itinerarios/registro', { // <-- USA TU RUTA REAL
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // ¡¡IMPORTANTE!! Recuerda añadir tu token
-          'token': localStorage.getItem('authToken') || '' 
-        },
-        body: JSON.stringify(payload)
-      });
+      const response = await fetch(
+        "https://harol-lovers.up.railway.app/itinerario/registro",
+        {
+          // <-- USA TU RUTA REAL
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            token: localStorage.getItem("authToken") || "",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
 
       if (!response.ok) {
-        throw new Error('Error al guardar el itinerario');
+      throw new Error("Error en el server");
       }
 
       const result = await response.json();
       console.log("Itinerario guardado:", result);
       // Aquí puedes redirigir al usuario
       // router.push(`/viajero/itinerarios/${result.id}`);
-
     } catch (error) {
       console.error(error);
       // Aquí deberías mostrar un error al usuario (ej. un Toast)
@@ -318,13 +335,10 @@ function Page() {
       <div className="flex flex-col md:flex-row h-[calc(100svh-3rem)] overflow-hidden">
         <div className="w-full md:w-1/2 h-1/2 md:h-full overflow-y-auto">
           {/* Usamos el título del estado */}
-          <TripHeader
-            title={pageTitle}
-            subtitle="Modifica tu itinerario"
-          />
+          <TripHeader title={pageTitle} subtitle="Modifica tu itinerario" />
           <div className="flex items-center gap-2 text-sm justify-center p-2">
             <h2 className="font-bold p-2">Plan de viaje</h2>
-            
+
             {/* ... Tus botones de 'Sugerir' y 'Optimizar' ... */}
 
             {/* --- 7. BOTÓN DE GUARDAR --- */}
@@ -355,11 +369,11 @@ function Page() {
               strategy={verticalListSortingStrategy}
             >
               {lugaresActivos.map((lugar) => (
-                <SortableDiaDetalle 
-                  key={lugar.id} 
+                <SortableDiaDetalle
+                  key={lugar.id}
                   lugar={lugar}
                   onActivityChange={handleActivityChange}
-                  onDelete= {handleDelete}
+                  onDelete={handleDelete}
                 />
               ))}
             </SortableContext>
