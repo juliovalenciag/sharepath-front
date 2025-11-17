@@ -53,11 +53,11 @@ const formSchema = z.object({
       message: "La contraseña debe tener mínimo 8 caracteres.",
     })
     .refine((password) => {
-      // Debe contener mayúscula, minúscula, número y caracteres especiales válidos (#, $, _, ?, ¿)
-      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$_?¿]).{8,}$/;
+      // Debe contener mayúscula, minúscula, número y caracteres especiales válidos (#, $, _, ?, ¿, *)
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$_?¿*]).{8,}$/;
       return passwordRegex.test(password);
     }, {
-      message: "La contraseña debe contener mayúscula, minúscula, número y un carácter especial válido (#, $, _, ?, ¿).",
+      message: "La contraseña debe contener mayúscula, minúscula, número y un carácter especial válido (#, $, _, ?, ¿, *).",
     }),
   
   username: z.string()
