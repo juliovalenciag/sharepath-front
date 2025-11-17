@@ -65,8 +65,16 @@ export class ItinerariosAPI implements ApiRoutes {
                 ...(token && { token })
             }
         });
-
+        console.log('Hice la petición');
+        
+        console.log(request);
+    
         const data = await request.json();
+
+        console.log('Parsee los datos a JSON, ' + request.status);
+        console.log(data);
+        
+        
 
         if (!request.ok) {
             const { message } = data as ErrorResponse;
@@ -129,6 +137,8 @@ export class ItinerariosAPI implements ApiRoutes {
         const data = await request.json();
 
         if (!request.ok) {
+            console.log(data);
+            
             const { message } = data as ErrorResponse;
             throw new Error(message);
         }
@@ -193,19 +203,17 @@ export class ItinerariosAPI implements ApiRoutes {
 
     async updateUser(body: UpdateUserRequest): Promise<Usuario> {
         // Si hay archivo (foto), usar FormData
-        if (body.foto) {
-            const formData = new FormData();
+        console.log(body);
+
+        const formData = new FormData();
             
-            if (body.username) formData.append('username', body.username);
-            if (body.nombre_completo) formData.append('nombre_completo', body.nombre_completo);
-            if (body.privacity_mode !== undefined) formData.append('privacity_mode', String(body.privacity_mode));
-            if (body.foto) formData.append('foto', body.foto);
+        if (body.username) formData.append('username', body.username);
+        if (body.nombre_completo) formData.append('nombre_completo', body.nombre_completo);
+        if (body.privacity_mode !== undefined) formData.append('privacity_mode', String(body.privacity_mode));
+        if (body.foto) formData.append('foto', body.foto);
 
-            return await this.putFormData<Usuario>("/user/update", formData);
-        }
-
-        // Si no hay archivo, enviar como JSON
-        return await this.put<Usuario>("/user/update", true, body);
+        return await this.putFormData<Usuario>("/user/update", formData);
+        
     }
 
     async updatePassword(body: UpdatePasswordRequest): Promise<{ message: string }> {

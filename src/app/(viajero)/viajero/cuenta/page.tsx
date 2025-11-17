@@ -3,49 +3,20 @@ import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Pencil } from "lucide-react";
+import { Globe, Lock, Pencil } from "lucide-react";
 import Link from "next/link";
+import { ItinerariosAPI } from "@/api/ItinerariosAPI";
+import { Usuario } from "@/api/interfaces/ApiRoutes";
 
-interface User{
-    correo: string;
-    username: string;
-    nombre_completo: string;
-    foto_url: string;
-    role: string;
-    privacity_mode: string;
-    verified_email: string; 
-}
+
 
 export default function AccountPage() {
-    // Esto es para obtener la información del usuario
-    const [user, setUser] = useState<User | null>(null);    
+  // Esto es para obtener la información del usuario
+  const [user, setUser] = useState<Usuario | null>(null);    
 
+  const api = ItinerariosAPI.getInstance();
   useEffect(() => {
-    async function fetchUser() {
-      try {
-        const res   = await fetch("https://harol-lovers.up.railway.app/user", { 
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            token: localStorage.getItem('authToken') || ""
-          }
-        }); // endpoint del backend
-        console.log(res.statusText);
-        // Cuando no esta autenticado.
-        if( res.status == 401 ) {
-          const message = await res.text();
-          console.log(message);
-        }
-        console.log(res.status);
-        
-        const data  = await res.json();        
-        setUser(data);
-      } catch (error) {
-        console.error("Error al cargar usuario:", error);
-      }
-    }
-
-    fetchUser();
+    api.getUser().then(setUser);
   }, []);
 
   if (!user) {
@@ -53,7 +24,7 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="p-6 flex flex-col gap-6 w-[70vh]">
+    <div className="p-6 flex flex-col gap-6 w-[80vh] mx-auto">
       {/* Encabezado */}
       <div className="flex flex-col sm:flex-row items-center sm:items-center justify-between gap-6">
         {/* Avatar */}
@@ -62,25 +33,26 @@ export default function AccountPage() {
             {/* En src ={user.avatarUrl || ""} */}
             <AvatarImage src={`${user.foto_url}`} alt="Foto de perfil" /> 
             {/* Cambiar A por {user.fullName?.charAt(0).toUpperCase() || "U"} */}
-            <AvatarFallback>A</AvatarFallback>
+            <AvatarFallback> { user.username?.charAt(0).toUpperCase() || "U" } </AvatarFallback>
           </Avatar>
 
           {/* Información básica */}
           <div className="flex flex-col gap-1 text-center sm:text-left">
-            <h1 className="text-lg font-semibold"> { user.username } </h1>
+            <h1 className="text-lg font-bold"> { user.username } </h1>
             <div className="flex flex-col sm:flex-row gap-2 text-sm text-muted-foreground">
               {/* Cambiar 100 por {user.itineraries} */}
-              <span>100 Itinerarios publicados</span>
+              <span> {user.itineraryCount} Itinerarios publicados</span>
               <span className="hidden sm:block">•</span>
-              {/* Cambiar 14K por {user.friends} */}
-              <span>14k Amigos</span>
+              
+              <span> {user.friendsCount} Amigos</span>
             </div>
+            <h2 className="text-sm font-semibold flex items-center gap-2"> { user.privacity_mode ? <> <Globe className="h-4 w-4" /> Perfil público </> : <><Lock className="h-4 w-4" /> Perfil privado</> } </h2>
           </div>
         </div>
 
         {/* Boton para editar información */}
         <Link href="/viajero/cuenta/editar">
-          <Button variant="outline" className="flex items-center gap-2 self-end sm:self-auto">
+          <Button variant="outline" className="flex items-center gap-2 self-end sm:self-auto" style={{ cursor: 'pointer' }}>
             <Pencil className="h-4 w-4"/>
             <span>Editar perfil</span>
         </Button>
@@ -118,7 +90,7 @@ export default function AccountPage() {
             {/* Tipo de cuenta u otro dato */}
             <div>
               <p className="text-sm font-medium">Tipo de cuenta</p>
-              <p className="text-sm text-muted-foreground"> { user.role } </p>
+              <p className="text-sm text-muted-foreground"> Usuario registrado como: <b>{ user.role == "user" ? "VIAJERO" : user.role }</b> </p>
             </div>
           </CardContent>
         </Card>

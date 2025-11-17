@@ -24,6 +24,8 @@ export interface Usuario {
     privacity_mode:  boolean;
     role:            string;
     correo:          string;
+    itineraryCount: number | null;
+    friendsCount: number | null;
 }
 
 export interface ErrorResponse {
