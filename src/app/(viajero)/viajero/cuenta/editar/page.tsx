@@ -14,119 +14,94 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Link from "next/link";
-
-interface User {
-  correo: string;
-  username: string;
-  nombre_completo: string;
-  foto_url: string;
-  role: string;
-  privacity_mode: string;
-}
+import { Usuario } from "@/api/interfaces/ApiRoutes";
+import { ItinerariosAPI } from "@/api/ItinerariosAPI";
+import { toast } from "sonner";
 
 export default function EditAccountPage() {
+  const api = ItinerariosAPI.getInstance();
+
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<Usuario | null>(null);
   const [nombre, setNombre] = useState("");
   const [username, setUsername] = useState("");
   const [privacidad, setPrivacidad] = useState("publica");
   const [loadingDelete, setLoadingDelete] = useState(false);
 
+  // foto seleccionada y preview local
+  const [foto, setFoto] = useState<File | undefined>(undefined);
+  const [preview, setPreview] = useState<string | null>(null);
+
   // Obtener datos del usuario al montar
   useEffect(() => {
-    async function fetchUser() {
-      try {
-        const res = await fetch("https://harol-lovers.up.railway.app/user", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            token: localStorage.getItem("authToken") || "",
-          },
-        });
-
-        if (!res.ok) {
-          console.error("Error al obtener usuario:", res.statusText);
-          return;
-        }
-
-        const data = await res.json();
-        setUser(data);
-        setNombre(data.nombre_completo || "");
-        setUsername(data.username || "");
-        setPrivacidad(data.privacity_mode || "publica");
-      } catch (error) {
-        console.error("Error:", error);
-      }
-    }
-
-    fetchUser();
+    api.getUser().then((data) => {
+      setUser(data);
+      setNombre(data.nombre_completo || "");
+      setUsername(data.username || "");
+      setPrivacidad(data.privacity_mode ? "publica" : "privada");
+      // establecer preview inicial desde la URL del usuario
+      setPreview(data.foto_url || null);
+    });
   }, []);
 
   const handleSave = async () => {
     if (!user) return;
-
-    try {
-      const res = await fetch("https://harol-lovers.up.railway.app/user/update", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          token: localStorage.getItem("authToken") || "",
-        },
-        body: JSON.stringify({
-          nombre_completo: nombre,
-          username,
-          privacity_mode: privacidad,
-        }),
-      });
-
-      if (res.ok) {
-        alert("Perfil actualizado correctamente");
-        router.back();
-      } else {
-        alert("Error al actualizar el perfil");
-      }
-    } catch (error) {
-      console.error("Error al actualizar:", error);
+    const body = {
+      nombre_completo: nombre,
+      username,
+      privacity_mode: privacidad === "publica",
+      ...(foto ? { foto } : {}),
     }
+    toast.promise(
+      api.updateUser(body),
+      {
+        loading: "Guardando cambios...",
+        success: (data) => {
+          setUser(data);
+          setNombre(data.nombre_completo || "");
+          setUsername(data.username || "");
+          setPrivacidad(data.privacity_mode ? "publica" : "privada");
+          // establecer preview inicial desde la URL del usuario
+          setPreview(data.foto_url || null);
+          return "Perfil actualizado correctamente";
+        },
+        error: (err) => {
+          return `${err.message}`
+        },
+      }
+    );
   };
 
-  const handleDelete = async () =>{
-    if (loadingDelete) return;
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    if (!file) return;
+    setFoto(file);
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+  };
 
-    const confirmDelete = confirm("¿Esta seguro de eliminar la cuenta?");
-    if (!confirmDelete) return;
+  const handleDelete = async () => {
+    if (loadingDelete) return;
 
     setLoadingDelete(true);
 
 
-    try {
-      const res = await fetch("https://harol-lovers.up.railway.app/user", {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          token: localStorage.getItem("authToken") || "",
-        },
-      });
-
-      if (!res.ok) {
-        const msg = await res.text();
-        alert("Error al eliminar la cuenta: " + msg);
+    toast.promise(api.deleteUser(), {
+      loading: "Eliminando cuenta...",
+      success: () => {
+        localStorage.removeItem("authToken");
+        router.push("/sign-up");
         setLoadingDelete(false);
-        return;
+        return "Cuenta eliminada correctamente";
+      },
+      error: (err) => {
+        setLoadingDelete(false);
+        return `Error al eliminar la cuenta: ${err.message}`;
       }
-
-      alert("Cuenta eliminada correctamente");
-
-      localStorage.removeItem("authToken");
-      router.push("/sign-up");
-      
-
-    } catch (error) {
-      console.error("Error al eliminar la cuenta:", error);
-      alert("Hubo un problema al intentar eliminar la cuenta, intentelo nuevamente");
-    } finally {
-      setLoadingDelete(false);
-    }
+    })
+    
+    
+    
   };
 
   if (!user) {
@@ -147,18 +122,31 @@ export default function EditAccountPage() {
       {/* Avatar y formulario */}
       <div className="flex flex-col items-center gap-4">
         <div className="relative">
-          <Avatar className="h-24 w-24">
-            <AvatarImage
-              src={`https://harol-lovers.up.railway.app${user.foto_url}`}
-              alt="Foto de perfil"
-            />
-            <AvatarFallback>A</AvatarFallback>
-          </Avatar>
-          <div className="absolute bottom-1 right-1 bg-white rounded-full p-1 border shadow-sm cursor-pointer hover:bg-gray-50">
-            <Camera className="h-4 w-4 text-gray-600" />
-          </div>
-        </div>
-      </div>
+          {/* input oculto para seleccionar foto; avatar clickable mediante label */}
+          <input
+            id="foto-input"
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+
+          <label htmlFor="foto-input" className="cursor-pointer">
+            <Avatar className="h-24 w-24">
+              <AvatarImage
+                src={preview || user.foto_url || ""}
+                alt="Foto de perfil"
+              />
+              <AvatarFallback>
+                { `${user.username?.charAt(0).toUpperCase()}${user.username?.charAt(1)?.toUpperCase()}` || "U" }
+              </AvatarFallback>
+            </Avatar>
+          </label>
+           <div className="absolute bottom-1 right-1 bg-white rounded-full p-1 border shadow-sm cursor-pointer hover:bg-gray-50">
+             <Camera className="h-4 w-4 text-gray-600" />
+           </div>
+         </div>
+       </div>
 
       {/* Formulario */}
       <Card className="bg-muted/30">
@@ -216,9 +204,9 @@ export default function EditAccountPage() {
 
           <div className="flex flex-col sm:flex-row justify-between gap-4 mt-4">
             <Link href="/viajero/cuenta/editar/cambContr">
-                  <Button variant="secondary" className="w-full sm:w-auto">
-                    Cambiar contraseña
-                  </Button>
+              <Button variant="secondary" className="w-full sm:w-auto">
+                Cambiar contraseña
+              </Button>
             </Link>
             <Button
               onClick={handleSave}

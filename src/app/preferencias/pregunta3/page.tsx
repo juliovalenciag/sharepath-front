@@ -11,7 +11,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
 const PreguntaSchema = z.object({
-  pregunta3: z.array(z.string()).optional(), 
+  pregunta3: z.array(z.string()).min(1, "Seleccione al menos una opcion "), 
 });
 type PreguntaValues = z.infer<typeof PreguntaSchema>;
 
@@ -57,17 +57,35 @@ export default function Pregunta3Page() {
     console.log('Datos FINALES enviados:', finalData);
 
     // 3. Simular el envío al servidor
-    await new Promise(resolve => setTimeout(resolve, 1000)); 
+    // await new Promise(resolve => setTimeout(resolve, 1000)); 
+    //implementacion del back 
+    const token = localStorage.getItem("token"); 
+    console.log("token del new user: ", token); 
 
-    toast.success('Preferencias guardadas con éxito', {
-      description: 'Gracias tus respuestas han sido registradas.',
+    const promise = await fetch("http://localhost:3000/preferencias/register", {
+      method: "POST", 
+      headers: {
+        "Content-Type": "application/json",
+        "Token": `Bearer ${token}`
+      }, 
+      body: JSON.stringify({
+        lugares_preferidos: finalData.pregunta1, 
+        estados_visitados:finalData.pregunta2, 
+        actividades_preferidas: finalData.pregunta3 }), 
+      }).then(async (res) => {
+         if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.message || 'Ocurrió un error al guardar las respuestas.');
+        }
+        const result = await res.json(); 
+        toast.success('Preferencias guardadas con éxito', {
+          description: 'Gracias tus respuestas han sido registradas.',
+        });
+      router.push('/viajero');
+
+       // return res.json();
     });
-    
-    // 4. Limpiar el almacenamiento temporal y redirigir
-    if (typeof window !== 'undefined') {
-        localStorage.removeItem('form-data'); 
-    }
-    router.push('/viajero');
+
   };
 
   return (
