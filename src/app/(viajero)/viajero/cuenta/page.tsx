@@ -53,14 +53,14 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="p-6 flex flex-col gap-6">
+    <div className="p-6 flex flex-col gap-6 w-[70vh]">
       {/* Encabezado */}
       <div className="flex flex-col sm:flex-row items-center sm:items-center justify-between gap-6">
         {/* Avatar */}
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
           <Avatar className="h-24 w-24 text-3xl">
             {/* En src ={user.avatarUrl || ""} */}
-            <AvatarImage src={`https://harol-lovers.up.railway.app${user.foto_url}`} alt="Foto de perfil" /> 
+            <AvatarImage src={`${user.foto_url}`} alt="Foto de perfil" /> 
             {/* Cambiar A por {user.fullName?.charAt(0).toUpperCase() || "U"} */}
             <AvatarFallback>A</AvatarFallback>
           </Avatar>
