@@ -19,7 +19,8 @@ const datosPublicacion = {
 
 export default function PublicacionPage() {
   return (
-    <>    <div className="p-10">
+    <>    
+    <div className="pb-10">
       <ItinerarioFrame itinerario={datosPublicacion} />
     </div>
     <div>

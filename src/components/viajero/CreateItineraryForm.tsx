@@ -459,62 +459,6 @@ export default function CreateItineraryForm() {
                 <p className="text-xs text-red-600">{errors.end.message}</p>
               )}
             </section>
-
-            {/* Compañeros */}
-            <section className="space-y-2">
-              <label className="block text-sm font-medium" htmlFor="companions">
-                ¿Quiénes van?{" "}
-                <span className="text-muted-foreground font-normal">
-                  (opcional; separa con coma o Enter)
-                </span>
-              </label>
-              <div className="rounded-lg border px-2 py-1.5 focus-within:ring-2 focus-within:ring-[color:var(--palette-blue)]">
-                <div className="flex flex-wrap gap-2">
-                  {companions.map((c) => (
-                    <span
-                      key={c}
-                      className="inline-flex items-center gap-1 rounded-full border px-2 py-[2px] text-xs"
-                      style={
-                        {
-                          background:
-                            "color-mix(in oklab, var(--palette-blue) 10%, transparent)",
-                        } as React.CSSProperties
-                      }
-                    >
-                      <IconUsersGroup className="h-3.5 w-3.5 opacity-70" />
-                      {c}
-                      <button
-                        type="button"
-                        className="opacity-70 hover:opacity-100"
-                        aria-label={`Quitar ${c}`}
-                        onClick={() => removeCompanionToken(c)}
-                      >
-                        <IconX className="h-3.5 w-3.5" />
-                      </button>
-                    </span>
-                  ))}
-                  <input
-                    id="companions"
-                    className="min-w-40 flex-1 bg-transparent outline-none text-sm py-1"
-                    placeholder="p. ej. Ana, Luis..."
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === "," || e.key === " ") {
-                        e.preventDefault();
-                        const target = e.target as HTMLInputElement;
-                        addCompanionTokenFromText(target.value);
-                        target.value = "";
-                      }
-                    }}
-                    onBlur={(e) => {
-                      addCompanionTokenFromText(e.currentTarget.value);
-                      e.currentTarget.value = "";
-                    }}
-                    aria-label="Añadir compañero"
-                  />
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground">Puedes escribir nombres, correos o @usuarios.</p>
-            </section>
           </div>
 
           {/* Columna derecha (sticky): resumen + privacidad + CTA */}

@@ -1,3 +1,4 @@
+"use client"
 import { LatLngExpression } from "leaflet";
 
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
@@ -40,21 +41,4 @@ export default function Mapa(props: MapProps) {
       </Marker>
     </MapContainer>
   );
-
-  return <L.MapContainer center={posicion} zoom={zoom} scrollWheelZoom={true} className="h-full w-full">
-    <L.TileLayer
-      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-    />
-
-    <Ruta destinos={itinerario}/>
-    
-    <BusquedaMapa onAddLugar={onAddLugar}/>
-
-    <L.Marker position={posicion}>
-      <L.Popup>
-        ESCOM <br/> Escula Superior de Computo
-      </L.Popup>
-    </L.Marker>
-  </L.MapContainer>
 }
