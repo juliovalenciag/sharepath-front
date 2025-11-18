@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-import 'sweetalert2/dist/sweetalert2.min.css';
-// npm install sweetalert2
+import "sweetalert2/dist/sweetalert2.min.css";
 
 import { cookies } from "next/headers";
 
@@ -11,7 +10,8 @@ import { cn } from "@/lib/utils";
 
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ActiveThemeProvider } from "@/components/active-theme";
-import { Toaster } from "@/components/ui/sonner"; 
+import { StyleGlideProvider } from "@/components/styleglide-provider";
+import { Toaster } from "@/components/ui/sonner";
 import { createContext } from "react";
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 
@@ -35,11 +35,9 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  
   const cookieStore = await cookies();
   const activeThemeValue = cookieStore.get("active_theme")?.value;
   const isScaled = activeThemeValue?.endsWith("-scaled");
-
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -50,24 +48,21 @@ export default async function RootLayout({
           isScaled ? "theme-scaled" : ""
         )}
       >
-
-
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-            enableColorScheme
-          >
-            <ActiveThemeProvider initialTheme={activeThemeValue}>
-              {children}
-            </ActiveThemeProvider>
-          </ThemeProvider>
-
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+          enableColorScheme
+        >
+          <ActiveThemeProvider initialTheme={activeThemeValue}>
+             <StyleGlideProvider />
+            {children}
+          </ActiveThemeProvider>
+        </ThemeProvider>
 
         <Toaster richColors position="top-right" />
       </body>
     </html>
   );
 }
-

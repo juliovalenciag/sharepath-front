@@ -6,18 +6,30 @@ import CallToAction from "@/components/landing-components/call-to-action";
 import FooterSection from "@/components/landing-components/footer";
 import { HeroHeader } from "@/components/landing-components/hero-header";
 
+import { Background } from "@/components/landing/background";
+import { FAQ } from "@/components/landing/faq";
+import { Features } from "@/components/landing/features";
+import { Hero } from "@/components/landing/hero";
+import { ResourceAllocation } from "@/components/landing/resource-allocation";
+import { Testimonials } from "@/components/landing/testimonials";
+import { Navbar } from "@/components/landing/navbar";
+import { Footer } from "@/components/landing/footer";
+
 export default function Home() {
   return (
     <>
-      {/* Esta es la landing page */}
-      <IntroAnimada/>
+      <Navbar />
+      <Background className="via-muted to-muted/80">
+        <Hero />
 
-      {/* Primer comando: pnpm i y segundo comando: pnpm dev */}
-        <HeroHeader/>
-        <HeroSection />
-        <ContentSection />
-        <CallToAction />
-        <FooterSection />
+        <Features />
+        <ResourceAllocation />
+      </Background>
+      <Testimonials />
+      <Background variant="bottom">
+        <FAQ />
+      </Background>
+      <Footer />
     </>
   );
 }
