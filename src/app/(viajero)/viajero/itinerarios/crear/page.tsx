@@ -1,13 +1,21 @@
 "use client";
-import React, { useState, useEffect, Suspense, useMemo } from "react"; // <-- Importa useEffect y Suspense
-import { useSearchParams } from "next/navigation"; // <-- Importa useSearchParams
+import * as React from "react";
 import dynamic from "next/dynamic";
+import { useState, useEffect, Suspense } from "react"; // <-- Importa useEffect y Suspense
+import { useSearchParams } from "next/navigation"; // <-- Importa useSearchParams
+import {useMemo } from "react"; 
+// import Mapa from "@/components/map";
+// import dynamic from "next/dynamic";
+// const Mapa = dynamic(() => import("@/components/viajero/map/Mapa"), {
+//   ssr: false,
+// });
 import { TripHeader } from "@/components/viajero/editor/TripHeader";
 import { Button } from "@/components/ui/button";
 import DiaDetalle from "@/components/DiaDetalle2";
+import { CalendarDays, Settings2, Save } from "lucide-react"; // <-- Importa Save
 import { Separator } from "@/components/ui/separator";
 import LugarRecomendado from "@/components/LugarRecomendado";
-import { differenceInDays, format, addDays, ItinerarioData } from "date-fns";
+import { differenceInDays, format, addDays } from "date-fns";
 import { es } from "date-fns/locale";
 import {
   DndContext,
@@ -18,24 +26,21 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import {
+  Map as MapIcon,
+  X,
+} from "lucide-react";
+import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+
 import { CSS } from "@dnd-kit/utilities";
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import {
-  CalendarDays,
-  Map as MapIcon,
-  Settings2,
-  Trash2,
-  X,
-  Save
-} from "lucide-react";
 import { useItineraryStore } from "@/lib/useItineraryStore";
 import {
   PLACES,
@@ -43,10 +48,16 @@ import {
   centerForStates,
   Place,
 } from "@/lib/constants/mock-itinerary-data";
-import { Actividad } from "@/api/interfaces/ApiRoutes";
 import MapSearchBar from "@/components/viajero/map/MapSearchBar";
 import { MapResultsPanel } from "@/components/viajero/map/MapResultsPanel";
 import PlaceInfoPanel from "@/components/viajero/map/PlaceInfoPanel";
+import DaySummary from "@/components/viajero/editor/DaySummary";
+import { Card } from "@/components/ui/card";
+
+const Mapa = dynamic(() => import("@/components/viajero/map/Mapa"), {
+  ssr: false,
+});
+
 
 export interface Actividad {
   id: number | string;
@@ -57,7 +68,6 @@ export interface Actividad {
   foto_url?: string; // <-- NUEVO: Para la imagen
   start_time?: string; // <-- Campo para el backend
   end_time?: string; // <-- Campo para el backend
-  category?: string;
 }
 
 interface Dia {
@@ -79,7 +89,6 @@ function SortableDiaDetalle({
     value: any
   ) => void;
   onDelete: (id: string | number) => void;
-  dragListeners?: any;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id: lugar.id });
@@ -103,6 +112,7 @@ function SortableDiaDetalle({
   );
 }
 
+          
 function SelectorDias({
   dias,
   diaActivoId,
@@ -144,36 +154,18 @@ function Page() {
   const [diasData, setDiasData] = useState<Dia[]>([]);
   const [diaActivoId, setDiaActivoId] = useState<number | string>(1);
 
-  const [itinerario, defItinerario] = useState<any[]>([]);
-  const [posicionInicial, setPosicionInicial] = useState<[number, number]>([
-    19.5043, -99.147,
-  ]);
+  const [itinerario, defItinerario] = useState<Actividad[]>([]);
+  const posicionInicial: [number, number] = [19.5043, -99.147];
   const zoomInicial = 17;
   const [isLoading, setIsLoading] = useState(false);
 
-  // --- Estado para Búsqueda y Filtros ---
-  const [filters, setFilters] = useState({
-    q: "",
-    category: null,
-    radiusKm: 25,
-  });
-  const [results, setResults] = useState<Place[]>([]);
-  const [selectedPlaceId, setSelectedPlace] = useState<string | null>(null);
-  const [placeOpen, setPlaceOpen] = useState<Place | null>(null);
-
-  const searchActive = Boolean(filters.q || filters.category);
-
-  const Mapa = useMemo(
-    () =>
-      dynamic(
-        () => import("@/components/viajero/map/Mapa"), // Ruta a tu componente de mapa
-        {
-          loading: () => <p>Cargando mapa...</p>, // Opcional: un loader
-          ssr: false, // ¡ESTO EVITA EL ERROR 'window is not defined'!
-        }
-      ),
-    []
-  ); // El array vacío asegura que solo se cargue una vez
+    const Mapa = useMemo(() => dynamic(
+    () => import("@/components/map"), // Ruta a tu componente de mapa
+    { 
+      loading: () => <p>Cargando mapa...</p>, // Opcional: un loader
+      ssr: false // ¡ESTO EVITA EL ERROR 'window is not defined'!
+    }
+  ), []); // El array vacío asegura que solo se cargue una vez
 
   useEffect(() => {
     const nombre = searchParams.get("nombre") || "Mi Nuevo Itinerario";
@@ -201,39 +193,10 @@ function Page() {
       setDiaActivoId(1);
     }
 
-    const regions = searchParams.get("regions")?.split(",");
-    if (regions) {
-      const center = centerForStates(regions);
-      if (center) {
-        setPosicionInicial([center.lat, center.lng]);
-      }
-    }
+    // (Aquí también podrías leer 'regions' y centrar el mapa)
+    // const regions = searchParams.get('regions')?.split(',');
   }, [searchParams]); // Se ejecuta 1 vez cuando los params están listos
 
-  // Efecto para buscar lugares cuando cambian los filtros
-  useEffect(() => {
-    const fetchResults = async () => {
-      if (!searchActive) {
-        setResults([]);
-        return;
-      }
-      const places = await suggestPlacesByRadius(
-        ["cdmx"], // Puedes hacerlo dinámico si es necesario
-        filters.radiusKm,
-        filters.q,
-        filters.category as any
-      );
-      setResults(places);
-    };
-    fetchResults();
-  }, [filters, searchActive]);
-
-  // Efecto para abrir el panel de información del lugar
-  useEffect(() => {
-    if (!selectedPlaceId) return setPlaceOpen(null);
-    const p = PLACES.find((x) => x.id_api_place === selectedPlaceId) || null;
-    setPlaceOpen(p);
-  }, [selectedPlaceId]);
   // --- Lógica de DND (Drag and Drop) ---
   const diaActual = diasData.find((d) => d.id === diaActivoId);
   const lugaresActivos = diaActual ? diaActual.lugares : [];
@@ -296,7 +259,7 @@ function Page() {
   };
 
   // --- 4. LÓGICA DE AGREGAR LUGAR (MODIFICADA) ---
-  const agregarLugar = async (lugar: Place) => {
+  const agregarLugar = async (lugar: Actividad) => {
     // 1. Buscar si el lugar ya existe en el día activo para evitar duplicados
     const diaActual = diasData.find((d) => d.id === diaActivoId);
     if (diaActual?.lugares.some((l) => l.id === lugar.id)) {
@@ -305,12 +268,7 @@ function Page() {
     }
 
     // 2. Obtener detalles completos del lugar desde la API
-    let lugarConDetalles: Actividad = {
-      ...lugar,
-      id: lugar.id_api_place,
-      lat: lugar.latitud,
-      lng: lugar.longitud,
-    };
+    let lugarConDetalles = { ...lugar };
     try {
       const api = ItinerariosAPI.getInstance();
       // Usamos el ID del lugar para obtener su información completa
@@ -461,44 +419,34 @@ function Page() {
           </DndContext>
         </div>
         <div className="w-full md:w-1/2 h-1/2 md:h-full relative">
-          <div className="h-full relative">
-            <MapSearchBar
-              value={filters as any}
-              onChange={(v) => setFilters((prev) => ({ ...prev, ...v }))}
-              onClear={() => {
-                setFilters({ q: "", category: null, radiusKm: 25 });
-              }}
-              className="absolute left-1/2 top-3 -translate-x-1/2 w-[95%] sm:w-[680px] z-[600]"
-            />
-          </div>
+          {/*<div className="h-full relative">
+           <MapSearchBar
+             value={filters}
+             onChange={(v) => setFilters(v)}
+             onClear={() => {
+               clearFilters();
+               setShowRoute(false);
+             }}
+            className="absolute left-1/2 top-3 -translate-x-1/2 w-[95%] sm:w-[680px] z-[600]"
+          />
+
+>>>>>>> 1456f7d (Integración de crear itinerario, ver itinerario e imagenes por default)
           <div className="hidden 2xl:block absolute left-4 top-[132px] z-[500]">
             <MapResultsPanel
               results={results}
               onOpenPlace={(id) => setSelectedPlace(id)}
               hidden={!searchActive}
-            />
-          </div>
+            /
+          </div> */}
           <Mapa
-            center={posicionInicial}
+            posicion={posicionInicial}
             zoom={zoomInicial}
-            markers={searchActive ? results : []} // Marcadores de búsqueda
-            path={lugaresActivos.map((p) => ({
-              ...p,
-              id_api_place: String(p.id),
-              latitud: p.lat,
-              longitud: p.lng,
-            }))} // Ruta del día activo
-            onMarkerClick={(id) => setSelectedPlace(id)}
+            itinerario={itinerario}
+            onAddLugar={agregarLugar}
           />
-          {!!placeOpen && (
-            <PlaceInfoPanel
-              place={placeOpen}
-              onClose={() => setSelectedPlace(null)}
-              onAddPlace={agregarLugar}
-            />
-          )}
         </div>
       </div>
     </>
+
   );
 }

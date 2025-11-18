@@ -179,20 +179,13 @@ export class ItinerariosAPI implements ApiRoutes {
         return await this.post<LugarData>("/lugar/registro", true, body);
     }
 
-<<<<<<< HEAD
     async getLugares(page: number = 1, limit: number = 10, state?: string, category?: string, nombre?: string): Promise<LugaresListResponse> {
         let query = `/lugar?page=${page}&limit=${limit}`;
         
         if (state) query += `&mexican_state=${encodeURIComponent(state)}`;
         if (category) query += `&category=${encodeURIComponent(category)}`;
         if (nombre) query += `&nombre=${encodeURIComponent(nombre)}`;
-=======
-    async getLugares(page: number = 1, limit: number = 10, state?: string, category?: string): Promise<LugaresListResponse> {
-        let query = `/lugar?pague=${page}&limit=${limit}`;
-        
-        if (state) query += `&mexican_state=${encodeURIComponent(state)}`;
-        if (category) query += `&category=${encodeURIComponent(category)}`;
->>>>>>> origin
+
 
         return await this.get<LugaresListResponse>(query, true);
     }

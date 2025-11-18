@@ -1,9 +1,6 @@
-<<<<<<< HEAD
+
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 import { LugarData } from "@/api/interfaces/ApiRoutes";
-
-=======
->>>>>>> origin
 export type StateKey = "cdmx" | "edomex" | "hidalgo" | "morelos" | "queretaro";
 
 export type PlaceCategory =
@@ -24,11 +21,8 @@ export type PlaceCategory =
   | "bar";
 
 export type Place = {
-<<<<<<< HEAD
   id_api_place: string | number;
-=======
-  id_api_place: string;
->>>>>>> origin
+
   state: StateKey;
   nombre: string;
   category: PlaceCategory;
@@ -617,36 +611,13 @@ export function suggestTags(draft: ItineraryDraftSlim) {
   SYSTEM_TAGS.slice(0, 3).forEach((t) => out.add(t));
   return Array.from(out).slice(0, 8);
 }
-<<<<<<< HEAD
 export async function suggestPlacesByRadius(
-=======
-export function suggestPlacesByRadius(
->>>>>>> origin
+
   states: StateKey[],
   kmRadius: number,
   q?: string,
   category?: PlaceCategory
-<<<<<<< HEAD
-): Promise<Place[]> {
-  const api = ItinerariosAPI.getInstance();
-  try {
-    // La API actual no filtra por radio, pero sí por estado y categoría.
-    // Usaremos el primer estado como filtro principal.
-    const stateFilter = states.length > 0 ? states[0] : undefined;
-    const response = await api.getLugares(1, 50, stateFilter, category);
 
-    // Mapeamos la respuesta de la API al tipo 'Place' que usa el frontend
-    const places: Place[] = (response.lugares || []).map((lugar) => ({
-      ...lugar,
-      id_api_place: String(lugar.id), // Aseguramos que el id sea string
-    }));
-
-    return places;
-  } catch (error) {
-    console.error("Error fetching places from API:", error);
-    return []; // Devolvemos un array vacío en caso de error
-  }
-=======
 ) {
   const c = centerForStates(states);
   const ql = (q ?? "").toLowerCase();
@@ -662,7 +633,6 @@ export function suggestPlacesByRadius(
       return false;
     return haversineKm(c, { lat: p.latitud, lng: p.longitud }) <= kmRadius;
   }).sort((a, b) => b.total_reviews - a.total_reviews);
->>>>>>> origin
 }
 export function suggestPopularByState(states: StateKey[], top = 3): Place[] {
   return PLACES.filter((p) => states.includes(p.state))

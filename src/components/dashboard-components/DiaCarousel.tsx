@@ -36,12 +36,12 @@ import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 import { toast } from "sonner";
 
 interface DiaDetalle {
-  id: string | number; // Corregido para coincidir con ItinerarioFrame
+  id: string | number;
   dia: string;
   categoria: string;
   titulo: string;
   urlImagen: string;
-  calificacion: number; // Corregido para coincidir con ItinerarioFrame
+  calificacion: number;
 }
 
 interface DiasCarouselProps {
@@ -103,7 +103,7 @@ const CarouselDias: React.FC<DiasCarouselProps> = ({
   };
   return (
     <>
-      <div className="w-full">
+      <div className="w-full relative">
         {/* ALERTA PEQUEÑA FLOTANTE */}
         {alerta && (
           <div
@@ -151,7 +151,7 @@ const CarouselDias: React.FC<DiasCarouselProps> = ({
           </DialogContent>
         </Dialog>
 
-        {/* Botón de los tres puntitos */}
+        {/* Botón de los tres puntitos (Posicionado absoluto o flex según prefieras, aquí lo dejo como en tu diseño original) */}
         <div className="flex justify-end pr-6 pt-2 mb-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -160,38 +160,39 @@ const CarouselDias: React.FC<DiasCarouselProps> = ({
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuItem
-                onClick={() => {
-                  /* Editar sin alerta */
-                }}
-              >
-                <Pencil />
+              <DropdownMenuItem onClick={() => {}}>
+                <Pencil className="mr-2 h-4 w-4" />
                 Editar
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {
-                  /* Compartir sin alerta */
-                }}
-              >
-                <Share2 />
+              <DropdownMenuItem onClick={() => {}}>
+                <Share2 className="mr-2 h-4 w-4" />
                 Compartir
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="text-red-600 focus:text-red-700"
                 onClick={handleEliminar}
               >
-                <Trash2 className="text-red-600" />
+                <Trash2 className="mr-2 h-4 w-4" />
                 Eliminar
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+
+        {/* --- LÓGICA DE RENDERIZADO --- */}
+        
+        {/* CASO 1: Solo 1 día (Siempre se ve igual) */}
         {dias.length === 1 ? (
           <div className="grid grid-cols-1 gap-4 px-4 max-w-md mx-auto">
             <DiaCard2 diaDetalle={dias[0]} />
           </div>
         ) : (
           <>
+            {/* CASO 2: VISTA GRID (Solo Desktop y pocos elementos)
+               - hidden por defecto (móvil)
+               - lg:grid SOLO SI hay menos de 4 días
+               - lg:hidden SI hay 4 o más días (para dejar paso al carousel)
+            */}
             <div
               className={`
                 hidden 
@@ -204,43 +205,43 @@ const CarouselDias: React.FC<DiasCarouselProps> = ({
                 <DiaCard2 key={dia.id} diaDetalle={dia} />
               ))}
             </div>
+
+            {/* CASO 3: VISTA CAROUSEL
+               - Visible siempre en Móvil/Tablet (< lg)
+               - Visible en Desktop (lg) SOLO SI hay 4 o más días
+            */}
             <div
               className={`
-                flex w-full 
-                min-w-0
-                ${dias.length < 4 ? "lg:hidden" : "lg:flex"}
-                
+                w-full px-8 
+                ${dias.length < 4 ? "lg:hidden" : "lg:block"}
               `}
             >
-
-              <Trash2 className="w-4 h-4" />
-              Eliminar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      </div>
-
-      
-        <CarouselContent className="-ml-1">
-          {dias.map((dia) => (
-            <CarouselItem key={dia.id} className="pl-1 basis-full sm:basis-1/2 md:basis-1/2 lg:basis-1/3">
-              <div className="p-1">
-                <DiaCard2 diaDetalle={dia} />
-              </div>
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-        <CarouselPrevious className="absolute left-0 top-1/2 -translate-y-1/2 z-10"/>
-                <CarouselNext className="absolute right-0 top-1/2 -translate-y-1/2 z-10"/>
-      </Carousel>
-    </div>
+              <Carousel
+                opts={{
+                  align: "start",
+                }}
+                className="w-full"
+              >
+                <CarouselContent className="-ml-1">
+                  {dias.map((dia) => (
+                    <CarouselItem
+                      key={dia.id}
+                      className="pl-1 basis-full sm:basis-1/2 md:basis-1/2 lg:basis-1/3"
+                    >
+                      <div className="p-1">
+                        <DiaCard2 diaDetalle={dia} />
+                      </div>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious className="absolute left-0 top-1/2 -translate-y-1/2 z-10" />
+                <CarouselNext className="absolute right-0 top-1/2 -translate-y-1/2 z-10" />
+              </Carousel>
+            </div>
           </>
         )}
       </div>
     </>
-
   );
 };
 
