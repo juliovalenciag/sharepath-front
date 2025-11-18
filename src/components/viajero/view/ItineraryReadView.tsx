@@ -30,7 +30,7 @@ function TripStats({ diasTotales, totalLugares, fechaInicio, fechaFin, categoria
 						<p className="text-xl font-semibold tracking-tight">{totalLugares}</p>
 					</li>
 				</ul>
-
+ 
 				<div className="mt-3 flex flex-wrap gap-2">
 					{categorias.map((t) => (
 						<span key={t} className="px-2.5 py-1 text-xs rounded-full ring-1 ring-border bg-[oklch(0.98_0_0)] dark:bg-[oklch(0.28_0_0)]">{t}</span>
