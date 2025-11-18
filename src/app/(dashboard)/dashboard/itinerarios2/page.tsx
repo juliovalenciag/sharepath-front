@@ -4,7 +4,7 @@ import { useState } from "react";
 import Mapa from "@/components/map";
 import { TripHeader } from "@/components/viajero/editor/TripHeader";
 import { Button } from "@/components/ui/button";
-import DiaDetalle from "@/components/DiaDetalle";
+import DiaDetalle from "@/components/DiaDetalle2";
 import { CalendarDays, Settings2} from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import LugarRecomendado from "@/components/LugarRecomendado";

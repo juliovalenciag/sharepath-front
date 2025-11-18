@@ -1,6 +1,6 @@
 "use client";
 
-import DiaCard from "./DiaCard";
+import DiaCard2 from "./DiaCard";
 import {
   Carousel,
   CarouselContent,
@@ -32,26 +32,31 @@ import {
   Share2,
 } from "lucide-react";
 import { useState } from "react";
+import { ItinerariosAPI } from "@/api/ItinerariosAPI";
+import { toast } from "sonner";
 
 interface DiaDetalle {
-  id: number;
+  id: string | number; // Corregido para coincidir con ItinerarioFrame
   dia: string;
   categoria: string;
   titulo: string;
   urlImagen: string;
-  calificacion: string;
+  calificacion: number; // Corregido para coincidir con ItinerarioFrame
 }
 
 interface DiasCarouselProps {
   dias: DiaDetalle[];
-  tituloItinerario?: string;
+  idItinerario: string | number;
+  onItinerarioDeleted: (id: string | number) => void;
 }
 
 const CarouselDias: React.FC<DiasCarouselProps> = ({
   dias,
-  tituloItinerario,
-}) => {
+  idItinerario,
+  onItinerarioDeleted,
+}: DiasCarouselProps) => {
   const [openConfirm, setOpenConfirm] = useState(false);
+
   const [alerta, setAlerta] = useState<{
     mensaje: string;
     error: boolean;
@@ -69,14 +74,33 @@ const CarouselDias: React.FC<DiasCarouselProps> = ({
 
   const confirmarEliminacion = () => {
     setOpenConfirm(false);
-    mostrarAlerta("Has eliminado un itinerario");
+    eliminarItinerario();
   };
 
   const cancelarEliminacion = () => {
     setOpenConfirm(false);
     mostrarAlerta("Operación cancelada", true);
   };
+  const api = ItinerariosAPI.getInstance();
+  const eliminarItinerario = () => {
+    if (!idItinerario) {
+      toast.error("No se pudo encontrar el ID del itinerario para eliminar.");
+      return;
+    }
 
+    const promise = api.deleteItinerario(idItinerario);
+    console.log("Se esta tomando como referencia el", idItinerario);
+    toast.promise(promise, {
+      loading: "Eliminando itinerario...",
+      success: (data) => {
+        onItinerarioDeleted(idItinerario);
+        return data.message || "Itinerario eliminado con éxito";
+      },
+      error: (err) => {
+        return err.message || "Error al eliminar el itinerario";
+      },
+    });
+  };
   return (
     <div className="relative w-full">
       {/* ALERTA PEQUEÑA FLOTANTE */}
@@ -148,7 +172,8 @@ const CarouselDias: React.FC<DiasCarouselProps> = ({
                 /* Compartir sin alerta */
               }}
             >
-              <Share2/>Compartir
+              <Share2 />
+              Compartir
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-red-600 focus:text-red-700"
@@ -167,7 +192,7 @@ const CarouselDias: React.FC<DiasCarouselProps> = ({
           {dias.map((dia) => (
             <CarouselItem key={dia.id} className="md:basis-1/3">
               <div className="p-1">
-                <DiaCard diaDetalle={dia} />
+                <DiaCard2 diaDetalle={dia} />
               </div>
             </CarouselItem>
           ))}

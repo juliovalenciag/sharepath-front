@@ -1,67 +1,67 @@
-"use client"
+"use client";
 
-import { useEffect } from 'react';
-import { useMap } from 'react-leaflet'
-import * as GeoSearch from 'leaflet-geosearch'
+import { useEffect, useMemo } from "react";
+import { useMap } from "react-leaflet";
+import * as GeoSearch from "leaflet-geosearch";
 
+// --- Tus importaciones Reales ---
+import { ApiSearchProvider } from "@/api/ApiSearchProvider"; 
+import { LugarData } from "@/api/interfaces/ApiRoutes";
+import { lugar } from "@/app/(dashboard)/dashboard/vermapa/page";
+
+// --- Estilos ---
 import "leaflet-geosearch/dist/geosearch.css";
-import "./estilosBusqueda.css"
+import "./estilosBusqueda.css";
 
-import { lugar } from "@/app/(dashboard)/dashboard/vermapa/page"
-
-interface BusquedaProps
-{
-    onAddLugar: (lugar: lugar) => void;
+interface BusquedaProps {
+  onAddLugar: (lugar: lugar) => void;
 }
 
-export default function busquedaMapa({ onAddLugar }: BusquedaProps)
-{
-    const map = useMap();
-    const provider = new GeoSearch.OpenStreetMapProvider({
-    params: {
-        countrycodes: 'mx',
-    },
+export default function BusquedaMapa({ onAddLugar }: BusquedaProps) {
+  const map = useMap();
+  
+  // 1. FIX IMPORTANTE: Usamos useMemo
+  // Esto evita que se cree un 'new ApiSearchProvider()' en cada render,
+  // lo cual "reseteaba" el buscador constantemente.
+  const provider = useMemo(() => new ApiSearchProvider(), []);
+
+  useEffect(() => {
+    const search = GeoSearch.GeoSearchControl({
+      searchLabel: "Buscar en mi base de datos",
+      notFoundMessage: "No se encontró el lugar",
+      provider: provider, 
+      style: "bar",
+      autoClose: true,
+      keepResult: true,
+      updateMap: true, // Mueve el mapa al resultado
     });
 
-    useEffect(() =>
-    {
-        const search = GeoSearch.GeoSearchControl({
-            searchLabel: 'Ingrese su búsqueda',
-            notFoundMessage: 'No se encontró el lugar ingresado',
-            provider: provider,
-            style: 'bar',
-            autoClose: true,
-            keepResult: true,
-        });
+    map.addControl(search);
 
-        map.addControl(search);
+    const onResult = (e: any) => {
+      // Validamos que exista 'raw' para evitar crashes
+      if (!e.location || !e.location.raw) return;
 
-        const onResult = (e: any) =>
-        {
-            console.log('Se busco algo');
-            const { location } = e;
+      const lugarDeLaDB: LugarData = e.location.raw; 
 
-            const nuevoLugar: lugar = {
-                id: new Date().getTime().toString(),
-                nombre: location.label,
-                lat: location.y,
-                lng: location.x,
-            };
+      const lugarParaElMapa: lugar = {
+        id: lugarDeLaDB.id_api_place || Date.now().toString(), // Fallback ID
+        nombre: lugarDeLaDB.nombre,
+        lat: lugarDeLaDB.latitud,   
+        lng: lugarDeLaDB.longitud,  
+      };
 
-            //appendChild(botonAgregarLugar)
-            //boton onclicl(onAddLugar(Lugar))
+      onAddLugar(lugarParaElMapa);
+    };
 
-            onAddLugar(nuevoLugar);
-        };
+    // Escuchamos el evento de selección
+    map.on("geosearch/showlocation", onResult);
 
-        map.on("geosearch/showlocation", onResult); //Poner showlocation con 'l' minuscula porque con 'L' no agarra
+    return () => {
+      map.removeControl(search);
+      map.off("geosearch/showlocation", onResult);
+    };
+  }, [map, onAddLugar, provider]); 
 
-        return () =>
-        {
-            map.removeControl(search);
-            map.off("geosearch/showlocation", onResult); //Poner showlocation con 'l' minuscula porque con 'L' no agarra
-        };
-    }, [map, onAddLugar, provider]);
-    
-    return null;
+  return null;
 }
