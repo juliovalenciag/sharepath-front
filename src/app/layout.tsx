@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-import 'sweetalert2/dist/sweetalert2.min.css';
-// npm install sweetalert2
+import "sweetalert2/dist/sweetalert2.min.css";
 
 import { cookies } from "next/headers";
 
@@ -11,9 +10,20 @@ import { cn } from "@/lib/utils";
 
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ActiveThemeProvider } from "@/components/active-theme";
-import { Toaster } from "@/components/ui/sonner"; 
+import { StyleGlideProvider } from "@/components/styleglide-provider";
+import { Toaster } from "@/components/ui/sonner";
 import { createContext } from "react";
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
+
+import { APP_CONFIG } from "@/config/app-config";
+import { getPreference } from "@/server/server-actions";
+import { PreferencesStoreProvider } from "@/stores/preferences/preferences-provider";
+import {
+  THEME_MODE_VALUES,
+  THEME_PRESET_VALUES,
+  type ThemePreset,
+  type ThemeMode,
+} from "@/types/preferences/theme";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,11 +45,19 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  
   const cookieStore = await cookies();
   const activeThemeValue = cookieStore.get("active_theme")?.value;
   const isScaled = activeThemeValue?.endsWith("-scaled");
-
+  const themeMode = await getPreference<ThemeMode>(
+    "theme_mode",
+    THEME_MODE_VALUES,
+    "light"
+  );
+  const themePreset = await getPreference<ThemePreset>(
+    "theme_preset",
+    THEME_PRESET_VALUES,
+    "default"
+  );
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -50,8 +68,10 @@ export default async function RootLayout({
           isScaled ? "theme-scaled" : ""
         )}
       >
-
-
+        <PreferencesStoreProvider
+          themeMode={themeMode}
+          themePreset={themePreset}
+        >
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
@@ -60,14 +80,14 @@ export default async function RootLayout({
             enableColorScheme
           >
             <ActiveThemeProvider initialTheme={activeThemeValue}>
+              <StyleGlideProvider />
               {children}
             </ActiveThemeProvider>
           </ThemeProvider>
 
-
-        <Toaster richColors position="top-right" />
+          <Toaster richColors position="top-right" />
+        </PreferencesStoreProvider>
       </body>
     </html>
   );
 }
-

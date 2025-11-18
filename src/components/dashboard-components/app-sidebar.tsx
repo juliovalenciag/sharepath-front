@@ -41,7 +41,11 @@ const data = {
   },
   navMain: [
     { title: "Inicio", url: "/dashboard", icon: IconHomeFilled },
-    { title: "Itinerarios", url: "/dashboard/itinerarios", icon: IconCalendarFilled, },
+    {
+      title: "Itinerarios",
+      url: "/dashboard/itinerarios",
+      icon: IconCalendarFilled,
+    },
     { title: "Ver Mapa", url: "/dashboard/vermapa", icon: IconMapPinFilled },
   ],
   navClouds: [
@@ -81,7 +85,11 @@ const data = {
   ],
   documents: [
     { name: "Chats", url: "/dashboard/chats", icon: IconMessages },
-    { name: "Notificaciones", url: "/dashboard/notificaciones", icon: IconUsers },
+    {
+      name: "Notificaciones",
+      url: "/dashboard/notificaciones",
+      icon: IconUsers,
+    },
   ],
 };
 
@@ -96,8 +104,23 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
               {/* Usa Link de Next para navegación cliente */}
-              <Link href="/" className="flex items-center gap-2">
-                <IconInnerShadowTop className="!size-5" />
+              <Link href="/viajero" className="flex items-center gap-2">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="size-6"
+                >
+                  <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                  <path d="M2 17l10 5 10-5" />
+                  <path d="M2 12l10 5 10-5" />
+                </svg>
                 <span className="text-base font-semibold">Share Path</span>
               </Link>
             </SidebarMenuButton>
