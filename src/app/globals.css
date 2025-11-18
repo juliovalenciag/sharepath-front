@@ -312,3 +312,6 @@ body,
     padding: 0.5rem !important;
   }
 }
+button {
+  cursor: pointer;
+}

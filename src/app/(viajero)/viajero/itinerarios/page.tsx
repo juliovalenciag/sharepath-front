@@ -59,7 +59,7 @@ export default function PublicacionPage() {
       ) : (
         <div className="p-10">No has creado ningún itinerario todavía.</div>
       )}
-    </div>
+    </div>  
   );
 }
 

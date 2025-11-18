@@ -32,6 +32,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { url } from "inspector";
+import { useRouter } from "next/router";
 
 export function NavUser({
   user,
@@ -43,11 +44,18 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar();
-  const pathname = usePathname();
+  const pathname     = usePathname();
+
+  const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');  
+    
+    window.location.href = '/';
+  };
 
   const menuItems = [
     { title: "Cuenta", url: "/viajero/cuenta", icon: IconUserCircle},
-    { title: "Notificaciones", url: "/viajero/notificaciones", icon: IconNotification},
+    // { title: "Notificaciones", url: "/viajero/notificaciones", icon: IconNotification},
   ];
 
   return (
@@ -61,7 +69,7 @@ export function NavUser({
             >
               <Avatar className="h-8 w-8 rounded-lg grayscale">
                 <AvatarImage src={user.foto_url || "/videos/profile.jpg"} alt={user.username} />
-                <AvatarFallback className="rounded-lg">HR</AvatarFallback>
+                <AvatarFallback className="rounded-lg">{ `${user.username?.charAt(0).toUpperCase()}${user.username?.charAt(1).toUpperCase()}` || "U" }</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.username}</span>
@@ -82,7 +90,7 @@ export function NavUser({
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage src={user.foto_url} alt={user.username} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  <AvatarFallback className="rounded-lg"> { `${user.username?.charAt(0).toUpperCase()}${user.username?.charAt(1).toUpperCase()}` || "U" } </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user.username}</span>
@@ -122,7 +130,7 @@ export function NavUser({
             <DropdownMenuSeparator />
 
             <DropdownMenuItem asChild>
-              <Link href="/" className="flex items-center gap-2">
+              <Link href="/" className="flex items-center gap-2" onClick={handleLogout}>
                 <IconLogout />
                 Cerrar sesión
               </Link>

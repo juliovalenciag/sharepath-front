@@ -43,8 +43,8 @@ export default function Login() {
         localStorage.setItem("authToken", json.token); // si tu API retorna token
       toast.success(`¡Bienvenido de vuelta! , ${json.email}`);
 
-        const redirect =
-          json.role === "admin" ? "/admin-dashboard" : "/dashboard";
+        const redirect = json.role === "admin" ? "/admin-dashboard" : "/viajero";
+        
         setTimeout(() => router.push(redirect), 1000);
         return;
       }

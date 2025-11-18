@@ -523,10 +523,10 @@ function SearchFilters({ query, estadoSeleccionado, onQueryChange, onEstadoChang
   ];
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
+    <div className="rounded-xl border border-gray-200 p-6 mb-8">
       <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-end justify-between">
         <div className="flex-1 min-w-0">
-          <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="search" className="block text-sm font-medium mb-2">
             Buscar itinerarios
           </label>
           <div className="relative">
@@ -637,44 +637,18 @@ export default function ViajeroLanding() {
   const resultadosCount = publicacionesFiltradas.length;
 
   return (
-    <div className="min-h-[calc(100dvh-64px)] bg-gray-50 text-gray-900">
-      {/* HERO SIMPLIFICADO */}
-      <div className="relative bg-gray-200">
-        <Section className="relative pt-12 md:pt-16 pb-12">
-          <div className="max-w-3xl">
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-black">
-              Tu <span className="text-blue-600">viaje,</span>
-              perfectamente
-              planificado
-            </h1>
-            <p className="mt-3 text-gray-600 max-w-prose text-lg">
-              Crea itinerarios prácticos, descubre lugares increíbles y comparte 
-              tus planes con amigos. Todo sincronizado con mapas, horarios y recomendaciones reales.
-            </p>
-            <div className="mt-6 flex flex-wrap items-center gap-3">
-              <Link href="/viajero/itinerarios/nuevo" className={btn.primary}>
-                Crear mi itinerario
-              </Link>
-              <a href="#itinerarios" className={btn.ghost + " bg-white/10 border-white/20 text-blue-600 hover:bg-white/20"}>
-                Ver itinerarios
-              </a>
-            </div>
-          </div>
-        </Section>
-      </div>
-
+    <div className="min-h-[calc(100dvh-64px)]">
       {/* SECCIÓN DE ITINERARIOS MEJORADA */}
-      <Section id="itinerarios" className="py-12">
+      <Section id="itinerarios">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-              Itinerarios de Viaje
+            <h2 className="text-2xl md:text-3xl font-bold mb-2">
+              Descubre
             </h2>
             <p className="text-gray-600">
-              Descubre experiencias reales compartidas por viajeros como tú
+              Descubre los itinerarios compartidos por viajeros y viajeras como tú.
             </p>
           </div>
-
           <SearchFilters 
             query={query}
             estadoSeleccionado={estadoSeleccionado}
@@ -737,25 +711,6 @@ export default function ViajeroLanding() {
         </div>
       </Section>
 
-      {/* LLAMADO INTERMEDIO SIMPLIFICADO */}
-      <Section className="py-12">
-        <div className="rounded-xl border border-gray-200 bg-white p-6 md:p-8">
-          <div className="grid md:grid-cols-[1fr_auto] gap-6 items-center">
-            <div>
-              <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
-                Planifica con amigos
-              </h2>
-              <p className="text-gray-600 max-w-prose">
-                Crea listas compartidas, comenta, vota por actividades favoritas y asigna lugares por día. 
-                Todo se sincroniza automáticamente en el mapa con rutas optimizadas.
-              </p>
-            </div>
-            <Link href="/viajero/itinerarios/nuevo" className={btn.primary}>
-              Empezar ahora
-            </Link>
-          </div>
-        </div>
-      </Section>
 
       {/* BLOQUE SOCIAL SIMPLIFICADO */}
       <Section id="feed" className="py-12">

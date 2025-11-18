@@ -52,6 +52,7 @@ const ItinerarioFrame: React.FC<ItinerarioFrameProps> = ({
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const startDate = new Date(itinerario.fechaInicio);
+
   const numberOfDays = itinerario.dias.length;
 
   const isValidDate = !isNaN(startDate.getTime());
@@ -116,7 +117,8 @@ const ItinerarioFrame: React.FC<ItinerarioFrameProps> = ({
                   disabled={!isValidDate}
                 >
                   <CalendarIcon className="h-4 w-4" />
-                  {displayDateRange}
+                  <span className="hidden sm:inline">{displayDateRange}</span>
+                  <span className="inline sm:hidden">Ver</span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -135,20 +137,20 @@ const ItinerarioFrame: React.FC<ItinerarioFrameProps> = ({
                     Detalles del lugar: {itinerario.detallesLugar}
                     </p> */}
             <div className="flex gap-5 justify-center">
-            <Button
-              size="sm"
-              className="mt-4 bg-gray-600 hover:bg-gray-800 text-white px-3 py-2 rounded-lg w-auto h-auto text-base"
-              onClick={() => handleVerDetalles(Number(itinerario.id))} // Pasa el id dinámicamente
-            >
-              Ver detalles
-            </Button>
-            <Button
-              size="sm"
-              className="mt-4 bg-blue-600 hover:bg-blue-800 text-white px-3 py-2 rounded-lg w-auto h-auto text-base"
-              onClick={() => handleVerDetalles(Number(itinerario.id))} // Pasa el id dinámicamente
-            >
-              Publicar
-            </Button>
+              <Button
+                size="sm"
+                className="mt-4 bg-gray-600 hover:bg-gray-800 text-white px-3 py-2 rounded-lg w-auto h-auto text-base"
+                onClick={() => handleVerDetalles(Number(itinerario.id))} // Pasa el id dinámicamente
+              >
+                Ver detalles
+              </Button>
+              <Button
+                size="sm"
+                className="mt-4 bg-blue-600 hover:bg-blue-800 text-white px-3 py-2 rounded-lg w-auto h-auto text-base"
+                onClick={() => handleVerDetalles(Number(itinerario.id))} // Pasa el id dinámicamente
+              >
+                Publicar
+              </Button>
             </div>
           </div>
         </div>

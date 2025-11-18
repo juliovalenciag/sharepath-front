@@ -10,7 +10,7 @@ import { PreguntaWrapper } from '@/components/cuestionario/PreguntaWrapper';
 import { useState, useEffect } from 'react';
 
 const PreguntaSchema = z.object({
-  pregunta1: z.array(z.string()).optional(),
+  pregunta1: z.array(z.string()).min(1, "Seleccione al menos una opcion "),
 });
 
 type PreguntaValues = z.infer<typeof PreguntaSchema>;
