@@ -15,6 +15,16 @@ import { Toaster } from "@/components/ui/sonner";
 import { createContext } from "react";
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 
+import { APP_CONFIG } from "@/config/app-config";
+import { getPreference } from "@/server/server-actions";
+import { PreferencesStoreProvider } from "@/stores/preferences/preferences-provider";
+import {
+  THEME_MODE_VALUES,
+  THEME_PRESET_VALUES,
+  type ThemePreset,
+  type ThemeMode,
+} from "@/types/preferences/theme";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -38,6 +48,16 @@ export default async function RootLayout({
   const cookieStore = await cookies();
   const activeThemeValue = cookieStore.get("active_theme")?.value;
   const isScaled = activeThemeValue?.endsWith("-scaled");
+  const themeMode = await getPreference<ThemeMode>(
+    "theme_mode",
+    THEME_MODE_VALUES,
+    "light"
+  );
+  const themePreset = await getPreference<ThemePreset>(
+    "theme_preset",
+    THEME_PRESET_VALUES,
+    "default"
+  );
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -48,20 +68,25 @@ export default async function RootLayout({
           isScaled ? "theme-scaled" : ""
         )}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-          enableColorScheme
+        <PreferencesStoreProvider
+          themeMode={themeMode}
+          themePreset={themePreset}
         >
-          <ActiveThemeProvider initialTheme={activeThemeValue}>
-             <StyleGlideProvider />
-            {children}
-          </ActiveThemeProvider>
-        </ThemeProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+            enableColorScheme
+          >
+            <ActiveThemeProvider initialTheme={activeThemeValue}>
+              <StyleGlideProvider />
+              {children}
+            </ActiveThemeProvider>
+          </ThemeProvider>
 
-        <Toaster richColors position="top-right" />
+          <Toaster richColors position="top-right" />
+        </PreferencesStoreProvider>
       </body>
     </html>
   );
