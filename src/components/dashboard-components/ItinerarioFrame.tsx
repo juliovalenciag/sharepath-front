@@ -49,6 +49,8 @@ const ItinerarioFrame: React.FC<ItinerarioFrameProps> = ({ itinerario }) => {
       )}`
     : "Fechas no disponibles";
     const router = useRouter(); 
+    console.log("Itinerario dentro del Frame:", itinerario);
+
 
     const handleVerDetalles = (id: number) => {
     setMostrarAlerta(true);
@@ -113,6 +115,8 @@ const ItinerarioFrame: React.FC<ItinerarioFrameProps> = ({ itinerario }) => {
                     {/* <p className="text-sm">
                     Detalles del lugar: {itinerario.detallesLugar}
                     </p> */}
+                    
+
                     <Button
                     size="sm"
                     className="mt-4 bg-blue-600 hover:bg-blue-800 text-white px-3 py-2 rounded-lg w-auto h-auto text-base"

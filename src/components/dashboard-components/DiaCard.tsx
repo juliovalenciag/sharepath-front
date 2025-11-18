@@ -18,6 +18,11 @@ interface DiaCardProps {
   diaDetalle: DiaDetalle;
 }
 const DiaCard2: React.FC<DiaCardProps> = ({ diaDetalle }) => {
+  //Esta es la imagen por defecto si es que el back no regresa ninguna imagen de algun lugar
+  const imagenFinal = 
+  diaDetalle.urlImagen && diaDetalle.urlImagen !== "null"
+  ? diaDetalle.urlImagen
+  : "/img/museo_antropologia.jpg";
   return (
     <>
     <Card className="w-full max-w-sm">
@@ -27,7 +32,7 @@ const DiaCard2: React.FC<DiaCardProps> = ({ diaDetalle }) => {
       </CardHeader>
       <CardContent>
          <Image 
-      src={diaDetalle.urlImagen}
+      src={imagenFinal}
       alt={diaDetalle.titulo}
       width={300}
       height={120}
