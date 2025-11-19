@@ -31,7 +31,7 @@ interface DiaCardProps {
 }
 const DiaCard2: React.FC<DiaCardProps> = ({ diaDetalle }) => {
   const imageUrl =
-    diaDetalle.urlImagen && diaDetalle.urlImagen !== "/img/placeholder.jpg"
+    diaDetalle.urlImagen && diaDetalle.urlImagen !== "/img/default.jpg"
       ? diaDetalle.urlImagen
       : getDefaultImageForCategory(diaDetalle.categoria);
 
