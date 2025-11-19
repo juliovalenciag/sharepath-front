@@ -521,37 +521,6 @@ export default function CreateItineraryForm() {
                 </div>
               </div>
             </Card>
-
-            {/* Privacidad */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium">Privacidad</label>
-              <div className="grid grid-cols-3 rounded-lg border overflow-hidden">
-                {[
-                  { key: "private", label: "Privado" },
-                  { key: "friends", label: "Amigos" },
-                  { key: "public", label: "Público" },
-                ].map((opt) => (
-                  <button
-                    key={opt.key}
-                    type="button"
-                    onClick={() =>
-                      setValue("visibility", opt.key as FormValues["visibility"], { shouldDirty: true })
-                    }
-                    className={cn(
-                      "px-3 py-2 text-sm transition-colors",
-                      visibility === opt.key
-                        ? "bg-blue-600 text-primary-foreground"
-                        : "bg-background hover:bg-muted"
-                    )}
-                    aria-pressed={visibility === opt.key}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground">Define la privacidad de tu itinerario.</p>
-            </div>
-
             <Separator />
 
             {/* CTA */}

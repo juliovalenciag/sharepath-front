@@ -68,7 +68,7 @@ const categoryDetails: Record<string, { name: string; defaultImage: string }> =
 
 const fallback = {
   name: "General",
-  defaultImage: "/img/bellas_artes.jpg",
+  defaultImage: "/img/categories/default.jpg",
 };
 
 /**
