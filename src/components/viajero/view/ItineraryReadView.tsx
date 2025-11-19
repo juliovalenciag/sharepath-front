@@ -1,243 +1,238 @@
 "use client";
-
-import React, { useState } from "react";
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
+import { Map } from "lucide-react";
 import dynamic from "next/dynamic";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import MuseumIcon from "@/components/icons/MuseumIcon";
-import TreeIcon from "@/components/icons/TreeIcon";
-import BrushIcon from "@/components/icons/BrushIcon";
-import Image from "next/image";
+import { useParams } from "next/navigation";
+
 
 // Carga dinámica en cliente para evitar SSR
-const ItineraryMap = dynamic(
-  () => import("@/components/viajero/view/ItineraryMap"),
-  { ssr: false }
-);
+const ItineraryMap = dynamic(() => import("@/components/viajero/view/ItineraryMap"), { ssr: false });
 
-const contentCards: Record<
-  number,
-  Array<{ id: number; title?: string; description?: string; imageUrl?: string }>
-> = {
-  1: [
-    {
-      id: 1,
-      title: "Palacio de Bellas Artes",
-      description: "Av. Juarez S/N, Centro Histórico, Ciudad de México, CDMX",
-      imageUrl:
-        "https://www.gob.mx/cms/uploads/press/main_image/265770/post_Bellas_Artes.jpeg",
-    },
-    {
-      id: 2,
-      title: "Bosque de Chapultepec",
-      description: " Miguel Hidalgo, Ciudad de México, CDMX",
-      imageUrl:
-        "https://cdn1.matadornetwork.com/blogs/2/2019/08/Bosque-de-Chapultepec.jpg",
-    },
-  ],
-  2: [
-    {
-      id: 3,
-      title: "Museo Soumaya",
-      description:
-        "Blvd. Miguel de Cervantes Saavedra, Granada, Miguel Hidalgo, 11529 Ciudad de México, CDMX",
-      imageUrl:
-        "https://images.adsttc.com/media/images/5295/42d3/e8e4/4ead/2a00/0016/newsletter/014_Soumaya_Image_by_Rafael_Gamo_05.jpg?1385513634",
-    },
-  ],
-  3: [
-    {
-      id: 4,
-      title: "Galería de Arte Moderno",
-      description: "Centro Histórico, Ciudad de México, CDMX",
-      imageUrl:
-        "https://placehold.co/400x300/3b82f6/ffffff?text=Galería+de+Arte",
-    },
-  ],
-  4: [
-    {
-      id: 5,
-      title: "Torre latinoamericana",
-      description:
-        "Eje Central Lázaro Cárdenas 2-piso 44, Col. Centro, Centro, Cuauhtémoc, 06000 Ciudad de México, CDMX",
-      imageUrl:
-        "https://mexicocity.cdmx.gob.mx/wp-content/uploads/2023/11/Torre-Latinoamericana.jpg",
-    },
-  ],
-  5: [
-    {
-      id: 6,
-      title: "Museo Nacional de Antropología",
-      description:
-        "Av. P.º de la Reforma s/n, Polanco, Bosque de Chapultepec I Secc, Miguel Hidalgo, 11560 Ciudad de México, CDMX",
-      imageUrl: "https://mna.inah.gob.mx/images/huellas/Paraguas-1200x800.jpg",
-    },
-  ],
-};
 
-function TripStats() {
-  const stats = [
-    { label: "Días", value: "5", hint: "31 oct – 4 nov" },
-    { label: "Lugares", value: "10", hint: "Museos, parques, arte" },
-  ];
+function TripStats({ diasTotales, totalLugares, fechaInicio, fechaFin, categorias}) {
+	
+	return (
+		<Card className="h-full bg-gradient-to-br from-[oklch(0.97_0.02_240)] to-[oklch(0.94_0.04_230)] dark:from-[oklch(0.26_0.02_240)] dark:to-[oklch(0.22_0.04_230)]">
+			<CardHeader>
+				<CardTitle>Resumen del viaje</CardTitle>
+			</CardHeader>
+			<CardContent>
+				<ul className="grid grid-cols-2 gap-3">
+					<li className="rounded-xl ring-1 ring-border bg-card/70 p-3 text-center">
+						<p className="text-xs text-muted-foreground">Días</p>
+						<p className="text-xl font-semibold tracking-tight">{diasTotales}</p>
+						<p className="text-[11px] text-muted-foreground">{fechaInicio} - {fechaFin}</p>
+					</li>
 
-  return (
-    <Card className="h-full bg-gradient-to-br from-[oklch(0.97_0.02_240)] to-[oklch(0.94_0.04_230)] dark:from-[oklch(0.26_0.02_240)] dark:to-[oklch(0.22_0.04_230)]">
-      <CardHeader>
-        <CardTitle>Resumen del viaje</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ul className="grid grid-cols-2 gap-3">
-          {stats.map((s) => (
-            <li
-              key={s.label}
-              className="rounded-xl ring-1 ring-border bg-card/70 p-3 text-center"
-            >
-              <p className="text-xs text-muted-foreground">{s.label}</p>
-              <p className="text-xl font-semibold tracking-tight">{s.value}</p>
-              <p className="text-[11px] text-muted-foreground">{s.hint}</p>
-            </li>
-          ))}
-        </ul>
-
-        <div className="mt-3 flex flex-wrap gap-2">
-          {["Cultura", "Parques", "Gastronomía", "Historia"].map((t) => (
-            <span
-              key={t}
-              className="px-2.5 py-1 text-xs rounded-full ring-1 ring-border bg-[oklch(0.98_0_0)] dark:bg-[oklch(0.28_0_0)]"
-            >
-              {t}
-            </span>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
+					<li className="rounded-xl ring-1 ring-border bg-card/70 p-3 text-center">
+						<p className="text-xs text-muted-foreground">Lugares</p>
+						<p className="text-xl font-semibold tracking-tight">{totalLugares}</p>
+					</li>
+				</ul>
+ 
+				<div className="mt-3 flex flex-wrap gap-2">
+					{categorias.map((t) => (
+						<span key={t} className="px-2.5 py-1 text-xs rounded-full ring-1 ring-border bg-[oklch(0.98_0_0)] dark:bg-[oklch(0.28_0_0)]">{t}</span>
+					))}
+				</div>
+			</CardContent>
+		</Card>
+	);
 }
 
 // --- Componente Principal de la Aplicación ---
 
-export default function ItineraryReadView() {
-  const [selecDay, setSelecDay] = useState(1);
+export default function ItineraryReadView({id}: {id: string}) {
+	
 
-  // Mapeo simple
-  // Coordenadas aproximadas en Ciudad de México para demostrar la ruta.
-  const placesForMap =
-    contentCards[selecDay]?.map((it) => {
-      // valores por defecto si no existe lat/lng
-      const lookup: Record<number, { lat: number; lng: number }> = {
-        1: { lat: 19.435, lng: -99.1416 }, // Palacio de Bellas Artes
-        2: { lat: 19.4204, lng: -99.1819 }, // Bosque de Chapultepec
-        3: { lat: 19.4347, lng: -99.2037 }, // Museo Soumaya (Polanco)
-        4: { lat: 19.427, lng: -99.1677 }, // Galería de Arte Moderno
-        5: { lat: 19.4333, lng: -99.1415 }, // Torre Latinoamericana
-        6: { lat: 19.426, lng: -99.186 }, // Museo Nacional de Antropología
-      };
-      const coord = lookup[it.id as number];
-      return {
-        id: String(it.id),
-        name: it.title || "",
-        city: it.description || "",
-        tag: "lugar",
-        img: it.imageUrl || "",
-        lat: coord?.lat ?? 19.4326,
-        lng: coord?.lng ?? -99.1332,
-      };
-    }) || [];
-  const Map = useMemo(
-    () =>
-      dynamic(
-        () => import("@/components/map"), // Ruta a tu componente de mapa
-        {
-          loading: () => <p>Cargando mapa...</p>, // Opcional: un loader
-          ssr: false, // ¡ESTO EVITA EL ERROR 'window is not defined'!
-        }
-      ),
-    []
-  );
-  return (
-    <div className="min-h-screen p-4 md:p-8 font-sans">
-      <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* COLUMNA IZQUIERDA: Título y Tarjetas de Contenido */}
-        <div className="lg:col-span-1 space-y-6">
-          {/* Título Principal de la Columna */}
-          <h1 className="text-3xl font-extrabold border-b-4 border-indigo-500 pb-2">
-            Mi primer itinerario
-          </h1>
+	const [itinerario, setItinerario] = useState<any>(null);
+	const [loading, setLoading] = useState(true);
+	const [dia, setDia] = useState(1);
+	
+	useEffect(()=> {
+		async function fetchData() {
+			console.log("ID recibido:", id);
+			try{
+				const res = await fetch(`https://harol-lovers.up.railway.app/itinerario/${id}`, {
+					method: 'GET',
+					headers: {
+						'Content-Type': 'application/json',
+            			token: localStorage.getItem('authToken') || "",
+					}
+				});
 
-          {/* Botones de días*/}
-          <div className="flex gap-2 mt-3">
-            {[1, 2, 3, 4, 5].map((n) => (
-              <button
-                key={n}
-                type="button"
-                onClick={() => setSelecDay(n)}
-                className={`px-3 py-1 rounded-md border text-sm font-medium
-									${
-                    selecDay === n
-                      ? "bg-indigo-500 text-white"
-                      : "bg-white border-gray-200 hover:bg-indigo-50"
-                  }
-								`}
-              >
-                Día {n}
-              </button>
-            ))}
-          </div>
+				const data = await res.json();
+				console.log("Itinerario detallado:", data);
+				console.log("Actividades:", data.actividades);
 
-          {/* Lista de Tarjetas */}
-          {contentCards[selecDay]?.map((item) => (
-            <Card key={item.id} className="p-0 overflow-hidden">
-              <div className="flex flex-col md:flex-row-reverse items-stretch">
-                <div className="md:w-2/5 flex-shrink-0">
-                  <Image
-                    alt={`Imagen para ${item.title}`}
-                    src={item.imgUrl} // Usamos la URL del estado
-                    fill // 'fill' hace que la imagen llene el div padre
-                    className="object-cover" // 'object-cover' funciona igual
-                    onError={() => {
-                      // En error, actualizamos el estado a la URL de fallback
-                      setImgSrc(`https://placehold.co/400x200/3b82f6/ffffff?text=Error+de+Carga`);
-                    }}
-                  />
-                </div>
-                <div className="p-4 space-y-2 flex-grow md:w-3/5">
-                  <h4 className="text-lg font-bold text-gray-800 flex items-center">
-                    {item.id === 1 && (
-                      <MuseumIcon className="w-5 h-5 mr-2 text-indigo-500" />
-                    )}
-                    {item.id === 2 && (
-                      <TreeIcon className="w-5 h-5 mr-2 text-green-500" />
-                    )}
-                    {item.id === 3 && (
-                      <BrushIcon className="w-5 h-5 mr-2 text-pink-500" />
-                    )}
-                    {item.title}
-                  </h4>
-                  <p className="text-sm text-gray-600">{item.description}</p>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
+				const actividadesOrdenadas = data.actividades.sort(
+					(a: any, b: any) => 
+						new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
+				);
 
-        {/* COLUMNA DERECHA: Mapa y Tarjeta de Información */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="grid grid-cols-1 gap-6 h-full">
-            {/* 1. Área del Mapa (real) */}
-            <div className="flex flex-col h-[350px] md:h-[450px] bg-gray-100 border-4 border-gray-300 rounded-xl overflow-hidden shadow-2xl">
-              <div className="p-4 bg-gray-800 text-white font-semibold flex items-center">
-                <Map className="w-5 h-5 mr-2" />
-                Vista de Mapa
-              </div>
-              <div className="flex-grow">
-                <ItineraryMap places={placesForMap} />
-              </div>
-            </div>
-            <TripStats />
-          </div>
-        </div>
-      </main>
-    </div>
-  );
+				const fechas = actividadesOrdenadas.map(a => new Date(a.fecha));
+				const fechaInicio = new Date(Math.min(...fechas));
+				const fechaFin = new Date(Math.max(...fechas));
+
+				const categorias = [...new Set(actividadesOrdenadas.map(a => a.lugar.category))];
+
+				const diasTotales = fechas.length > 0 ?
+				Math.ceil((fechaFin.getTime() - fechaInicio.getTime()) / (1000 * 60 * 60 * 24)) + 1 : 0;
+
+				const totalLugares = actividadesOrdenadas.length;
+
+				// Agrupar actividades por fecha real
+				const actividadesPorDia: Record<string, any[]> = {};
+
+				actividadesOrdenadas.forEach((act: any) => {
+				const fecha = new Date(act.fecha).toISOString().split("T")[0]; // YYYY-MM-DD
+
+				if (!actividadesPorDia[fecha]) {
+					actividadesPorDia[fecha] = [];
+				}
+
+				actividadesPorDia[fecha].push({
+					id: act.id,
+					titulo: act.lugar.nombre,
+					descripcion: act.description,
+					imageUrl: act.lugar.foto_url,
+					categoria: act.lugar.category,
+					estado: act.lugar.mexican_state,
+					lat: act.lugar.latitud,
+					lng: act.lugar.longitud,
+				});
+				});
+
+				// Convertir el objeto en una lista de “días”
+				const dias = Object.keys(actividadesPorDia)
+				.sort()
+				.map((fecha, index) => ({
+					dia: index + 1,
+					fecha,
+					lugares: actividadesPorDia[fecha],
+				}));
+
+
+				setItinerario({
+					id: data.id,
+					titulo: data.title,
+					dias,
+					resumen: {
+						diasTotales,
+						totalLugares,
+						fechaInicio: fechaInicio.toLocaleDateString('es-MX'),
+						fechaFin: fechaFin.toLocaleDateString('es-MX'),
+						categorias,
+					}
+				});
+			} catch (err) {
+				console.error(err);
+			} finally {
+				setLoading(false);
+			}
+		}
+		fetchData();
+	}, [id]);
+
+	if (loading) return <p className="p-4 text-xl">Cargando...-</p>;
+	if (!itinerario) return <p>Intinerarios no encontrado</p>;
+
+	const diaSeleccionado = itinerario.dias.find((d: any) => d.dia === dia);
+	const lugaresDelDia = diaSeleccionado ? diaSeleccionado.lugares : [];
+
+	
+	const placesForMap = lugaresDelDia.map((lugar: any) => ({
+		id: String(lugar.id),
+		name: lugar.titulo,
+		city: lugar.descripcion,
+		tag: lugar.categoria || "lugar",
+		img: lugar.imageUrl,
+		lat: lugar.lat,
+		lng: lugar.lng,
+	}));
+
+	return (
+		<div className="min-h-screen bg-gray-50 p-4 md:p-8 font-sans">
+			<main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+				{/* COLUMNA IZQUIERDA: Título y Tarjetas de Contenido */}
+				<div className="lg:col-span-1 space-y-6">
+					{/* Título Principal de la Columna */}
+					<h1 className="text-3xl font-extrabold text-gray-900 border-b-4 border-indigo-500 pb-2">
+						{itinerario.titulo}
+					</h1>
+
+					{/* Botones de días*/}
+					<div className="flex gap-2 mt-3">
+						{itinerario.dias.map((d: any) => (
+							<button
+							key={d.dia}
+							onClick={() => setDia(d.dia)}
+							className={`px-3 py-1 rounded-md border ${
+								dia === d.dia
+								? "bg-indigo-500 text-white"
+								: "bg-white hover:bg-indigo-100"
+                			}`}
+							>Día {d.dia}</button>
+						))}
+					</div>
+
+
+
+					{/* Lista de Tarjetas */}
+					{lugaresDelDia.map((lugar: any) => {
+						//Esta es la imagen generica por si el back no tiene imagen del lugar
+
+						const imagenFinal =
+							lugar.imageUrl && lugar.imageUrl !== "null" && lugar.imageUrl !== null
+								? lugar.imageUrl
+								: "/img/museo_antropologia.jpg";
+
+						return (
+							<Card key={lugar.id} className="overflow-hidden shadow">
+								<img
+									src={imagenFinal}
+									className="w-full h-48 object-cover rounded-t-lg"
+									alt={lugar.titulo}
+								/>
+								<div className="p-4 space-y-1">
+									<h4 className="text-lg font-bold flex items-center justify-between">
+										{lugar.titulo}
+										<span className="ml-2 px-2 py-0.5 text-xs bg-blue-100 text-blue-600 rounded-full">
+											{lugar.categoria}
+										</span>
+									</h4>
+									<p className="text-sm text-gray-700">{lugar.descripcion}</p>
+									<p className="text-xs text-gray-500 italic">{lugar.estado}</p>
+								</div>
+							</Card>
+						);
+					})}
+				</div>
+
+				{/* COLUMNA DERECHA: Mapa y Tarjeta de Información */}
+				<div className="lg:col-span-2 space-y-6">
+					<div className="grid grid-cols-1 gap-6 h-full">
+						{/* 1. Área del Mapa (real) */}
+						<div className="flex flex-col h-[350px] md:h-[450px] bg-gray-100 border-4 border-gray-300 rounded-xl overflow-hidden shadow-2xl">
+							<div className="p-4 bg-gray-800 text-white font-semibold flex items-center">
+								<Map className="w-5 h-5 mr-2" />
+								Vista de Mapa
+							</div>
+							<div className="flex-grow">
+								<ItineraryMap places={placesForMap} />
+							</div>
+						</div>
+						<TripStats 
+						diasTotales={itinerario.resumen.diasTotales}
+						totalLugares={itinerario.resumen.totalLugares}
+						fechaInicio={itinerario.resumen.fechaInicio}
+						fechaFin={itinerario.resumen.fechaFin}
+						categorias={itinerario.resumen.categorias}
+						/>
+					</div>
+				</div>
+			</main>
+		</div>
+	);
 }
