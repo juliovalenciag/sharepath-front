@@ -10,6 +10,7 @@ import { TripHeader } from "@/components/viajero/editor/TripHeader";
 import DiaDetalle from "@/components/DiaDetalle2";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
 
 import {
   DndContext,
@@ -28,6 +29,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 
 import { toast } from "sonner";
+import { PLACES, type Place } from "@/lib/constants/mock-itinerary-data";
 
 // Mapa igual que en "ver itinerario"
 const ItineraryMap = dynamic(
@@ -38,7 +40,7 @@ const ItineraryMap = dynamic(
 // ---------- Tipos ----------
 
 interface Actividad {
-  id: number | string; // id de la ACTIVIDAD en el backend
+  id: number | string; // id de la ACTIVIDAD en el backend (o local para nuevas)
   lugarId: number | string; // id del lugar en catálogo
   nombre: string;
   lat: number;
@@ -135,6 +137,10 @@ export default function EditItineraryPage() {
 
   const posicionInicial: [number, number] = [19.5043, -99.147];
   const zoomInicial = 13;
+
+  // --- búsqueda de lugares ---
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Place[]>([]);
 
   // DnD
   const sensors = useSensors(
@@ -252,6 +258,67 @@ export default function EditItineraryPage() {
   const diaActual = diasData.find((d) => d.id === diaActivoId);
   const lugaresActivos = diaActual ? diaActual.lugares : [];
 
+  // ---------- Búsqueda de lugares (local con PLACES) ----------
+  useEffect(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) {
+      setSearchResults([]);
+      return;
+    }
+
+    const filtered = PLACES.filter((p) => {
+      const name = p.nombre?.toLowerCase() || "";
+      const state =
+        (p.mexican_state as string | undefined)?.toLowerCase() || "";
+      return name.includes(q) || state.includes(q);
+    }).slice(0, 20); // limitar resultados
+
+    setSearchResults(filtered);
+  }, [searchQuery]);
+
+  const handleAddPlaceFromSearch = (place: Place) => {
+    if (!diaActual) {
+      toast.error("Primero selecciona un día.");
+      return;
+    }
+
+    // evitar duplicados por lugarId en el día actual
+    const yaExiste = diaActual.lugares.some(
+      (l) => String(l.lugarId) === String(place.id_api_place)
+    );
+    if (yaExiste) {
+      toast.info(`${place.nombre} ya está en el día seleccionado.`);
+      return;
+    }
+
+    const nuevaActividad: Actividad = {
+      id: `${place.id_api_place}-${Date.now()}`, // id temporal local
+      lugarId: place.id_api_place,
+      nombre: place.nombre,
+      lat: place.latitud,
+      lng: place.longitud,
+      description: "",
+      foto_url: place.foto_url,
+      categoria: place.category,
+      estado: place.mexican_state,
+    };
+
+    setDiasData((dias) => {
+      const diaIndex = dias.findIndex((d) => d.id === diaActivoId);
+      if (diaIndex === -1) return dias;
+
+      const nuevosDias = [...dias];
+      nuevosDias[diaIndex] = {
+        ...nuevosDias[diaIndex],
+        lugares: [...nuevosDias[diaIndex].lugares, nuevaActividad],
+      };
+
+      return nuevosDias;
+    });
+
+    toast.success(`${place.nombre} añadido al día seleccionado.`);
+  };
+
   // ---------- Drag & Drop ----------
   function handleDragEnd(event: any) {
     const { active, over } = event;
@@ -352,7 +419,7 @@ export default function EditItineraryPage() {
       const promise = fetch(
         `https://harol-lovers.up.railway.app/itinerario/${itineraryId}`,
         {
-          method: "PUT", // ajusta a PATCH si tu API lo requiere
+          method: "PUT",
           headers: {
             "Content-Type": "application/json",
             token: localStorage.getItem("authToken") || "",
@@ -384,7 +451,7 @@ export default function EditItineraryPage() {
     }
   };
 
-  // ---------- Mapa (misma lógica que ver itinerario) ----------
+  // ---------- Mapa (igual que ver itinerario) ----------
   const placesForMap = lugaresActivos.map((lugar) => ({
     id: String(lugar.id),
     name: lugar.nombre,
@@ -432,6 +499,44 @@ export default function EditItineraryPage() {
           setDiaActivoId={setDiaActivoId}
         />
 
+        {/* BUSCADOR DE LUGARES */}
+        <div className="px-4 pb-3 space-y-2">
+          <p className="text-xs font-medium text-muted-foreground">
+            Buscar lugares para añadir al día seleccionado
+          </p>
+          <Input
+            placeholder="Buscar por nombre o estado (ej. 'Centro Histórico', 'CDMX')"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-9 text-sm"
+          />
+
+          {searchResults.length > 0 && (
+            <div className="mt-2 max-h-52 overflow-y-auto rounded-md border bg-card text-xs">
+              {searchResults.map((place) => (
+                <div
+                  key={place.id_api_place}
+                  className="flex items-center justify-between gap-2 px-2 py-1.5 border-b last:border-b-0 hover:bg-muted/60"
+                >
+                  <div className="flex flex-col">
+                    <span className="font-medium">{place.nombre}</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {place.category} · {place.mexican_state}
+                    </span>
+                  </div>
+                  <Button
+                    size="xs"
+                    className="text-[10px] px-2 py-1"
+                    onClick={() => handleAddPlaceFromSearch(place)}
+                  >
+                    Añadir
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -453,7 +558,7 @@ export default function EditItineraryPage() {
         </DndContext>
       </div>
 
-      {/* DERECHA: Mapa (igual que ver itinerario) */}
+      {/* DERECHA: Mapa */}
       <div className="w-full md:w-1/2 h-1/2 md:h-full bg-gray-100">
         <ItineraryMap
           places={placesForMap}
