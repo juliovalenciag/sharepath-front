@@ -104,6 +104,7 @@ export const sidebarItems: NavGroup[] = [
         title: "Chat",
         url: "/viajero/chat",
         icon: MessageSquare,
+        comingSoon: true,
       },
       {
         title: "Notificaciones",
