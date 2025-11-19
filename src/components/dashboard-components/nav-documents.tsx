@@ -28,15 +28,17 @@ import {
 
 export function NavDocuments({
   items,
+  label,
 }: {
-  items: { name: string; url: string; icon: Icon }[];
+  items: { title: string; url: string; icon: Icon }[];
+  label?: string;
 }) {
   const { isMobile } = useSidebar();
   const pathname = usePathname();
 
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-      <SidebarGroupLabel>Social</SidebarGroupLabel>
+      {label && <SidebarGroupLabel>{label}</SidebarGroupLabel>}
       <SidebarMenu>
         {items.map((item) => {
           const isActive =
@@ -45,66 +47,28 @@ export function NavDocuments({
           const isDisabled = item.url === "#";
 
           return (
-            <SidebarMenuItem key={item.name}>
+            <SidebarMenuItem key={item.title}>
               <SidebarMenuButton
                 asChild={!isDisabled}
                 isActive={isActive}
+                tooltip={item.title}
                 className={isDisabled ? "opacity-60 cursor-not-allowed" : ""}
               >
                 {isDisabled ? (
                   <div className="flex items-center gap-2">
                     <item.icon />
-                    <span>{item.name}</span>
+                    <span>{item.title}</span>
                   </div>
                 ) : (
                   <Link href={item.url} className="flex items-center gap-2">
                     <item.icon />
-                    <span>{item.name}</span>
+                    <span>{item.title}</span>
                   </Link>
                 )}
               </SidebarMenuButton>
-
-              {/* Menú contextual (opcional) */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <SidebarMenuAction
-                    showOnHover
-                    className="data-[state=open]:bg-accent rounded-sm"
-                  >
-                    <IconDots />
-                    <span className="sr-only">More</span>
-                  </SidebarMenuAction>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  className="w-24 rounded-lg"
-                  side={isMobile ? "bottom" : "right"}
-                  align={isMobile ? "end" : "start"}
-                >
-                  <DropdownMenuItem>
-                    <IconFolder />
-                    <span>Open</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <IconShare3 />
-                    <span>Share</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem variant="destructive">
-                    <IconTrash />
-                    <span>Delete</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
             </SidebarMenuItem>
           );
         })}
-
-        <SidebarMenuItem>
-          <SidebarMenuButton className="text-sidebar-foreground/70">
-            <IconDots className="text-sidebar-foreground/70" />
-            <span>More</span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
       </SidebarMenu>
     </SidebarGroup>
   );

@@ -3,19 +3,12 @@
 import * as React from "react";
 import Link from "next/link";
 import {
-  IconCamera,
-  IconFileAi,
-  IconFileDescription,
-  IconHelp,
-  IconInnerShadowTop,
-  IconSearch,
-  IconSettings,
-  IconUsers,
   IconHomeFilled,
-  IconCalendarFilled,
-  IconMessages,
-  IconCompassFilled,
-  IconMapPinFilled,
+  IconTable,
+  IconMapPin,
+  IconUsers,
+  IconFileText,
+  IconSettings,
 } from "@tabler/icons-react";
 
 import { NavDocuments } from "@/components/dashboard-components/nav-documents";
@@ -35,61 +28,24 @@ import {
 
 const data = {
   user: {
-    name: "Harol",
-    email: "harol@hater.com",
+    name: "Admin",
+    email: "admin@sharepath.com",
     avatar: "profile.png",
   },
+  // Sección General
   navMain: [
     { title: "Inicio", url: "/dashboard", icon: IconHomeFilled },
-    {
-      title: "Itinerarios",
-      url: "/dashboard/itinerarios",
-      icon: IconCalendarFilled,
-    },
-    { title: "Ver Mapa", url: "/dashboard/vermapa", icon: IconMapPinFilled },
+    { title: "CRUD", url: "/dashboard/CRUD", icon: IconTable },
   ],
-  navClouds: [
-    {
-      title: "Capture",
-      icon: IconCamera,
-      isActive: true,
-      url: "#",
-      items: [
-        { title: "Active Proposals", url: "#" },
-        { title: "Archived", url: "#" },
-      ],
-    },
-    {
-      title: "Proposal",
-      icon: IconFileDescription,
-      url: "#",
-      items: [
-        { title: "Active Proposals", url: "#" },
-        { title: "Archived", url: "#" },
-      ],
-    },
-    {
-      title: "Prompts",
-      icon: IconFileAi,
-      url: "#",
-      items: [
-        { title: "Active Proposals", url: "#" },
-        { title: "Archived", url: "#" },
-      ],
-    },
+  // Sección Gestión
+  navGestion: [
+    { title: "Lugares", url: "/dashboard/lugares", icon: IconMapPin },
+    { title: "Usuarios", url: "/dashboard/usuarios", icon: IconUsers },
+    { title: "Reportes", url: "/dashboard/reportes", icon: IconFileText },
   ],
+  // Sección Otros
   navSecondary: [
-    { title: "Configuración", url: "/dashboard/settings", icon: IconSettings },
-    { title: "Obtener Ayuda", url: "/help", icon: IconHelp },
-    { title: "Buscar", url: "/search", icon: IconSearch },
-  ],
-  documents: [
-    { name: "Chats", url: "/dashboard/chats", icon: IconMessages },
-    {
-      name: "Notificaciones",
-      url: "/dashboard/notificaciones",
-      icon: IconUsers,
-    },
+    { title: "Configuración", url: "/dashboard/configuracion", icon: IconSettings },
   ],
 };
 
@@ -101,10 +57,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
+              className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
               {/* Usa Link de Next para navegación cliente */}
-              <Link href="/viajero" className="flex items-center gap-2">
+              <Link href="/dashboard" className="flex items-center gap-2">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="24"
@@ -121,7 +77,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <path d="M2 17l10 5 10-5" />
                   <path d="M2 12l10 5 10-5" />
                 </svg>
-                <span className="text-base font-semibold">Share Path</span>
+                <span className="text-base font-semibold">SharePath</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              tooltip="Gestionar"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
+              asChild
+            >
+              <Link href="/dashboard" className="flex items-center gap-2 justify-center">
+                <IconTable className="size-4" />
+                <span>Gestionar</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -129,10 +97,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
 
       <SidebarContent>
-        {/* Estas tres usan Link internamente en las implementaciones de abajo */}
-        <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        {/* Sección General */}
+        <NavMain items={data.navMain} label="General" />
+        
+        {/* Sección Gestión */}
+        <NavDocuments items={data.navGestion} label="Gestión" />
+        
+        {/* Sección Otros */}
+        <NavSecondary items={data.navSecondary} label="Otros" className="mt-auto" />
       </SidebarContent>
 
       <SidebarFooter>
