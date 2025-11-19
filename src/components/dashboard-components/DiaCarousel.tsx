@@ -234,8 +234,8 @@ const CarouselDias: React.FC<DiasCarouselProps> = ({
                     </CarouselItem>
                   ))}
                 </CarouselContent>
-                <CarouselPrevious className="absolute left-0 top-1/2 -translate-y-1/2 z-10" />
-                <CarouselNext className="absolute right-0 top-1/2 -translate-y-1/2 z-10" />
+                <CarouselPrevious  />
+                <CarouselNext />
               </Carousel>
             </div>
           </>

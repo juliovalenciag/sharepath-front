@@ -41,8 +41,7 @@ interface ApiUser {
   stats?: {
     itinerarios_publicos?: number;
     lugares_visitados?: number;
-    seguidores?: number;
-    siguiendo?: number;
+    amigos?: number;
   };
 }
 
@@ -61,8 +60,7 @@ interface TravelerProfile {
   stats: {
     itinerarios_publicos: number;
     lugares_visitados: number;
-    seguidores: number;
-    siguiendo: number;
+    amigos: number;
   };
 }
 
@@ -120,8 +118,7 @@ export default function ViajeroProfilePage() {
           stats: {
             itinerarios_publicos: data.stats?.itinerarios_publicos ?? 0,
             lugares_visitados: data.stats?.lugares_visitados ?? 0,
-            seguidores: data.stats?.seguidores ?? 0,
-            siguiendo: data.stats?.siguiendo ?? 0,
+            amigos: data.stats?.amigos ?? 0,
           },
         });
 
@@ -228,7 +225,7 @@ export default function ViajeroProfilePage() {
           {/* Acciones rápidas sobre el perfil */}
           <div className="flex flex-wrap gap-2 md:flex-col md:items-end">
             <Button variant="outline" size="sm">
-              Seguir
+              Añadir
             </Button>
             <Button variant="outline" size="sm">
               Enviar mensaje
@@ -240,7 +237,7 @@ export default function ViajeroProfilePage() {
       </Card>
 
       {/* Stats principales */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-3 gap-3 md:grid-cols-4">
         <StatCard
           label="Itinerarios públicos"
           value={profile.stats.itinerarios_publicos}
@@ -252,14 +249,9 @@ export default function ViajeroProfilePage() {
           icon={MapPin}
         />
         <StatCard
-          label="Seguidores"
-          value={profile.stats.seguidores}
+          label="Amigos"
+          value={profile.stats.amigos}
           icon={Users}
-        />
-        <StatCard
-          label="Siguiendo"
-          value={profile.stats.siguiendo}
-          icon={Heart}
         />
       </div>
 

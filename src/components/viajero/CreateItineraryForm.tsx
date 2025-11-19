@@ -272,7 +272,7 @@ export default function CreateItineraryForm() {
             Crea un nuevo itinerario
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Elige destino, fechas y privacidad. Luego ajustamos el itinerario.
+            Elige destino y fechas. Luego ajustamos el itinerario.
           </p>
           <div className="mt-3 h-1 w-24 mx-auto rounded-full bg-primary/90 dark:bg-[var(--palette-blue)]" />
         </div>
@@ -461,7 +461,7 @@ export default function CreateItineraryForm() {
             </section>
           </div>
 
-          {/* Columna derecha (sticky): resumen + privacidad + CTA */}
+          {/* Columna derecha (sticky): resumen  + CTA */}
           <aside className="space-y-6 lg:sticky lg:top-6 self-start">
             {/* Resumen compacto */}
             <Card className="border bg-background/80">
@@ -513,12 +513,6 @@ export default function CreateItineraryForm() {
                   </div>
                 </div>
 
-                <div className="text-sm">
-                  <div className="text-muted-foreground">Privacidad</div>
-                  <div className="mt-1 capitalize">
-                    {visibility === "private" ? "Privado" : visibility === "friends" ? "Amigos" : "Público"}
-                  </div>
-                </div>
               </div>
             </Card>
             <Separator />
