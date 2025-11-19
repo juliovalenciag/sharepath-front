@@ -198,7 +198,7 @@ export default function ItineraryReadView({id}: {id: string}) {
 								<div className="p-4 space-y-1">
 									<h4 className="text-lg font-bold flex items-center justify-between">
 										{lugar.titulo}
-										<span className="ml-2 px-2 py-0.5 text-xs bg-blue-100 text-blue-600 rounded-full">
+										<span className="ml-2 px-2 py-0.5 text-xs bg-blue-100 text-primary rounded-full">
 											{lugar.categoria}
 										</span>
 									</h4>

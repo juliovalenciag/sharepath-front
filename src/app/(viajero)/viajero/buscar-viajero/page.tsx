@@ -43,7 +43,7 @@ const ResultadoViajero: React.FC<{ data: ViajeroData }> = ({ data }) => {
         </div>
       </div>
       <button
-        className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium py-2 px-4 rounded-full flex items-center transition duration-150"
+        className="bg-primary hover:bg-secondary text-white text-sm font-medium py-2 px-4 rounded-full flex items-center transition duration-150"
         // Falta implementacion para enviar la solicitud de amistad
       >
         <span className="text-xl leading-none mr-1 pb-0.5">+</span> Agregar
@@ -58,7 +58,7 @@ const SugerenciaAmistad: React.FC<{
   status: "Agregar" | "Solicitud enviada";
 }> = ({ nombre, status }) => {
   let buttonText = status;
-  let buttonClasses = "bg-blue-500 hover:bg-blue-600 text-white";
+  let buttonClasses = "bg-primary hover:bg-secondary text-white";
 
   if (status === "Solicitud enviada") {
     buttonClasses = "bg-gray-200 text-gray-700 border border-gray-300";

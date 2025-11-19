@@ -464,7 +464,7 @@ function Section({
 
 const btn = {
   primary:
-    "inline-flex items-center justify-center h-11 px-6 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 font-medium",
+    "inline-flex items-center justify-center h-11 px-6 rounded-lg bg-primary text-white hover:bg-blue-700 transition-all duration-200 font-medium",
   ghost:
     "inline-flex items-center justify-center h-11 px-6 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition-all duration-200 font-medium"
 };
@@ -565,7 +565,7 @@ function SearchFilters({ query, estadoSeleccionado, onQueryChange, onEstadoChang
         <div className="w-full lg:w-auto pt-2 lg:pt-0">
           <Button 
             type="button" 
-            className="w-full lg:w-auto bg-blue-600 hover:bg-blue-700"
+            className="w-full lg:w-auto bg-primary hover:bg-secondary"
             onClick={() => {
               onQueryChange({ target: { value: '' } });
               onEstadoChange('todos');
@@ -667,7 +667,7 @@ export default function ViajeroLanding() {
                   setQuery('');
                   setEstadoSeleccionado('todos');
                 }}
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                className="text-sm text-primary hover:text-secondary font-medium"
               >
                 Limpiar filtros
               </button>
