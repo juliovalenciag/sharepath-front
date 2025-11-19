@@ -65,7 +65,7 @@ const SugerenciaAmistad: React.FC<{
   }
 
   return (
-    <div className="w-40 flex-shrink-0 p-4 border border-gray-200 rounded-xl text-center bg-white shadow-md">
+    <div className="w-40 flex-shrink-0 p-4 border border-gray-200 rounded-xl text-center shadow-md">
       {/* Avatar Placeholder */}
       <div className="w-16 h-16 rounded-full mx-auto mb-3 bg-gray-200 flex items-center justify-center text-3xl font-medium text-gray-500">
         {nombre.charAt(0)}
