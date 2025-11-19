@@ -20,7 +20,7 @@ interface DiaCardProps {
 const DiaCard2: React.FC<DiaCardProps> = ({ diaDetalle }) => {
   return (
     <>
-    <Card className="w-full max-w-sm">
+    <Card className="w-full h-full">
       <CardHeader className='flex justify-between items-center m-0'>
         {diaDetalle.dia}
         <div> ⭐{diaDetalle.calificacion}</div>

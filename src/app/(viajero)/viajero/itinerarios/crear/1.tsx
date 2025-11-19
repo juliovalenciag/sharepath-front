@@ -1,7 +1,8 @@
 "use client";
 import React, { useState, useEffect, Suspense } from "react"; // <-- Importa useEffect y Suspense
 import { useSearchParams } from "next/navigation"; // <-- Importa useSearchParams
-import Mapa from "@/components/map";
+import dynamic from "next/dynamic";
+import {useMemo } from "react"; 
 import { TripHeader } from "@/components/viajero/editor/TripHeader";
 import { Button } from "@/components/ui/button";
 import DiaDetalle from "@/components/DiaDetalle";
@@ -98,8 +99,8 @@ function SelectorDias({
   setDiaActivoId: (id: number | string) => void;
 }) {
   return (
-    <div className="space-y-4 p-3">
-      <div className="flex gap-2">
+    <div className="space-y-4 p-3 ">
+      <div className="flex flex-wrap gap-3 justify-center">
         {dias.map((dia) => (
           <Button
             key={dia.id}
@@ -131,6 +132,14 @@ function Page() {
   const [itinerario, defItinerario] = useState<Actividad[]>([]);
   const posicionInicial: [number, number] = [19.5043, -99.147];
   const zoomInicial = 17;
+
+    const Mapa = useMemo(() => dynamic(
+    () => import("@/components/map"), // Ruta a tu componente de mapa
+    { 
+      loading: () => <p>Cargando mapa...</p>, // Opcional: un loader
+      ssr: false // ¡ESTO EVITA EL ERROR 'window is not defined'!
+    }
+  ), []); // El array vacío asegura que solo se cargue una vez
 
   useEffect(() => {
     const nombre = searchParams.get("nombre") || "Mi Nuevo Itinerario";

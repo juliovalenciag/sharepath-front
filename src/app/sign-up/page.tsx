@@ -53,11 +53,11 @@ const formSchema = z.object({
       message: "La contraseña debe tener mínimo 8 caracteres.",
     })
     .refine((password) => {
-      // Debe contener mayúscula, minúscula, número y caracteres especiales válidos (#, $, _, ?, ¿)
-      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$_?¿]).{8,}$/;
+      // Debe contener mayúscula, minúscula, número y caracteres especiales válidos (#, $, _, ?, ¿, *)
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$_?¿*]).{8,}$/;
       return passwordRegex.test(password);
     }, {
-      message: "La contraseña debe contener mayúscula, minúscula, número y un carácter especial válido (#, $, _, ?, ¿).",
+      message: "La contraseña debe contener mayúscula, minúscula, número y un carácter especial válido (#, $, _, ?, ¿, *).",
     }),
   
   username: z.string()
@@ -119,6 +119,19 @@ export default function SignUpPage() {
         const errorData = await res.json();
         throw new Error(errorData.message || "No se pudo completar el registro.");
       }
+      // Necesario el token del usuario 
+      const formJSON = Object.fromEntries(formData.entries()); 
+     const loginRes = await fetch("https://harol-lovers.up.railway.app/auth", { // espera a promise 
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ correo: formJSON.correo, password: formJSON.password }),
+      })
+    const loginData = await loginRes.json(); 
+    localStorage.setItem("token", loginData.token); // obtener el token 
+    console.log("token new user: ",loginData.token); 
+
       return res.json();
     });
 
@@ -216,7 +229,7 @@ export default function SignUpPage() {
                 />
                 
                 <p className="text-xs text-muted-foreground">
-                    Al registrarte, aceptas nuestras <Link href="#" className="underline">Condiciones</Link>.
+                    Al registrarte, aceptas nuestras <Link href="/sign-up/terminos" className="underline">Terminos y Condiciones</Link>.
                 </p>
 
                 <Button type="submit" className="w-full py-6 text-lg font-semibold" style={{ backgroundColor: '#555', color: 'white' }} disabled={isLoading}>

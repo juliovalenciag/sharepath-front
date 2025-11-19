@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ActiveThemeProvider } from "@/components/active-theme";
 import { Toaster } from "@/components/ui/sonner"; 
+import { createContext } from "react";
+import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,9 +35,12 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  
   const cookieStore = await cookies();
   const activeThemeValue = cookieStore.get("active_theme")?.value;
   const isScaled = activeThemeValue?.endsWith("-scaled");
+
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body
@@ -45,17 +50,21 @@ export default async function RootLayout({
           isScaled ? "theme-scaled" : ""
         )}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-          enableColorScheme
-        >
-          <ActiveThemeProvider initialTheme={activeThemeValue}>
-            {children}
-          </ActiveThemeProvider>
-        </ThemeProvider>
+
+
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+            enableColorScheme
+          >
+            <ActiveThemeProvider initialTheme={activeThemeValue}>
+              {children}
+            </ActiveThemeProvider>
+          </ThemeProvider>
+
+
         <Toaster richColors position="top-right" />
       </body>
     </html>
