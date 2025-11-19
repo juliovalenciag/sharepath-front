@@ -41,8 +41,8 @@ const formSchema = z.object({
       message: "El correo es requerido.",
     })
     .refine((email) => {
-      // Valida: @gmail.com, @hotmail.com, @alumno.ipn.mx
-      const emailRegex = /^[^\s@]+@(gmail\.com|hotmail\.com|alumno\.ipn\.mx|[^\s@]+\.com)$/i;
+      // Valida únicamente: @gmail.com, @hotmail.com, @alumno.ipn.mx
+      const emailRegex = /^[^\s@]+@(gmail\.com|hotmail\.com|alumno\.ipn\.mx)$/i;
       return emailRegex.test(email);
     }, {
       message: "El correo debe terminar con @gmail.com, @hotmail.com, @alumno.ipn.mx.",
