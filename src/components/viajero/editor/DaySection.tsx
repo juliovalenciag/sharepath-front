@@ -153,9 +153,9 @@ export function DaySection({
                         </span>
                         <Button
                           variant="link"
-                          className="p-0 h-auto text-xs text-blue-600 hover:text-blue-500 hover:underline"
+                          className="p-0 h-auto text-xs text-primary hover:text-secondary hover:underline"
                         >
-                          <CornerDownRight className="size-3.5 mr-1 text-blue-600" />{" "}
+                          <CornerDownRight className="size-3.5 mr-1 text-primary" />{" "}
                           Direcciones
                         </Button>
                       </div>

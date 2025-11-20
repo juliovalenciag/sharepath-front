@@ -124,11 +124,9 @@ export interface ApiRoutes {
 
     // Lugares
     createLugar: (body: CreateLugarRequest) => Promise<LugarData>;
-<<<<<<< HEAD
+
     getLugares: (page: number, limit: number, state?: string, category?: string, nombre?:string) => Promise<LugaresListResponse>;
-=======
-    getLugares: (page: number, limit: number, state?: string, category?: string) => Promise<LugaresListResponse>;
->>>>>>> origin
+
     getLugarById: (id: string) => Promise<LugarData>;
     deleteLugar: (id: string) => Promise<{ message: string }>;
 

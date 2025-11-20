@@ -87,7 +87,7 @@ export default function Pregunta1Page() {
                               rounded-full px-4 py-2 text-sm transition-colors duration-200 
                               ${
                                 isSelected
-                                  ? 'bg-blue-600 text-white shadow-md hover:bg-blue-700' 
+                                  ? 'bg-primary text-white shadow-md hover:bg-secondary' 
                                   : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200' 
                               }
                             `}

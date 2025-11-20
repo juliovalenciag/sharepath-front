@@ -27,13 +27,12 @@ export function Footer() {
           Empieza tu próximo viaje hoy
         </h2>
         <p className="text-muted-foreground mx-auto max-w-xl leading-snug text-balance">
-          SharePath es la herramienta ideal para planear y organizar
-          itinerarios modernos, visuales y optimizados para cualquier destino.
+          SharePath es la herramienta ideal para planear y organizar itinerarios
+          modernos, visuales y optimizados para cualquier destino.
         </p>
         <div>
           <Button size="lg" className="mt-4" asChild>
-            {/* Ajusta el href a la ruta principal de tu app */}
-            <a href="/app">Crear itinerario</a>
+            <a href="/sign-in">Ingresar</a>
           </Button>
         </div>
       </div>

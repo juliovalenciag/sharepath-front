@@ -71,21 +71,12 @@ const fallback = {
   defaultImage: "/img/categories/default.jpg",
 };
 
-/**
- * Obtiene el nombre legible de una categoría.
- * @param categoryKey - El identificador de la categoría (ej. "art_gallery").
- * @returns El nombre formateado (ej. "Galería de Arte").
- */
+
 export function getCategoryName(categoryKey: string | undefined): string {
   if (!categoryKey) return fallback.name;
   return categoryDetails[categoryKey]?.name || fallback.name;
 }
 
-/**
- * Obtiene la URL de la imagen por defecto para una categoría.
- * @param categoryKey - El identificador de la categoría (ej. "art_gallery").
- * @returns La ruta a la imagen de fallback.
- */
 export function getDefaultImageForCategory(
   categoryKey: string | undefined
 ): string {

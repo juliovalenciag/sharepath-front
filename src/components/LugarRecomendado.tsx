@@ -7,7 +7,7 @@ import {Button} from "./ui/button";
 export default function LugarRecomendado() {
   return (
     <div>
-      <Card className="p-2 m-3 border-blue-600">
+      <Card className="p-2 m-3 border-secondary/50 shadow-lg">
         <CardContent className="flex gap-4">
           {/* Imagen: 1/3 */}
           <div className="w-1/3 flex items-center">
@@ -24,7 +24,7 @@ export default function LugarRecomendado() {
           {/* Texto: 2/3 */}
           <div className="w-2/3 flex flex-col justify-center">
             <CardTitle className="text-xl font-semibold">
-            <p className="flex items-center text-blue-600 gap-2">
+            <p className="flex items-center text-primary gap-2">
               <Lightbulb className="w-5 h-5 "/>Sugerencia de lugar</p>
               Palacio de Bellas Artes
             </CardTitle>
@@ -35,7 +35,7 @@ export default function LugarRecomendado() {
                 variant="outline"
                 className="mt-1 p-2 flex items-center gap-2 ml-auto"
               >
-                <CirclePlus className="text-blue-600"></CirclePlus>Añadir
+                <CirclePlus className="text-primary"></CirclePlus>Añadir
               </Button>
             </CardDescription>
           </div>

@@ -161,21 +161,25 @@ export function NavMain({ items }: NavMainProps) {
       <SidebarGroup>
         <SidebarGroupContent className="flex flex-col gap-2">
           <SidebarMenu>
-            <SidebarMenuItem className="flex items-center gap-2">
-              <SidebarMenuButton
-                tooltip="Crear itinerario"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
-              >
-                <PlusCircleIcon />
-                <span>Crear itinerario</span>
-              </SidebarMenuButton>
-              <Button
-                size="icon"
-                className="h-9 w-9 shrink-0 group-data-[collapsible=icon]:opacity-0"
-                variant="outline"
-              >
-                <Calendar />
-                <span className="sr-only">Calendario</span>
+        <SidebarMenuItem className="flex items-center gap-2">
+          
+          <SidebarMenuButton
+            asChild
+            tooltip="Crear itinerario"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
+          >
+            <Link href="/viajero/itinerarios/nuevo">
+          <PlusCircleIcon />
+          <span>Crear itinerario</span>
+            </Link>
+          </SidebarMenuButton>
+          <Button
+            size="icon"
+            className="h-9 w-9 shrink-0 group-data-[collapsible=icon]:opacity-0"
+            variant="outline"
+          >
+            <Calendar />
+            <span className="sr-only">Calendario</span>
               </Button>
             </SidebarMenuItem>
           </SidebarMenu>

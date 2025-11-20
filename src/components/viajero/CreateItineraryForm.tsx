@@ -249,7 +249,7 @@ export default function CreateItineraryForm() {
               Elegir menos destinos
             </AlertDialogCancel>
             <AlertDialogAction
-              className="bg-blue-600 text-primary-foreground hover:opacity-90"
+              className="bg-primary text-primary-foreground hover:opacity-90"
               onClick={() => {
                 setAck3Plus(true);
                 setShowRegionAlert(false);
@@ -272,9 +272,9 @@ export default function CreateItineraryForm() {
             Crea un nuevo itinerario
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Elige destino, fechas y privacidad. Luego ajustamos el itinerario.
+            Elige destino y fechas. Luego ajustamos el itinerario.
           </p>
-          <div className="mt-3 h-1 w-24 mx-auto rounded-full bg-blue-600/90 dark:bg-[var(--palette-blue)]" />
+          <div className="mt-3 h-1 w-24 mx-auto rounded-full bg-primary/90 dark:bg-[var(--palette-blue)]" />
         </div>
 
         {/* Layout mejor organizado */}
@@ -461,7 +461,7 @@ export default function CreateItineraryForm() {
             </section>
           </div>
 
-          {/* Columna derecha (sticky): resumen + privacidad + CTA */}
+          {/* Columna derecha (sticky): resumen  + CTA */}
           <aside className="space-y-6 lg:sticky lg:top-6 self-start">
             {/* Resumen compacto */}
             <Card className="border bg-background/80">
@@ -513,12 +513,6 @@ export default function CreateItineraryForm() {
                   </div>
                 </div>
 
-                <div className="text-sm">
-                  <div className="text-muted-foreground">Privacidad</div>
-                  <div className="mt-1 capitalize">
-                    {visibility === "private" ? "Privado" : visibility === "friends" ? "Amigos" : "Público"}
-                  </div>
-                </div>
               </div>
             </Card>
             <Separator />
@@ -527,7 +521,7 @@ export default function CreateItineraryForm() {
             <div className="flex flex-col items-center gap-3">
               <Button
                 type="submit"
-                className="h-12 w-full px-8 text-base rounded-full bg-blue-600 hover:opacity-90 text-primary-foreground"
+                className="h-12 w-full px-8 text-base rounded-full bg-primary hover:opacity-90 text-primary-foreground"
                 disabled={submitting}
               >
                 {submitting ? "Preparando..." : "Comienza a planificar"}

@@ -19,7 +19,7 @@ export default function ListaLugares({ lugares, onAddLugar } : ListaProps) {
 
             <button
                 onClick={() => onAddLugar(lugar)}
-                className="bg-blue-500 text-white pt-[2px] pb-[2px] pl-[10px] pr-[10px] rounded-lg text-md hover:bg-blue-600"
+                className="bg-primary text-white pt-[2px] pb-[2px] pl-[10px] pr-[10px] rounded-lg text-md hover:bg-secondary transition-colors"
             >
                 + Agregar
             </button>

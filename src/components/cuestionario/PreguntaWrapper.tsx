@@ -10,7 +10,7 @@ const ProgressBar = ({ current, total }: { current: number; total: number }) => 
   return (
     <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6">
       <div 
-        className="bg-blue-600 h-2.5 rounded-full transition-all duration-500 ease-out" 
+        className="bg-primary h-2.5 rounded-full transition-all duration-500 ease-out" 
         style={{ width: `${progressPercentage}%` }}
       ></div>
     </div>
@@ -72,7 +72,7 @@ export const PreguntaWrapper = ({
               type="submit"
               onClick={onGuardar}
               disabled={isLoading}
-              className="bg-blue-700 hover:bg-gray-900 text-white"
+              className="bg-secondary hover:bg-primary text-white"
             >
               {isLoading ? 'Guardando...' : 'Guardar y Finalizar'}
             </Button>
@@ -81,7 +81,7 @@ export const PreguntaWrapper = ({
               type="submit"
               onClick={onSiguiente}
               disabled={isLoading}
-              className="bg-blue-700 hover:bg-gray-900 text-white"
+              className="bg-secondary hover:bg-primary text-white"
             >
               Siguiente
             </Button>
