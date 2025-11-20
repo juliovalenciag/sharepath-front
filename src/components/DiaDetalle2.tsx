@@ -3,17 +3,17 @@ import { Card, CardContent, CardDescription, CardTitle } from "./ui/card";
 import { GripVertical, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { Input } from "./ui/input";
-import { Actividad } from "@/types/itinerarios";
+import { Actividad } from "@/app/(viajero)/viajero/itinerarios/crear/page";
 import { getDefaultImageForCategory } from "@/components/dashboard-components/category-utils";
 interface DiaDetalleProps {
   lugar: Actividad;
   onActivityChange: (
     id: string | number,
     field: keyof Actividad,
-    value: string | number | null
+    value: any
   ) => void;
   onDelete: (id: string | number) => void;
-  dragListeners?: Record<string, unknown>; // Prop para los listeners de dnd-kit
+  dragListeners?: any; // Prop para los listeners de dnd-kit
 }
 export default function DiaDetalle({
   lugar,
