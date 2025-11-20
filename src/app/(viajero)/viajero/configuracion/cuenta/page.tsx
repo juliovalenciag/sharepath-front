@@ -18,7 +18,7 @@ export default function AccountPage() {
   }, []);
 
   if (!user) {
-    return <p className="p-6 text-muted-foreground">Cargando perfil...</p>;
+    return <p className="p-6 text-muted-foreground">Cargando cuenta...</p>;
   }
 
   return (

@@ -5,9 +5,10 @@ import { toast } from "sonner";
 import ItinerarioFrame from "@/components/dashboard-components/ItinerarioFrame";
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 import {
-  ItinerarioData,
-  Actividad,
-} from "@/api/interfaces/ApiRoutes";
+  getCategoryName,
+  getDefaultImageForCategory,
+} from "@/components/dashboard-components/category-utils";
+import { ItinerarioData, Actividad } from "@/api/interfaces/ApiRoutes";
 
 export default function PublicacionPage() {
   const [itinerarios, setItinerarios] = useState<ItinerarioData[]>([]);
@@ -21,7 +22,7 @@ export default function PublicacionPage() {
 
       success: (response: any) => {
         console.log("Respuesta CRUDA de la API:", response);
-        
+
         if (Array.isArray(response)) {
           setItinerarios(response);
         } else {
@@ -39,12 +40,16 @@ export default function PublicacionPage() {
 
   const handleDeleteSuccess = (idEliminado: string | number) => {
     setItinerarios((currentItinerarios) =>
-      currentItinerarios.filter((itinerario) => (itinerario as any)._id !== idEliminado && itinerario.id !== idEliminado)
+      currentItinerarios.filter(
+        (itinerario) =>
+          (itinerario as any)._id !== idEliminado &&
+          itinerario.id !== idEliminado
+      )
     );
   };
 
   return (
-    <div className="p-10 space-y-8">
+    <div className="grid grid-cols-1">
       {itinerarios.length > 0 ? (
         itinerarios.map((itinerarioApi) => {
           const datosParaElFrame = transformarItinerario(itinerarioApi);
@@ -59,7 +64,7 @@ export default function PublicacionPage() {
       ) : (
         <div className="p-10">No has creado ningún itinerario todavía.</div>
       )}
-    </div>  
+    </div>
   );
 }
 
@@ -71,30 +76,31 @@ function transformarItinerario(itinerarioApi: ItinerarioData) {
 
   let startDate = new Date();
   let startDateString = "";
-  
+
   if (sortedActivities.length > 0) {
     startDateString = (sortedActivities[0] as any).fecha;
     startDate = new Date(startDateString);
   }
   const diasProcesados = sortedActivities.map((act: any, index) => {
-    
     const actDate = new Date(act.fecha);
-    
-    const startMidnight = new Date(startDate); startMidnight.setHours(0,0,0,0);
-    const actMidnight = new Date(actDate); actMidnight.setHours(0,0,0,0);
-    
+
+    const startMidnight = new Date(startDate);
+    startMidnight.setHours(0, 0, 0, 0);
+    const actMidnight = new Date(actDate);
+    actMidnight.setHours(0, 0, 0, 0);
+
     const diffTime = actMidnight.getTime() - startMidnight.getTime();
     const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-    const numeroDia = diffDays + 1; 
+    const numeroDia = diffDays + 1;
 
-    const lugar = act.lugar; 
+    const lugar = act.lugar;
 
     return {
-      id: act._id || act.id || index, 
-      dia: `Día ${numeroDia}`, 
+      id: act._id || act.id || index,
+      dia: `Día ${numeroDia}`,
       categoria: lugar?.category || "General",
-      titulo: lugar?.nombre || act.description || "Actividad", 
-      urlImagen: lugar?.foto_url || "/img/placeholder.jpg",
+      titulo: lugar?.nombre || act.description || "Actividad",
+      urlImagen: lugar?.foto_url || null,
       calificacion: lugar?.google_score || 0,
     };
   });
@@ -102,8 +108,12 @@ function transformarItinerario(itinerarioApi: ItinerarioData) {
   return {
     id: (itinerarioApi as any)._id || itinerarioApi.id,
     tituloPrincipal: itinerarioApi.title,
-    subtitulo: startDateString 
-      ? `Inicia el: ${startDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}` 
+    subtitulo: startDateString
+      ? `Inicia el: ${startDate.toLocaleDateString("es-ES", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })}`
       : "Sin fecha",
     calificacion: 0,
     fechaInicio: startDateString,
