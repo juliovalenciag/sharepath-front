@@ -125,7 +125,7 @@ const destinosPopulares = [
     nombre: "Chapultepec",
     visitas: 2100,
     calificacion: 4.6,
-    imagen: "https://visitmexico.com/media/usercontent/6840af71264b9-67f9ab9d0c30b-Chapultepec_gmxdot_jpg",
+    imagen: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTUB4eDXywgdKuPz6V6BEBIV2xp_9vjB-LYuQ&s",
     descripcion: "Parque urbano más grande de América",
   },
   {
