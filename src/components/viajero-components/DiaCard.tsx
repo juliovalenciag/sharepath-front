@@ -3,7 +3,7 @@
 import {
   getCategoryName,
   getDefaultImageForCategory,
-} from "@/components/dashboard-components/category-utils";
+} from "@/components/viajero-components/category-utils";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {

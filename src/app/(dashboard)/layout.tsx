@@ -1,8 +1,8 @@
 import * as React from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/dashboard-components/app-sidebar";
+import { AppSidebar } from "@/components/viajero-components/app-sidebar";
 import { SidebarInset } from "@/components/ui/sidebar";
-import { SiteHeader } from "@/components/dashboard-components/site-header";
+import { SiteHeader } from "@/components/viajero-components/site-header";
 
 export default function DashboardLayout({
   children,

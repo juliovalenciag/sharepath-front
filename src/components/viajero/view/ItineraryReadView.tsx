@@ -187,13 +187,13 @@ export default function ItineraryReadView({ id }: { id: string }) {
   }));
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8 font-sans">
+    <div className="min-h-screen p-4 md:p-8 font-sans">
       <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* COLUMNA IZQUIERDA: Título y Tarjetas de Contenido */}
         <div className="lg:col-span-1 space-y-6">
           {/* Título + botón Editar */}
           <div className="flex items-center justify-between gap-4 border-b-4 border-primary pb-2">
-            <h1 className="text-3xl font-extrabold text-gray-900">
+            <h1 className="text-3xl font-extrabold">
               {itinerario.titulo}
             </h1>
             <Button

@@ -193,7 +193,7 @@ export default function SignUpPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormControl>
-                        <Input type="email" placeholder="Correo electrónico" {...field} className="py-6" disabled={isLoading} />
+                        <Input type="email" placeholder="Correo (@gmail.com, @hotmail.com, @alumno.ipn.mx)" {...field} className="py-6" disabled={isLoading} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

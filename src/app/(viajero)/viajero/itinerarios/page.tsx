@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import ItinerarioFrame from "@/components/dashboard-components/ItinerarioFrame";
+import ItinerarioFrame from "@/components/viajero-components/ItinerarioFrame";
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 import {
   getCategoryName,
   getDefaultImageForCategory,
-} from "@/components/dashboard-components/category-utils";
+} from "@/components/viajero-components/category-utils";
 import { ItinerarioData, Actividad } from "@/api/interfaces/ApiRoutes";
 
 export default function PublicacionPage() {
@@ -49,22 +49,25 @@ export default function PublicacionPage() {
   };
 
   return (
-    <div className="grid grid-cols-1">
-      {itinerarios.length > 0 ? (
-        itinerarios.map((itinerarioApi) => {
-          const datosParaElFrame = transformarItinerario(itinerarioApi);
-          return (
-            <ItinerarioFrame
-              key={datosParaElFrame.id}
-              itinerario={datosParaElFrame}
-              onItinerarioDeleted={handleDeleteSuccess}
-            />
-          );
-        })
-      ) : (
-        <div className="p-10">No has creado ningún itinerario todavía.</div>
-      )}
-    </div>
+    <>
+      <h1 className="text-3xl font-bold mb-6">Mis Itinerarios</h1>
+      <div className="grid grid-cols-1 gap-6">
+        {itinerarios.length > 0 ? (
+          itinerarios.map((itinerarioApi) => {
+            const datosParaElFrame = transformarItinerario(itinerarioApi);
+            return (
+              <ItinerarioFrame
+                key={datosParaElFrame.id}
+                itinerario={datosParaElFrame}
+                onItinerarioDeleted={handleDeleteSuccess}
+              />
+            );
+          })
+        ) : (
+          <div className="p-10">No has creado ningún itinerario todavía.</div>
+        )}
+      </div>
+    </>
   );
 }
 

@@ -1,4 +1,4 @@
-import ItinerarioFrame from "@/components/dashboard-components/ItinerarioFrame";
+import ItinerarioFrame from "@/components/viajero-components/ItinerarioFrame";
 const datosPublicacion = {
   id: "t1",
   tituloPrincipal: "Tepoztlan, Morelos",

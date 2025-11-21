@@ -4,11 +4,6 @@ import dynamic from "next/dynamic";
 import { useState, useEffect, Suspense } from "react"; // <-- Importa useEffect y Suspense
 import { useSearchParams } from "next/navigation"; // <-- Importa useSearchParams
 import {useMemo } from "react"; 
-// import Mapa from "@/components/map";
-// import dynamic from "next/dynamic";
-// const Mapa = dynamic(() => import("@/components/viajero/map/Mapa"), {
-//   ssr: false,
-// });
 import { TripHeader } from "@/components/viajero/editor/TripHeader";
 import { Button } from "@/components/ui/button";
 import DiaDetalle from "@/components/DiaDetalle2";
@@ -25,10 +20,7 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import {
-  Map as MapIcon,
-  X,
-} from "lucide-react";
+
 import {
   arrayMove,
   SortableContext,
@@ -41,18 +33,6 @@ import { CSS } from "@dnd-kit/utilities";
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { useItineraryStore } from "@/lib/useItineraryStore";
-import {
-  PLACES,
-  suggestPlacesByRadius,
-  centerForStates,
-  Place,
-} from "@/lib/constants/mock-itinerary-data";
-import MapSearchBar from "@/components/viajero/map/MapSearchBar";
-import { MapResultsPanel } from "@/components/viajero/map/MapResultsPanel";
-import PlaceInfoPanel from "@/components/viajero/map/PlaceInfoPanel";
-import DaySummary from "@/components/viajero/editor/DaySummary";
-import { Card } from "@/components/ui/card";
 
 const Mapa = dynamic(() => import("@/components/viajero/map/Mapa"), {
   ssr: false,
@@ -430,7 +410,6 @@ function Page() {
             className="absolute left-1/2 top-3 -translate-x-1/2 w-[95%] sm:w-[680px] z-[600]"
           />
 
->>>>>>> 1456f7d (Integración de crear itinerario, ver itinerario e imagenes por default)
           <div className="hidden 2xl:block absolute left-4 top-[132px] z-[500]">
             <MapResultsPanel
               results={results}

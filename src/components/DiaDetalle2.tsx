@@ -4,7 +4,7 @@ import { GripVertical, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { Input } from "./ui/input";
 import { Actividad } from "@/app/(viajero)/viajero/itinerarios/crear/page";
-import { getDefaultImageForCategory } from "@/components/dashboard-components/category-utils";
+import { getDefaultImageForCategory } from "@/components/viajero-components/category-utils";
 interface DiaDetalleProps {
   lugar: Actividad;
   onActivityChange: (

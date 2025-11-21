@@ -32,11 +32,11 @@ export default function Mapa(props: MapProps) {
       <Ruta destinos={itinerario} />
       <BusquedaMapa onAddLugar={onAddLugar} />
 
-      <Marker position={posicion}>
+      {/* <Marker position={posicion}>
         <Popup>
           ESCOM <br /> Escula Superior de Computo
         </Popup>
-      </Marker>
+      </Marker> */}
     </MapContainer>
   );
 }

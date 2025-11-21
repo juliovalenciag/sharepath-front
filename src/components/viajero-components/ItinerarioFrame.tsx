@@ -93,7 +93,7 @@ const ItinerarioFrame: React.FC<ItinerarioFrameProps> = ({
         <div className="fixed top-4 right-4 bg-gray-100 text-gray-800 text-sm px-4 py-2 rounded-lg shadow-md flex items-center gap-2 z-50 border border-gray-300">
           <Loader2 className="animate-spin h-4 w-4 text-gray-600" />
           <div className="flex flex-col">
-            <p className="font-semibold text-gray-700">Redirigiendo...</p>
+            <p className="font-semibold">Redirigiendo...</p>
             <p className="text-xs text-gray-500">
               Abriendo los detalles del itinerario
             </p>
@@ -102,7 +102,7 @@ const ItinerarioFrame: React.FC<ItinerarioFrameProps> = ({
       )}
       <div className="p-2 flex rounded-lg min-h-[300px] w-full">
         <div className="w-1/3 p-4 flex flex-col justify-center">
-          <Estrellas value={itinerario.calificacion} />
+          {/* <Estrellas value={itinerario.calificacion} /> */}
 
           <h2 className="text-3xl font-bold text-shadow-primary mb-2">
             {itinerario.tituloPrincipal}

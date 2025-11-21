@@ -118,7 +118,7 @@ export default function SignInPage() {
                       <FormItem>
                         <FormControl>
                           <Input type="email"
-                            placeholder="Correo electrónico" {...field}
+                            placeholder="Correo(@gmail.com, @hotmail.com, @alumno.ipn.mx)" {...field}
                             className="py-6"
                             disabled={isLoading}
                           />

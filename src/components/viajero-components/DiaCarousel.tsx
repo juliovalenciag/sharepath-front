@@ -34,6 +34,8 @@ import {
 import { useState } from "react";
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+
 
 interface DiaDetalle {
   id: string | number;
@@ -57,6 +59,7 @@ const CarouselDias: React.FC<DiasCarouselProps> = ({
 }: DiasCarouselProps) => {
   const [openConfirm, setOpenConfirm] = useState(false);
 
+  const router = useRouter();
   const [alerta, setAlerta] = useState<{
     mensaje: string;
     error: boolean;
@@ -160,7 +163,9 @@ const CarouselDias: React.FC<DiasCarouselProps> = ({
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuItem onClick={() => {}}>
+              <DropdownMenuItem  onClick={() =>
+                router.push(`/viajero/itinerarios/${idItinerario}/editar`)
+              }>
                 <Pencil className="mr-2 h-4 w-4" />
                 Editar
               </DropdownMenuItem>

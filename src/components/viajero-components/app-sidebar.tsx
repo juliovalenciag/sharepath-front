@@ -18,10 +18,10 @@ import {
   IconMapPinFilled,
 } from "@tabler/icons-react";
 
-import { NavDocuments } from "@/components/dashboard-components/nav-documents";
-import { NavMain } from "@/components/dashboard-components/nav-main";
-import { NavSecondary } from "@/components/dashboard-components/nav-secondary";
-import { NavUser } from "@/components/dashboard-components/nav-user";
+import { NavDocuments } from "@/components/viajero-components/nav-documents";
+import { NavMain } from "@/components/viajero-components/nav-main";
+import { NavSecondary } from "@/components/viajero-components/nav-secondary";
+import { NavUser } from "@/components/viajero-components/nav-user";
 
 import {
   Sidebar,

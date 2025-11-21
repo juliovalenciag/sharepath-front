@@ -78,11 +78,11 @@ export const sidebarItems: NavGroup[] = [
         url: "/viajero/itinerarios",
         icon: BookMarked,
       },
-      {
-        title: "Mapa",
-        url: "/viajero/mapa",
-        icon: Map,
-      },
+      // {
+      //   title: "Mapa",
+      //   url: "/viajero/mapa",
+      //   icon: Map,
+      // },
       // {
       //   title: "Analytics",
       //   url: "/dashboard/coming-soon",
