@@ -5,6 +5,11 @@ import dynamic from "next/dynamic";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import {
+  getCategoryName,
+  getDefaultImageForCategory,
+} from "@/components/dashboard-components/category-utils";
+
 
 // Carga dinámica en cliente para evitar SSR
 const ItineraryMap = dynamic(
@@ -56,7 +61,7 @@ function TripStats({
               key={t}
               className="px-2.5 py-1 text-xs rounded-full ring-1 ring-border bg-[oklch(0.98_0_0)] dark:bg-[oklch(0.28_0_0)]"
             >
-              {t}
+              {getCategoryName(t)}
             </span>
           ))}
         </div>
@@ -247,7 +252,7 @@ export default function ItineraryReadView({ id }: { id: string }) {
                   <h4 className="text-lg font-bold flex items-center justify-between">
                     {lugar.titulo}
                     <span className="ml-2 px-2 py-0.5 text-xs bg-blue-100 text-primary rounded-full">
-                      {lugar.categoria}
+                      {getCategoryName(lugar.categoria)}
                     </span>
                   </h4>
                   <p className="text-sm text-gray-700">
