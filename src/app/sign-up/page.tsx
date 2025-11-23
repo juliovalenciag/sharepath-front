@@ -41,11 +41,11 @@ const formSchema = z.object({
       message: "El correo es requerido.",
     })
     .refine((email) => {
-      // Valida únicamente: @gmail.com, @hotmail.com, @alumno.ipn.mx
-      const emailRegex = /^[^\s@]+@(gmail\.com|hotmail\.com|alumno\.ipn\.mx)$/i;
+      // Valida todos los dominios 
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i; 
       return emailRegex.test(email);
     }, {
-      message: "El correo debe terminar con @gmail.com, @hotmail.com, @alumno.ipn.mx.",
+      message: "Ingrese un correo válido",
     }),
   
   password: z.string()
@@ -229,7 +229,7 @@ export default function SignUpPage() {
                 />
                 
                 <p className="text-xs text-muted-foreground">
-                    Al registrarte, aceptas nuestras <Link href="/sign-up/terminos" className="underline">Terminos y Condiciones</Link>.
+                    Al registrarte, aceptas nuestros <Link href="/sign-up/terminos" className="underline">Terminos y Condiciones</Link>.
                 </p>
 
                 <Button type="submit" className="w-full py-6 text-lg font-semibold" style={{ backgroundColor: '#555', color: 'white' }} disabled={isLoading}>
