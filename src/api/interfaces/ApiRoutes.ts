@@ -112,6 +112,15 @@ export interface SearchUserResponse {
     users: Usuario[];
 }
 
+// Amigo 
+export interface Amigo {
+    id: number, 
+    status: number, 
+    receiving_user: Usuario, 
+    requesting_user: Usuario, 
+    fecha_amistad: String | null
+}
+
 export interface ApiRoutes {
     // Auth
     doLogin: (correo: string, password: string) => Promise<Usuario>;
@@ -137,4 +146,11 @@ export interface ApiRoutes {
     verifyPassword: (body: VerifyPasswordRequest) => Promise<{ valid: boolean }>;
     searchUsers: (query: string) => Promise<SearchUserResponse>;
     deleteUser: () => Promise<{ message: string }>;
+
+    // Amigo 
+    sendFriendRequest: (correo: string) => Promise<any>;
+    respondFriendRequest: (id: number, state: number) => Promise<any>;
+    getRequests: () => Promise<Amigo>;
+    getFriends: () => Promise<Amigo>; 
+
 }
