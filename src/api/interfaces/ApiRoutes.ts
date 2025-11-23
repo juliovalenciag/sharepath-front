@@ -118,9 +118,26 @@ export interface Amigo {
     status: number, 
     receiving_user: Usuario, 
     requesting_user: Usuario, 
-    fecha_amistad: String | null
+    fecha_amistad: string | null
 }
 
+export interface SendFriend {
+    message : string; 
+    data: Amigo[]; 
+}
+
+export interface RespondFriend {
+    message: string; 
+    data: Amigo[]; 
+}
+export interface ListRequest {
+    message: string; 
+    data: Amigo[]; 
+}
+
+export interface ListFriend {
+    friends: Usuario[]; 
+}
 export interface ApiRoutes {
     // Auth
     doLogin: (correo: string, password: string) => Promise<Usuario>;
@@ -148,9 +165,9 @@ export interface ApiRoutes {
     deleteUser: () => Promise<{ message: string }>;
 
     // Amigo 
-    sendFriendRequest: (correo: string) => Promise<any>;
-    respondFriendRequest: (id: number, state: number) => Promise<any>;
-    getRequests: () => Promise<Amigo>;
-    getFriends: () => Promise<Amigo>; 
+    sendFriendRequest: (correo: string) => Promise<SendFriend>;
+    respondFriendRequest: (id: number, state: number) => Promise<RespondFriend>;
+    getRequests: () => Promise<ListRequest>;
+    getFriends: () => Promise<ListFriend>; 
 
 }

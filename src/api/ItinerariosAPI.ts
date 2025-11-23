@@ -15,6 +15,10 @@ import {
     UpdatePasswordRequest,
     VerifyPasswordRequest,
     SearchUserResponse,
+    SendFriend, 
+    RespondFriend, 
+    ListRequest, 
+    ListFriend, 
     Amigo
 } from "./interfaces/ApiRoutes";
 
@@ -236,19 +240,19 @@ export class ItinerariosAPI implements ApiRoutes {
     }
 
     // ===== AMIGOS =====
-    async sendFriendRequest(correo: string): Promise<Amigo> {
-        return await this.post<any>("/amigo/solicitud", true, {receiving: correo });
+    async sendFriendRequest(correo: string): Promise<SendFriend> {
+        return await this.post<SendFriend>("/amigo/solicitud", true, {receiving: correo });
+    }
+    
+    async respondFriendRequest(id: number, state: number): Promise<RespondFriend> {
+        return await this.put<RespondFriend>("/amigo/respond", true, { Id: id, state: state });
     }
 
-    async respondFriendRequest(id: number, state: number): Promise<any> {
-        return await this.put<any>("/amigo/respond", true, { Id: id, state: state });
+    async getRequests(): Promise<ListRequest> {
+        return await this.get<ListRequest>("/amigo/pendiente", true);
     }
 
-    async getRequests(): Promise<any> {
-        return await this.get<any>("/amigo/requests", true);
-    }
-
-    async getFriends(): Promise<Amigo> {
-        return await this.get<any>("/amigo", true);
+    async getFriends(): Promise<ListFriend> {
+        return await this.get<ListFriend>("/amigo", true);
     }
 }
