@@ -14,8 +14,7 @@ import {
     UpdateUserRequest,
     UpdatePasswordRequest,
     VerifyPasswordRequest,
-    SearchUserResponse,
-    Amigo
+    SearchUserResponse
 } from "./interfaces/ApiRoutes";
 
 
@@ -233,22 +232,5 @@ export class ItinerariosAPI implements ApiRoutes {
 
     async deleteUser(): Promise<{ message: string }> {
         return await this.delete<{ message: string }>("/user");
-    }
-
-    // ===== AMIGOS =====
-    async sendFriendRequest(correo: string): Promise<Amigo> {
-        return await this.post<any>("/amigo/solicitud", true, {receiving: correo });
-    }
-
-    async respondFriendRequest(id: number, state: number): Promise<any> {
-        return await this.put<any>("/amigo/respond", true, { Id: id, state: state });
-    }
-
-    async getRequests(): Promise<any> {
-        return await this.get<any>("/amigo/requests", true);
-    }
-
-    async getFriends(): Promise<Amigo> {
-        return await this.get<any>("/amigo", true);
     }
 }
