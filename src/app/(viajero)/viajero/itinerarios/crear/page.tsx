@@ -3,7 +3,7 @@ import * as React from "react";
 import dynamic from "next/dynamic";
 import { useState, useEffect, Suspense } from "react"; // <-- Importa useEffect y Suspense
 import { useSearchParams } from "next/navigation"; // <-- Importa useSearchParams
-import {useMemo } from "react"; 
+import { useMemo } from "react";
 // import Mapa from "@/components/map";
 // import dynamic from "next/dynamic";
 // const Mapa = dynamic(() => import("@/components/viajero/map/Mapa"), {
@@ -25,10 +25,7 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import {
-  Map as MapIcon,
-  X,
-} from "lucide-react";
+import { Map as MapIcon, X } from "lucide-react";
 import {
   arrayMove,
   SortableContext,
@@ -57,7 +54,6 @@ import { Card } from "@/components/ui/card";
 const Mapa = dynamic(() => import("@/components/viajero/map/Mapa"), {
   ssr: false,
 });
-
 
 export interface Actividad {
   id: number | string;
@@ -112,7 +108,6 @@ function SortableDiaDetalle({
   );
 }
 
-          
 function SelectorDias({
   dias,
   diaActivoId,
@@ -159,13 +154,17 @@ function Page() {
   const zoomInicial = 17;
   const [isLoading, setIsLoading] = useState(false);
 
-    const Mapa = useMemo(() => dynamic(
-    () => import("@/components/map"), // Ruta a tu componente de mapa
-    { 
-      loading: () => <p>Cargando mapa...</p>, // Opcional: un loader
-      ssr: false // ¡ESTO EVITA EL ERROR 'window is not defined'!
-    }
-  ), []); // El array vacío asegura que solo se cargue una vez
+  const Mapa = useMemo(
+    () =>
+      dynamic(
+        () => import("@/components/map"), // Ruta a tu componente de mapa
+        {
+          loading: () => <p>Cargando mapa...</p>, // Opcional: un loader
+          ssr: false, // ¡ESTO EVITA EL ERROR 'window is not defined'!
+        }
+      ),
+    []
+  ); // El array vacío asegura que solo se cargue una vez
 
   useEffect(() => {
     const nombre = searchParams.get("nombre") || "Mi Nuevo Itinerario";
@@ -447,6 +446,5 @@ function Page() {
         </div>
       </div>
     </>
-
   );
 }

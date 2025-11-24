@@ -53,8 +53,10 @@ export default function DiaDetalle({
                 onClick={() => onDelete(lugar.id)}
               ></Trash2>
             </CardTitle>
-            {/* <CardDescription> se elimina para evitar anidar el input */}
-            <Input
+             <CardDescription> 
+              Aqui debe ir la descripción de cada lugar.
+              </CardDescription>
+            {/* <Input
               type="text"
               placeholder="Añadir una descripción (Opcional)"
               className="border-0 m-0 p-0 mt-2 text-sm text-gray-600 focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -63,7 +65,7 @@ export default function DiaDetalle({
                 onActivityChange(lugar.id, "description", e.target.value)
               }
               onMouseDown={(e) => e.stopPropagation()}
-            />
+            /> */}
           </div>
         </CardContent>
       </Card>
