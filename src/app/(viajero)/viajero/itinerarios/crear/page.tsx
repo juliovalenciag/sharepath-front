@@ -1,18 +1,13 @@
-// src/app/(viajero)/viajero/itinerarios/crear/page.tsx
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useShallow } from "zustand/react/shallow";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 
 // Fechas
-import {
-  addMinutes,
-  differenceInCalendarDays,
-  eachDayOfInterval,
-  format,
-} from "date-fns";
+import { differenceInCalendarDays, eachDayOfInterval, format } from "date-fns";
 import { es } from "date-fns/locale";
 
 // Drag & Drop
@@ -43,7 +38,6 @@ import {
   Loader2,
   MapPin,
   Save,
-  Search,
   Wand2,
   Map as MapIcon,
   List,
@@ -52,6 +46,9 @@ import {
   Trash2,
   MoreHorizontal,
   Pencil,
+  Sparkles,
+  AlertCircle,
+  Plus,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -76,10 +73,7 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
-  DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -91,14 +85,29 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-// Sub-components (Importados)
-import { CinematicMap, type DayInfo } from "./components/CinematicMap";
-import { PlaceSearchDialog } from "./components/PlacesSearchDialog"; // Asegúrate de que el nombre del archivo coincida
+// Sub-components
+import { PlaceSearchDialog } from "./components/PlacesSearchDialog";
 import { EditDatesDialog } from "./components/EditDatesDialog";
+import type { DayInfo } from "./components/CinematicMap";
+
+const CinematicMap = dynamic(
+  () => import("./components/CinematicMap").then((mod) => mod.CinematicMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full w-full items-center justify-center bg-muted/20 text-muted-foreground">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Cargando mapa...</span>
+      </div>
+    ),
+  }
+);
 
 /* ======================================================================= */
-/* Helpers                                                                 */
+/* Helpers & Config                                                        */
 /* ======================================================================= */
+
+const MAX_ACTIVITIES_PER_DAY = 5;
 
 function dayKey(date: Date) {
   return format(date, "yyyy-MM-dd");
@@ -132,7 +141,7 @@ function createActivityFromLugar(
   return {
     id,
     fecha,
-    description: `Visita a ${place.nombre}`,
+    description: "",
     lugar: place,
     start_time: "10:00",
     end_time: "11:00",
@@ -156,26 +165,23 @@ function distanceKm(
 }
 
 /* ======================================================================= */
-/* Activity Card (Sortable)                                                */
+/* Activity Card (Sortable) - CORREGIDO TIEMPO                             */
 /* ======================================================================= */
-
-type ActivityModalState = {
-  open: boolean;
-  activity: BuilderActivity | null;
-};
 
 interface SortableActivityCardProps {
   activity: BuilderActivity;
+  index: number;
   onChange: (id: string, patch: Partial<BuilderActivity>) => void;
   onDelete: (id: string) => void;
-  onOpenModal: (activity: BuilderActivity) => void;
+  onViewDetails: (activityId: string) => void; // Recibe ID ahora
 }
 
 function SortableActivityCard({
   activity,
+  index,
   onChange,
   onDelete,
-  onOpenModal,
+  onViewDetails,
 }: SortableActivityCardProps) {
   const {
     attributes,
@@ -190,99 +196,131 @@ function SortableActivityCard({
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 50 : "auto",
-    opacity: isDragging ? 0.3 : 1,
+    opacity: isDragging ? 0.8 : 1,
   };
 
   const foto = activity.lugar.foto_url;
 
   return (
-    <div ref={setNodeRef} style={style} className="group relative mb-3">
-      <Card className="border-border/60 bg-card transition-colors hover:border-primary/30">
-        <div className="flex gap-3 p-3">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="relative flex gap-4 touch-none group"
+    >
+      {/* LINEA DE TIEMPO */}
+      <div className="flex flex-col items-center">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground shadow-sm z-10 mt-3">
+          {index + 1}
+        </div>
+        <div className="flex-1 w-px bg-border/60 -mb-3 mt-1 group-last:hidden" />
+      </div>
+
+      {/* TARJETA */}
+      <Card className="flex-1 border-muted-foreground/20 bg-card hover:border-primary/30 transition-all shadow-sm mb-3 overflow-hidden">
+        <div className="flex p-3 gap-3">
           {/* Drag Handle */}
-          <button
-            type="button"
-            className="mt-1 hidden h-6 w-6 cursor-grab items-center justify-center rounded text-muted-foreground/40 hover:bg-muted hover:text-foreground group-hover:flex"
+          <div
+            className="mt-2 cursor-grab flex flex-col items-center justify-start text-muted-foreground/30 hover:text-foreground py-1"
             {...attributes}
             {...listeners}
           >
-            <GripVertical className="h-4 w-4" />
-          </button>
-
-          {/* Foto */}
-          <div className="relative h-20 w-24 shrink-0 overflow-hidden rounded-md bg-muted shadow-sm">
-            {foto ? (
-              <Image
-                src={foto}
-                alt={activity.lugar.nombre}
-                fill
-                className="object-cover"
-                sizes="96px"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center bg-muted text-[10px] text-muted-foreground">
-                <MapPin className="h-5 w-5 opacity-20" />
-              </div>
-            )}
+            <GripVertical className="h-5 w-5" />
           </div>
 
           {/* Contenido */}
-          <div className="flex min-w-0 flex-1 flex-col justify-between gap-2">
-            <div>
-              <div className="flex items-start justify-between gap-2">
-                <h4 className="truncate text-sm font-semibold text-foreground">
-                  {activity.lugar.nombre}
-                </h4>
-                {/* Menú de acciones móvil/desktop */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground"
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onOpenModal(activity)}>
-                      <Pencil className="mr-2 h-3.5 w-3.5" /> Editar detalles
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="text-red-600 focus:text-red-600"
-                      onClick={() => onDelete(activity.id)}
-                    >
-                      <Trash2 className="mr-2 h-3.5 w-3.5" /> Eliminar
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <p className="truncate text-xs text-muted-foreground">
-                {activity.description || "Sin descripción"}
-              </p>
+          <div className="flex-1 flex flex-col gap-3 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <h4
+                onClick={() => onViewDetails(activity.id)}
+                className="text-base font-semibold truncate cursor-pointer hover:text-primary transition-colors"
+              >
+                {activity.lugar.nombre}
+              </h4>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 shrink-0 -mr-2 -mt-1 text-muted-foreground hover:text-foreground"
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => onViewDetails(activity.id)}>
+                    <Info className="mr-2 h-3.5 w-3.5" /> Ver detalles completos
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-red-600 focus:text-red-600"
+                    onClick={() => onDelete(activity.id)}
+                  >
+                    <Trash2 className="mr-2 h-3.5 w-3.5" /> Eliminar lugar
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
-            {/* Inputs de Horario Inline */}
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-1 rounded-md bg-muted/40 px-2 py-1">
-                <Clock className="h-3 w-3 text-muted-foreground" />
-                <Input
-                  type="time"
-                  className="h-5 w-[4.5rem] border-0 bg-transparent p-0 text-xs focus-visible:ring-0"
-                  value={activity.start_time ?? ""}
+            {/* FIX: Inputs de Horario con shrink-0 y width auto/fijo mayor */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 bg-muted/40 px-3 py-1.5 rounded-md border border-border/50 transition-colors hover:border-primary/30 hover:bg-muted/60">
+                <Clock className="h-4 w-4 text-primary shrink-0" />
+                <div className="flex items-center gap-1">
+                  <input
+                    type="time"
+                    // FIX: w-auto y min-w para que no se aplaste
+                    className="bg-transparent border-none p-0 w-auto min-w-[60px] focus:ring-0 font-medium text-sm text-foreground text-center cursor-pointer font-mono shrink-0"
+                    value={activity.start_time ?? ""}
+                    onChange={(e) =>
+                      onChange(activity.id, { start_time: e.target.value })
+                    }
+                  />
+                  <span className="text-muted-foreground font-medium mx-1 shrink-0">
+                    –
+                  </span>
+                  <input
+                    type="time"
+                    // FIX: w-auto y min-w para que no se aplaste
+                    className="bg-transparent border-none p-0 w-auto min-w-[60px] focus:ring-0 font-medium text-sm text-foreground text-center cursor-pointer font-mono shrink-0"
+                    value={activity.end_time ?? ""}
+                    onChange={(e) =>
+                      onChange(activity.id, { end_time: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-1">
+              <div className="flex-1 relative">
+                <Pencil className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground/50" />
+                <Textarea
+                  value={activity.description || ""}
                   onChange={(e) =>
-                    onChange(activity.id, { start_time: e.target.value })
+                    onChange(activity.id, { description: e.target.value })
                   }
+                  className="min-h-[80px] pl-7 text-sm bg-muted/20 border-muted-foreground/10 resize-none focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:bg-background transition-colors shadow-none rounded-md py-2"
+                  placeholder="Añadir notas..."
                 />
-                <span className="text-xs text-muted-foreground">-</span>
-                <Input
-                  type="time"
-                  className="h-5 w-[4.5rem] border-0 bg-transparent p-0 text-xs focus-visible:ring-0"
-                  value={activity.end_time ?? ""}
-                  onChange={(e) =>
-                    onChange(activity.id, { end_time: e.target.value })
-                  }
-                />
+              </div>
+
+              <div
+                className="relative h-24 w-32 shrink-0 overflow-hidden rounded-lg bg-muted cursor-pointer hover:opacity-90 transition-opacity shadow-sm border border-border/10"
+                onClick={() => onViewDetails(activity.id)}
+              >
+                {foto ? (
+                  <Image
+                    src={foto}
+                    alt={activity.lugar.nombre}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 128px"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-muted-foreground/30 bg-muted/50">
+                    <MapPin className="h-6 w-6" />
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -293,90 +331,166 @@ function SortableActivityCard({
 }
 
 /* ======================================================================= */
-/* Activity Details Modal                                                  */
+/* Place Info Modal - CORREGIDO STATE BINDING                              */
 /* ======================================================================= */
 
-function ActivityDetailsDialog({
-  state,
-  onOpenChange,
-  onSave,
+function PlaceInfoDialog({
+  isOpen,
+  onClose,
+  activityId, // Recibimos ID, no objeto
+  allActivities,
+  onUpdate,
 }: {
-  state: ActivityModalState;
-  onOpenChange: (open: boolean) => void;
-  onSave: (activity: BuilderActivity) => void;
+  isOpen: boolean;
+  onClose: () => void;
+  activityId: string | null;
+  allActivities: BuilderActivity[];
+  onUpdate: (id: string, patch: Partial<BuilderActivity>) => void;
 }) {
-  const activity = state.activity;
-  const [local, setLocal] = useState<BuilderActivity | null>(activity);
+  // FIX: Buscar la actividad "viva" desde el array global
+  const liveActivity = useMemo(
+    () => allActivities.find((a) => a.id === activityId),
+    [allActivities, activityId]
+  );
 
-  useEffect(() => {
-    setLocal(activity);
-  }, [activity]);
-
-  if (!local) return null;
-
-  function update(patch: Partial<BuilderActivity>) {
-    setLocal((prev) => (prev ? { ...prev, ...patch } : prev));
-  }
+  if (!liveActivity) return null;
 
   return (
-    <Dialog open={state.open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Editar Parada</DialogTitle>
-          <DialogDescription>
-            Detalles para <span className="font-medium text-foreground">{local.lugar.nombre}</span>.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="grid gap-4 py-2">
-          <div className="space-y-2">
-            <Label>Notas / Descripción</Label>
-            <Textarea
-              className="min-h-[100px] resize-none text-sm"
-              placeholder="Ej. Comprar tickets en la entrada..."
-              value={local.description}
-              onChange={(e) => update({ description: e.target.value })}
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl overflow-hidden p-0 gap-0 border-none shadow-2xl">
+        <div className="relative h-56 w-full bg-muted">
+          {liveActivity.lugar.foto_url ? (
+            <Image
+              src={liveActivity.lugar.foto_url}
+              alt={liveActivity.lugar.nombre}
+              fill
+              className="object-cover"
             />
+          ) : (
+            <div className="flex h-full items-center justify-center bg-slate-100 dark:bg-slate-800">
+              <MapPin className="h-16 w-16 text-muted-foreground/20" />
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+
+          <div className="absolute bottom-5 left-6 right-6 text-white">
+            <div className="flex items-center gap-2 mb-2">
+              <Badge className="bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-md px-2 py-0.5 text-[10px] uppercase tracking-wider">
+                {liveActivity.lugar.category || "Atracción"}
+              </Badge>
+              {liveActivity.lugar.google_score && (
+                <div className="flex items-center gap-1 text-amber-400 font-bold text-xs bg-black/30 backdrop-blur-md px-2 py-0.5 rounded-full">
+                  ★ {liveActivity.lugar.google_score.toFixed(1)}
+                </div>
+              )}
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-bold leading-tight shadow-black drop-shadow-sm">
+              {liveActivity.lugar.nombre}
+            </h2>
+            <p className="text-sm opacity-90 flex items-center gap-1.5 mt-1 text-gray-200">
+              <MapPin className="h-3.5 w-3.5" />{" "}
+              {liveActivity.lugar.mexican_state}
+            </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Inicio</Label>
-              <div className="relative">
-                <Clock className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <DialogClose className="absolute top-4 right-4 rounded-full bg-black/20 p-2 text-white hover:bg-white hover:text-black transition-all backdrop-blur-sm">
+            <span className="sr-only">Cerrar</span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
+          </DialogClose>
+        </div>
+
+        <div className="p-6 bg-background max-h-[60vh] overflow-y-auto">
+          <div className="mb-6">
+            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 block flex items-center gap-2">
+              <Clock className="h-3.5 w-3.5" /> Planificación del Tiempo
+            </Label>
+            <div className="grid grid-cols-2 gap-4 p-4 rounded-xl border bg-muted/20">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">
+                  Llegada
+                </Label>
                 <Input
                   type="time"
-                  className="pl-9"
-                  value={local.start_time ?? ""}
-                  onChange={(e) => update({ start_time: e.target.value })}
+                  className="bg-background border-border/50 focus-visible:ring-primary/30 font-mono text-sm h-10"
+                  value={liveActivity.start_time || ""}
+                  onChange={(e) =>
+                    onUpdate(liveActivity.id, { start_time: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">
+                  Salida
+                </Label>
+                <Input
+                  type="time"
+                  className="bg-background border-border/50 focus-visible:ring-primary/30 font-mono text-sm h-10"
+                  value={liveActivity.end_time || ""}
+                  onChange={(e) =>
+                    onUpdate(liveActivity.id, { end_time: e.target.value })
+                  }
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>Fin</Label>
-              <div className="relative">
-                <Clock className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="time"
-                  className="pl-9"
-                  value={local.end_time ?? ""}
-                  onChange={(e) => update({ end_time: e.target.value })}
-                />
+          </div>
+
+          <div className="mb-6">
+            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
+              <Pencil className="h-3.5 w-3.5" /> Tus Notas Personales
+            </Label>
+            <Textarea
+              placeholder="Escribe aquí detalles importantes..."
+              className="min-h-[120px] text-sm resize-none bg-muted/20 border-muted-foreground/10 focus:bg-background focus-visible:ring-primary/30 transition-colors rounded-lg p-3"
+              // FIX: Usamos el valor directo de liveActivity, así que se actualiza al escribir
+              value={liveActivity.description || ""}
+              onChange={(e) =>
+                onUpdate(liveActivity.id, { description: e.target.value })
+              }
+            />
+          </div>
+
+          <Separator className="my-6 bg-border/50" />
+
+          <div className="space-y-3">
+            <h4 className="font-semibold flex items-center gap-2 text-sm text-foreground">
+              <Sparkles className="h-4 w-4 text-primary" />
+              Para completar tu día
+            </h4>
+            <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 flex gap-3 items-start">
+              <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-medium text-foreground">
+                  ¿Buscas qué hacer cerca de{" "}
+                  <strong>{liveActivity.lugar.nombre}</strong>?
+                </p>
+                <p className="mt-1 text-muted-foreground text-xs leading-relaxed">
+                  Usa el botón <strong>"+ Agregar Lugar"</strong> para buscar
+                  más opciones.
+                </p>
               </div>
             </div>
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
-          <DialogClose asChild>
-            <Button variant="outline">Cancelar</Button>
-          </DialogClose>
+        <DialogFooter className="p-4 bg-muted/30 border-t border-border/50 flex justify-end">
           <Button
-            onClick={() => {
-              if (local) onSave(local);
-            }}
+            onClick={onClose}
+            className="px-6 rounded-full shadow-sm font-semibold"
           >
-            Guardar cambios
+            Listo
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -391,7 +505,6 @@ function ActivityDetailsDialog({
 export default function CrearItinerarioPage() {
   const router = useRouter();
 
-  // --- ZUSTAND ---
   const {
     meta,
     actividades,
@@ -412,31 +525,25 @@ export default function CrearItinerarioPage() {
     }))
   );
 
-  // --- LOCAL STATE ---
   const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
-  
-  // Mobile View Toggle: 'list' | 'map'
   const [mobileView, setMobileView] = useState<"list" | "map">("list");
 
-  // Dialogs
-  const [activityModal, setActivityModal] = useState<ActivityModalState>({
-    open: false,
-    activity: null,
-  });
   const [searchDialogOpen, setSearchDialogOpen] = useState(false);
   const [datesDialogOpen, setDatesDialogOpen] = useState(false);
 
-  // DnD Sensors
+  const [infoModalOpen, setInfoModalOpen] = useState(false);
+  // FIX: Guardamos solo el ID para asegurar que leemos el estado fresco
+  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(
+    null
+  );
+
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }), // Distancia para evitar clicks accidentales
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  // --- EFFECTS ---
-
-  // Validación inicial
   useEffect(() => {
     if (!meta) {
       toast.info("Configura tu viaje para comenzar.");
@@ -444,7 +551,6 @@ export default function CrearItinerarioPage() {
     }
   }, [meta, router]);
 
-  // Construcción de días
   const days: DayInfo[] = useMemo(() => {
     if (meta?.start && meta?.end) {
       const interval = eachDayOfInterval({ start: meta.start, end: meta.end });
@@ -458,10 +564,8 @@ export default function CrearItinerarioPage() {
     return [];
   }, [meta?.start, meta?.end]);
 
-  // Selección de día inicial
   useEffect(() => {
     if (!days.length) return;
-    // Si no hay seleccionado o el seleccionado ya no existe (cambio de fechas), poner el primero
     if (!selectedDayKey || !days.some((d) => d.key === selectedDayKey)) {
       setSelectedDayKey(days[0].key);
     }
@@ -469,15 +573,13 @@ export default function CrearItinerarioPage() {
 
   const currentDay = days.find((d) => d.key === selectedDayKey) ?? null;
 
-  // Filtrado de actividades
   const activitiesForCurrentDay = useMemo(() => {
     if (!currentDay) return [];
-    return actividades
-      .filter((a) => sameDayKey(a.fecha, currentDay.key))
-      .sort((a, b) => (a.start_time || "").localeCompare(b.start_time || ""));
+    return actividades.filter((a) => sameDayKey(a.fecha, currentDay.key));
+    // Ordenamos por hora si lo deseas, o por índice si usas DnD manual
+    // Por ahora dejamos orden manual (tal como vienen en el array) para DnD
   }, [actividades, currentDay]);
 
-  // Mapa
   const mapActivities = useMemo(
     () =>
       [...actividades]
@@ -493,8 +595,6 @@ export default function CrearItinerarioPage() {
     [actividades]
   );
 
-  // --- HANDLERS ---
-
   function handleDragEnd(event: any) {
     const { active, over } = event;
     if (!over || active.id === over.id || !currentDay) return;
@@ -509,9 +609,6 @@ export default function CrearItinerarioPage() {
     if (oldIndex === -1 || newIndex === -1) return;
 
     const reordered = arrayMove(currentItems, oldIndex, newIndex);
-
-    // Lógica simple de reajuste horario (opcional)
-    // Simplemente reordenamos en el array global
     setActivities([...otherItems, ...reordered]);
   }
 
@@ -520,17 +617,30 @@ export default function CrearItinerarioPage() {
       toast.error("Selecciona un día primero.");
       return;
     }
-    // Verificar duplicados en el día
-    if (activitiesForCurrentDay.some((a) => a.lugar.id_api_place === lugar.id_api_place)) {
+    if (activitiesForCurrentDay.length >= MAX_ACTIVITIES_PER_DAY) {
+      toast.error(`Límite alcanzado`, {
+        description: `Solo puedes agregar hasta ${MAX_ACTIVITIES_PER_DAY} lugares por día.`,
+      });
+      return;
+    }
+
+    if (
+      activitiesForCurrentDay.some(
+        (a) => a.lugar.id_api_place === lugar.id_api_place
+      )
+    ) {
       toast.warning("Este lugar ya está en el día actual.");
       return;
     }
-    
+
     const act = createActivityFromLugar(lugar, currentDay.date);
     addActivity(act);
-    toast.success("Lugar añadido", {
-      description: `${lugar.nombre} agregado al ${currentDay.label}.`,
-    });
+    toast.success("Lugar añadido");
+  }
+
+  function handleViewDetails(id: string) {
+    setSelectedActivityId(id);
+    setInfoModalOpen(true);
   }
 
   function handleOptimize() {
@@ -539,9 +649,8 @@ export default function CrearItinerarioPage() {
     if (items.length <= 2) return;
 
     setOptimizing(true);
-    // Algoritmo "Greedy" simple (Vecino más cercano)
     const remaining = [...items];
-    const ordered: BuilderActivity[] = [remaining.shift()!]; // Empezar con el primero (o el que sea hotel/inicio)
+    const ordered: BuilderActivity[] = [remaining.shift()!];
 
     while (remaining.length) {
       const current = ordered[ordered.length - 1];
@@ -558,14 +667,13 @@ export default function CrearItinerarioPage() {
       ordered.push(remaining.splice(bestIdx, 1)[0]);
     }
 
-    // Actualizar store
     const key = currentDay.key;
     const other = actividades.filter((a) => !sameDayKey(a.fecha, key));
     setActivities([...other, ...ordered]);
 
     setTimeout(() => {
       setOptimizing(false);
-      toast.success("Ruta optimizada", { description: "Ordenado por cercanía." });
+      toast.success("Ruta optimizada");
     }, 400);
   }
 
@@ -575,9 +683,7 @@ export default function CrearItinerarioPage() {
     try {
       const payload = buildItineraryPayload(meta, actividades);
       await ItinerariosAPI.getInstance().createItinerario(payload);
-      toast.success("¡Itinerario creado!", {
-        description: "Redirigiendo a tus viajes...",
-      });
+      toast.success("¡Itinerario creado!");
       useItineraryBuilderStore.getState().clear?.();
       router.push("/viajero/itinerarios");
     } catch (error: any) {
@@ -587,32 +693,29 @@ export default function CrearItinerarioPage() {
     }
   }
 
-  // --- RENDER ---
-
-  if (!meta) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-background text-muted-foreground">
-        <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Preparando el viaje...
-      </div>
-    );
-  }
+  if (!meta) return null;
 
   const totalDays = differenceInCalendarDays(meta.end, meta.start) + 1;
+  const isDayFull = activitiesForCurrentDay.length >= MAX_ACTIVITIES_PER_DAY;
+
   const dropAnimation: DropAnimation = {
-    sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: "0.5" } } }),
+    sideEffects: defaultDropAnimationSideEffects({
+      styles: {
+        active: { opacity: "0.5" },
+      },
+    }),
   };
 
   return (
     <>
-      {/* --- DIALOGS --- */}
-      <ActivityDetailsDialog
-        state={activityModal}
-        onOpenChange={(open) => setActivityModal((prev) => ({ ...prev, open }))}
-        onSave={(updated) => {
-          updateActivity(updated.id, updated);
-          setActivityModal({ open: false, activity: null });
-        }}
+      <PlaceInfoDialog
+        isOpen={infoModalOpen}
+        onClose={() => setInfoModalOpen(false)}
+        activityId={selectedActivityId} // Pasamos el ID
+        allActivities={actividades} // Pasamos la lista completa
+        onUpdate={updateActivity}
       />
+
       <PlaceSearchDialog
         open={searchDialogOpen}
         onOpenChange={setSearchDialogOpen}
@@ -620,6 +723,7 @@ export default function CrearItinerarioPage() {
         onAddLugarToDay={handleAddLugar}
         defaultState={meta.regions?.[0]}
       />
+
       <EditDatesDialog
         open={datesDialogOpen}
         onOpenChange={setDatesDialogOpen}
@@ -631,31 +735,38 @@ export default function CrearItinerarioPage() {
         }}
       />
 
-      {/* --- MAIN LAYOUT --- */}
       <div className="flex h-[calc(100vh-4rem)] flex-col bg-background">
-        
-        {/* HEADER TOOLBAR */}
         <header className="z-20 flex shrink-0 flex-col gap-3 border-b bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <h1 className="truncate text-lg font-bold tracking-tight">{meta.title}</h1>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <CalendarDays className="h-3.5 w-3.5" />
-              <span>
-                {format(meta.start, "d MMM", { locale: es })} -{" "}
-                {format(meta.end, "d MMM", { locale: es })}
+            <h1 className="truncate text-lg font-bold tracking-tight">
+              {meta.title}
+            </h1>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+              <Badge
+                variant="outline"
+                className="font-normal gap-1 rounded-sm px-1.5 py-0 h-5"
+              >
+                <CalendarDays className="h-3 w-3" />
+                {totalDays} días
+              </Badge>
+              <span className="hidden sm:inline">•</span>
+              <span className="truncate">
+                {format(meta.start, "d MMM yyyy", { locale: es })} -{" "}
+                {format(meta.end, "d MMM yyyy", { locale: es })}
               </span>
-              <span>•</span>
-              <span>{totalDays} días</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-            <Button variant="outline" size="sm" onClick={() => setDatesDialogOpen(true)}>
-              <CalendarDays className="mr-2 h-3.5 w-3.5" /> Fechas
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 no-scrollbar">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setDatesDialogOpen(true)}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <CalendarDays className="mr-2 h-3.5 w-3.5" /> Ajustar Fechas
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setSearchDialogOpen(true)}>
-              <Search className="mr-2 h-3.5 w-3.5" /> Agregar lugar
-            </Button>
+            <div className="h-4 w-px bg-border mx-1 hidden sm:block" />
             <Button
               variant="outline"
               size="sm"
@@ -668,44 +779,74 @@ export default function CrearItinerarioPage() {
               ) : (
                 <Wand2 className="mr-2 h-3.5 w-3.5" />
               )}
-              Optimizar
+              Optimizar Ruta
             </Button>
-            <Button size="sm" onClick={handleSave} disabled={saving} className="min-w-[100px]">
-              {saving ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-2 h-3.5 w-3.5" />}
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={saving}
+              className="min-w-[100px] shadow-sm"
+            >
+              {saving ? (
+                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-3.5 w-3.5" />
+              )}
               Guardar
             </Button>
           </div>
         </header>
 
-        {/* WORKSPACE */}
         <div className="relative flex flex-1 overflow-hidden">
-          
-          {/* --- LEFT PANEL: LISTA (Visible en desktop o si mobileView='list') --- */}
           <div
             className={cn(
               "flex w-full flex-col border-r bg-background transition-all duration-300 md:w-[480px] lg:w-[520px] md:translate-x-0 absolute md:relative inset-0 z-10",
               mobileView === "list" ? "translate-x-0" : "-translate-x-full"
             )}
           >
-            {/* Day Selector (Horizontal Scroll) */}
-            <div className="border-b bg-muted/30 py-2">
+            <div className="border-b bg-muted/30 py-3 shadow-inner">
               <ScrollArea className="w-full whitespace-nowrap">
-                <div className="flex px-4 gap-2">
+                <div className="flex px-4 gap-3">
                   {days.map((d) => {
                     const isSelected = selectedDayKey === d.key;
+                    const count = actividades.filter((a) =>
+                      sameDayKey(a.fecha, d.key)
+                    ).length;
+
                     return (
                       <button
                         key={d.key}
                         onClick={() => setSelectedDayKey(d.key)}
                         className={cn(
-                          "flex flex-col items-center justify-center rounded-lg px-4 py-2 text-sm transition-all border",
+                          "flex flex-col items-start justify-between rounded-xl px-4 py-3 text-sm transition-all border min-w-[110px] h-[72px] group relative",
                           isSelected
-                            ? "bg-background border-primary text-primary shadow-sm"
-                            : "border-transparent text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                            ? "bg-background border-primary text-foreground shadow-md ring-1 ring-primary/10"
+                            : "bg-background/60 border-transparent text-muted-foreground hover:bg-background hover:text-foreground hover:border-border/50"
                         )}
                       >
-                        <span className="font-semibold">{d.label}</span>
-                        <span className="text-[10px] opacity-80">{d.subtitle}</span>
+                        <div>
+                          <span className="block font-bold text-xs uppercase tracking-wider mb-0.5">
+                            {d.label}
+                          </span>
+                          <span className="block text-[10px] opacity-70 font-medium">
+                            {d.subtitle}
+                          </span>
+                        </div>
+
+                        <div className="flex gap-1 mt-auto">
+                          {count > 0 ? (
+                            Array.from({ length: count }).map((_, i) => (
+                              <div
+                                key={i}
+                                className="h-1.5 w-1.5 rounded-full bg-primary"
+                              />
+                            ))
+                          ) : (
+                            <span className="text-[9px] text-muted-foreground/50 italic">
+                              Sin planes
+                            </span>
+                          )}
+                        </div>
                       </button>
                     );
                   })}
@@ -714,33 +855,46 @@ export default function CrearItinerarioPage() {
               </ScrollArea>
             </div>
 
-            {/* Activities List */}
-            <div className="flex-1 overflow-hidden bg-muted/5">
+            <div className="flex-1 overflow-hidden bg-muted/5 relative">
               <ScrollArea className="h-full">
-                <div className="p-4 pb-24">
-                  <div className="mb-4 flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                      Itinerario · {currentDay?.label}
-                    </h3>
-                    <Badge variant="default" className="text-xs">
-                      {activitiesForCurrentDay.length} paradas
-                    </Badge>
+                <div className="p-4 pb-32">
+                  <div className="mb-5 flex items-center justify-between bg-background p-3 rounded-xl border shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-xs">
+                        {activitiesForCurrentDay.length}
+                      </div>
+                      <span className="text-xs font-bold text-foreground uppercase tracking-wider">
+                        Lugares en tu ruta
+                      </span>
+                    </div>
+
+                    {isDayFull ? (
+                      <span className="text-[10px] text-amber-600 font-medium flex items-center gap-1 bg-amber-50 px-2 py-1 rounded-full border border-amber-100">
+                        <AlertCircle className="h-3 w-3" /> Día completo (
+                        {MAX_ACTIVITIES_PER_DAY} máx)
+                      </span>
+                    ) : (
+                      <Button
+                        size="sm"
+                        className="h-9 text-xs font-semibold px-4 shadow-sm"
+                        onClick={() => setSearchDialogOpen(true)}
+                      >
+                        <Plus className="mr-1.5 h-4 w-4" /> Agregar Lugar
+                      </Button>
+                    )}
                   </div>
 
-                  {!activitiesForCurrentDay.length ? (
-                    <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed py-12 text-center">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                        <MapPin className="h-6 w-6 text-muted-foreground/50" />
+                  {!activitiesForCurrentDay.length && !isDayFull ? (
+                    <div className="flex flex-col items-center justify-center gap-3 py-16 text-center opacity-60">
+                      <div className="p-4 rounded-full bg-muted mb-2">
+                        <MapPin className="h-8 w-8 text-muted-foreground/50" />
                       </div>
-                      <div className="max-w-[200px] space-y-1">
-                        <p className="font-medium">Día libre</p>
-                        <p className="text-xs text-muted-foreground">
-                          No hay actividades. Usa "Agregar lugar" para empezar.
-                        </p>
-                      </div>
-                      <Button variant="outline" size="sm" onClick={() => setSearchDialogOpen(true)}>
-                        Explorar Lugares
-                      </Button>
+                      <p className="text-sm font-medium text-foreground">
+                        Tu día está libre
+                      </p>
+                      <p className="text-xs text-muted-foreground max-w-[200px]">
+                        Usa el botón de arriba para empezar a añadir lugares.
+                      </p>
                     </div>
                   ) : (
                     <DndContext
@@ -752,15 +906,20 @@ export default function CrearItinerarioPage() {
                         items={activitiesForCurrentDay.map((a) => a.id)}
                         strategy={verticalListSortingStrategy}
                       >
-                        {activitiesForCurrentDay.map((act) => (
-                          <SortableActivityCard
-                            key={act.id}
-                            activity={act}
-                            onChange={(id, patch) => updateActivity(id, patch)}
-                            onDelete={(id) => removeActivity(id)}
-                            onOpenModal={(activity) => setActivityModal({ open: true, activity })}
-                          />
-                        ))}
+                        <div className="flex flex-col pb-4">
+                          {activitiesForCurrentDay.map((act, index) => (
+                            <SortableActivityCard
+                              key={act.id}
+                              activity={act}
+                              index={index}
+                              onChange={(id, patch) =>
+                                updateActivity(id, patch)
+                              }
+                              onDelete={(id) => removeActivity(id)}
+                              onViewDetails={handleViewDetails}
+                            />
+                          ))}
+                        </div>
                       </SortableContext>
                       <DragOverlay dropAnimation={dropAnimation} />
                     </DndContext>
@@ -770,16 +929,16 @@ export default function CrearItinerarioPage() {
             </div>
           </div>
 
-          {/* --- RIGHT PANEL: MAPA (Visible en desktop o si mobileView='map') --- */}
           <div
             className={cn(
               "absolute inset-0 z-0 w-full bg-muted transition-all duration-300 md:relative md:block",
-              mobileView === "map" ? "translate-x-0 block" : "translate-x-full hidden md:translate-x-0"
+              mobileView === "map"
+                ? "translate-x-0 block"
+                : "translate-x-full hidden md:translate-x-0"
             )}
           >
-            {/* Cinematic Map toma el 100% del contenedor padre */}
             <div className="h-full w-full">
-               <CinematicMap
+              <CinematicMap
                 activities={mapActivities}
                 days={days}
                 selectedDayKey={selectedDayKey}
@@ -788,32 +947,32 @@ export default function CrearItinerarioPage() {
             </div>
           </div>
 
-          {/* --- MOBILE TOGGLE BUTTON (Solo visible en pantallas pequeñas) --- */}
           <div className="absolute bottom-6 left-1/2 z-50 -translate-x-1/2 md:hidden">
-             <div className="flex items-center rounded-full border bg-background/90 p-1 shadow-lg backdrop-blur-md">
-                <button
-                   onClick={() => setMobileView("list")}
-                   className={cn(
-                      "flex items-center gap-2 rounded-full px-4 py-2 text-xs font-medium transition-all",
-                      mobileView === "list" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted"
-                   )}
-                >
-                   <List className="h-3.5 w-3.5" />
-                   Lista
-                </button>
-                <button
-                   onClick={() => setMobileView("map")}
-                   className={cn(
-                      "flex items-center gap-2 rounded-full px-4 py-2 text-xs font-medium transition-all",
-                      mobileView === "map" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted"
-                   )}
-                >
-                   <MapIcon className="h-3.5 w-3.5" />
-                   Mapa
-                </button>
-             </div>
+            <div className="flex items-center rounded-full border bg-background/90 p-1 shadow-lg backdrop-blur-md">
+              <button
+                onClick={() => setMobileView("list")}
+                className={cn(
+                  "flex items-center gap-2 rounded-full px-4 py-2 text-xs font-medium transition-all",
+                  mobileView === "list"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-muted"
+                )}
+              >
+                <List className="h-3.5 w-3.5" /> Lista
+              </button>
+              <button
+                onClick={() => setMobileView("map")}
+                className={cn(
+                  "flex items-center gap-2 rounded-full px-4 py-2 text-xs font-medium transition-all",
+                  mobileView === "map"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-muted"
+                )}
+              >
+                <MapIcon className="h-3.5 w-3.5" /> Mapa
+              </button>
+            </div>
           </div>
-
         </div>
       </div>
     </>

@@ -1,4 +1,3 @@
-// src/app/(viajero)/viajero/itinerarios/crear/components/EditDatesDialog.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
