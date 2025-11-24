@@ -4,7 +4,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useShallow } from "zustand/react/shallow";
+import Image from "next/image";
 
+// Fechas
 import {
   addMinutes,
   differenceInCalendarDays,
@@ -13,6 +15,7 @@ import {
 } from "date-fns";
 import { es } from "date-fns/locale";
 
+// Drag & Drop
 import {
   DndContext,
   closestCenter,
@@ -20,6 +23,9 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  DragOverlay,
+  defaultDropAnimationSideEffects,
+  type DropAnimation,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -30,6 +36,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
+// Iconos
 import {
   CalendarDays,
   Info,
@@ -38,10 +45,17 @@ import {
   Save,
   Search,
   Wand2,
+  Map as MapIcon,
+  List,
+  GripVertical,
+  Clock,
+  Trash2,
+  MoreHorizontal,
+  Pencil,
 } from "lucide-react";
-import Image from "next/image";
 import { toast } from "sonner";
 
+// Stores & API
 import type { LugarData } from "@/api/interfaces/ApiRoutes";
 import {
   useItineraryBuilderStore,
@@ -49,12 +63,14 @@ import {
   type BuilderActivity,
   type BuilderPlace,
 } from "@/lib/itinerary-builder-store";
+import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 
+// UI Components
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
@@ -65,13 +81,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
+// Sub-components (Importados)
 import { CinematicMap, type DayInfo } from "./components/CinematicMap";
-import { PlaceSearchDialog } from "./components/PlacesSearchDialog";
+import { PlaceSearchDialog } from "./components/PlacesSearchDialog"; // Asegúrate de que el nombre del archivo coincida
 import { EditDatesDialog } from "./components/EditDatesDialog";
 
 /* ======================================================================= */
@@ -127,7 +149,6 @@ function distanceKm(
   const dLon = toRad(b.longitud - a.longitud);
   const lat1 = toRad(a.latitud);
   const lat2 = toRad(b.latitud);
-
   const h =
     Math.sin(dLat / 2) ** 2 +
     Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
@@ -135,7 +156,7 @@ function distanceKm(
 }
 
 /* ======================================================================= */
-/* Activity Card sortable (col izquierda)                                  */
+/* Activity Card (Sortable)                                                */
 /* ======================================================================= */
 
 type ActivityModalState = {
@@ -143,108 +164,120 @@ type ActivityModalState = {
   activity: BuilderActivity | null;
 };
 
+interface SortableActivityCardProps {
+  activity: BuilderActivity;
+  onChange: (id: string, patch: Partial<BuilderActivity>) => void;
+  onDelete: (id: string) => void;
+  onOpenModal: (activity: BuilderActivity) => void;
+}
+
 function SortableActivityCard({
   activity,
   onChange,
   onDelete,
   onOpenModal,
-}: {
-  activity: BuilderActivity;
-  onChange: (id: string, patch: Partial<BuilderActivity>) => void;
-  onDelete: (id: string) => void;
-  onOpenModal: (activity: BuilderActivity) => void;
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id: activity.id });
+}: SortableActivityCardProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: activity.id });
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
+    zIndex: isDragging ? 50 : "auto",
+    opacity: isDragging ? 0.3 : 1,
   };
 
   const foto = activity.lugar.foto_url;
 
   return (
-    <Card
-      ref={setNodeRef}
-      style={style}
-      className="group relative mb-3 border-border/70 bg-card/95 shadow-sm"
-      {...attributes}
-    >
-      <div className="flex gap-3 p-3 sm:p-4">
-        {/* Handle drag */}
-        <button
-          type="button"
-          className="mt-4 hidden cursor-grab text-muted-foreground/70 hover:text-foreground sm:inline-flex"
-          {...listeners}
-        >
-          ⋮⋮
-        </button>
+    <div ref={setNodeRef} style={style} className="group relative mb-3">
+      <Card className="border-border/60 bg-card transition-colors hover:border-primary/30">
+        <div className="flex gap-3 p-3">
+          {/* Drag Handle */}
+          <button
+            type="button"
+            className="mt-1 hidden h-6 w-6 cursor-grab items-center justify-center rounded text-muted-foreground/40 hover:bg-muted hover:text-foreground group-hover:flex"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
 
-        {/* Foto */}
-        <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded-lg bg-muted">
-          {foto ? (
-            <Image
-              src={foto}
-              alt={activity.lugar.nombre}
-              fill
-              className="object-cover"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
-              Sin foto
-            </div>
-          )}
-        </div>
-
-        <div className="flex-1 space-y-2">
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <MapPin className="h-4 w-4 text-primary" />
-              <span className="truncate">{activity.lugar.nombre}</span>
-            </div>
-            <div className="flex gap-2 text-xs text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <CalendarDays className="h-3.5 w-3.5" />
-                {format(activity.fecha, "d MMM", { locale: es })}
+          {/* Foto */}
+          <div className="relative h-20 w-24 shrink-0 overflow-hidden rounded-md bg-muted shadow-sm">
+            {foto ? (
+              <Image
+                src={foto}
+                alt={activity.lugar.nombre}
+                fill
+                className="object-cover"
+                sizes="96px"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-muted text-[10px] text-muted-foreground">
+                <MapPin className="h-5 w-5 opacity-20" />
               </div>
-              {activity.start_time && activity.end_time && (
-                <div className="flex items-center gap-1">
-                  <span>
-                    {activity.start_time} – {activity.end_time}
-                  </span>
-                </div>
-              )}
-            </div>
+            )}
           </div>
 
-          <Textarea
-            value={activity.description}
-            className="min-h-[60px] text-xs sm:text-sm"
-            onChange={(e) =>
-              onChange(activity.id, { description: e.target.value })
-            }
-            placeholder="Añade una nota rápida (tour guiado, comer aquí, ver el atardecer...)"
-          />
+          {/* Contenido */}
+          <div className="flex min-w-0 flex-1 flex-col justify-between gap-2">
+            <div>
+              <div className="flex items-start justify-between gap-2">
+                <h4 className="truncate text-sm font-semibold text-foreground">
+                  {activity.lugar.nombre}
+                </h4>
+                {/* Menú de acciones móvil/desktop */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground"
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => onOpenModal(activity)}>
+                      <Pencil className="mr-2 h-3.5 w-3.5" /> Editar detalles
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-red-600 focus:text-red-600"
+                      onClick={() => onDelete(activity.id)}
+                    >
+                      <Trash2 className="mr-2 h-3.5 w-3.5" /> Eliminar
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <p className="truncate text-xs text-muted-foreground">
+                {activity.description || "Sin descripción"}
+              </p>
+            </div>
 
-          <div className="flex flex-col gap-2 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex gap-2">
-              <div className="flex items-center gap-1">
-                <span>Inicio</span>
+            {/* Inputs de Horario Inline */}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1 rounded-md bg-muted/40 px-2 py-1">
+                <Clock className="h-3 w-3 text-muted-foreground" />
                 <Input
                   type="time"
-                  className="h-7 w-24 text-xs"
+                  className="h-5 w-[4.5rem] border-0 bg-transparent p-0 text-xs focus-visible:ring-0"
                   value={activity.start_time ?? ""}
                   onChange={(e) =>
                     onChange(activity.id, { start_time: e.target.value })
                   }
                 />
-              </div>
-              <div className="flex items-center gap-1">
-                <span>Fin</span>
+                <span className="text-xs text-muted-foreground">-</span>
                 <Input
                   type="time"
-                  className="h-7 w-24 text-xs"
+                  className="h-5 w-[4.5rem] border-0 bg-transparent p-0 text-xs focus-visible:ring-0"
                   value={activity.end_time ?? ""}
                   onChange={(e) =>
                     onChange(activity.id, { end_time: e.target.value })
@@ -252,33 +285,15 @@ function SortableActivityCard({
                 />
               </div>
             </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="h-7 rounded-full px-3 text-[11px]"
-                onClick={() => onOpenModal(activity)}
-              >
-                Detalles
-              </Button>
-              <button
-                type="button"
-                onClick={() => onDelete(activity.id)}
-                className="ml-auto text-xs font-medium text-red-500 hover:underline"
-              >
-                Eliminar
-              </button>
-            </div>
           </div>
         </div>
-      </div>
-    </Card>
+      </Card>
+    </div>
   );
 }
 
 /* ======================================================================= */
-/* Modal de detalles de actividad                                          */
+/* Activity Details Modal                                                  */
 /* ======================================================================= */
 
 function ActivityDetailsDialog({
@@ -305,100 +320,58 @@ function ActivityDetailsDialog({
 
   return (
     <Dialog open={state.open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg sm:max-w-2xl">
+      <DialogContent className="max-w-md sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Detalles de la parada</DialogTitle>
+          <DialogTitle>Editar Parada</DialogTitle>
           <DialogDescription>
-            Ajusta notas y horarios para{" "}
-            <span className="font-semibold">{local.lugar.nombre}</span>.
+            Detalles para <span className="font-medium text-foreground">{local.lugar.nombre}</span>.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="mt-2 grid gap-4 md:grid-cols-[3fr_2fr]">
-          {/* Col izquierda */}
-          <div className="space-y-3">
-            <div>
-              <Label>Descripción</Label>
-              <Textarea
-                className="mt-1 min-h-[120px] text-sm"
-                value={local.description}
-                onChange={(e) => update({ description: e.target.value })}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <div>
-                <Label>Hora de inicio</Label>
+        <div className="grid gap-4 py-2">
+          <div className="space-y-2">
+            <Label>Notas / Descripción</Label>
+            <Textarea
+              className="min-h-[100px] resize-none text-sm"
+              placeholder="Ej. Comprar tickets en la entrada..."
+              value={local.description}
+              onChange={(e) => update({ description: e.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Inicio</Label>
+              <div className="relative">
+                <Clock className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="time"
-                  className="mt-1 h-8 text-xs"
+                  className="pl-9"
                   value={local.start_time ?? ""}
                   onChange={(e) => update({ start_time: e.target.value })}
                 />
               </div>
-              <div>
-                <Label>Hora de fin</Label>
+            </div>
+            <div className="space-y-2">
+              <Label>Fin</Label>
+              <div className="relative">
+                <Clock className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="time"
-                  className="mt-1 h-8 text-xs"
+                  className="pl-9"
                   value={local.end_time ?? ""}
                   onChange={(e) => update({ end_time: e.target.value })}
                 />
               </div>
             </div>
           </div>
-
-          {/* Col derecha */}
-          <Card className="space-y-3 border-border/70 bg-muted/40 p-3 text-xs">
-            <div className="flex items-start gap-2">
-              <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-md bg-muted">
-                {local.lugar.foto_url && (
-                  <Image
-                    src={local.lugar.foto_url}
-                    alt={local.lugar.nombre}
-                    fill
-                    className="object-cover"
-                  />
-                )}
-              </div>
-              <div className="space-y-1">
-                <div className="text-sm font-semibold">
-                  {local.lugar.nombre}
-                </div>
-                <div className="text-[11px] text-muted-foreground">
-                  {local.lugar.category} • {local.lugar.mexican_state}
-                </div>
-                {typeof local.lugar.google_score === "number" && (
-                  <div className="text-[11px] text-muted-foreground">
-                    ⭐ {local.lugar.google_score.toFixed(1)} ·{" "}
-                    {local.lugar.total_reviews} reseñas
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-1">
-              <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                <Info className="h-3 w-3" />
-                <span>Tip rápido</span>
-              </div>
-              <p className="text-[11px] text-muted-foreground">
-                Usa esta descripción para guardar horarios de ticket, puntos de
-                encuentro o cualquier detalle logístico importante.
-              </p>
-            </div>
-          </Card>
         </div>
 
-        <DialogFooter className="mt-3 flex items-center justify-between">
+        <DialogFooter className="gap-2 sm:gap-0">
           <DialogClose asChild>
-            <Button variant="outline" size="sm">
-              Cancelar
-            </Button>
+            <Button variant="outline">Cancelar</Button>
           </DialogClose>
           <Button
-            size="sm"
             onClick={() => {
               if (local) onSave(local);
             }}
@@ -412,12 +385,13 @@ function ActivityDetailsDialog({
 }
 
 /* ======================================================================= */
-/* Página principal                                                        */
+/* Main Page Component                                                     */
 /* ======================================================================= */
 
 export default function CrearItinerarioPage() {
   const router = useRouter();
 
+  // --- ZUSTAND ---
   const {
     meta,
     actividades,
@@ -438,33 +412,42 @@ export default function CrearItinerarioPage() {
     }))
   );
 
+  // --- LOCAL STATE ---
   const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
+  
+  // Mobile View Toggle: 'list' | 'map'
+  const [mobileView, setMobileView] = useState<"list" | "map">("list");
 
+  // Dialogs
   const [activityModal, setActivityModal] = useState<ActivityModalState>({
     open: false,
     activity: null,
   });
-
   const [searchDialogOpen, setSearchDialogOpen] = useState(false);
   const [datesDialogOpen, setDatesDialogOpen] = useState(false);
 
-  // Si entra directo sin meta, lo mandamos al paso anterior
+  // DnD Sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }), // Distancia para evitar clicks accidentales
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  // --- EFFECTS ---
+
+  // Validación inicial
   useEffect(() => {
     if (!meta) {
-      toast.info("Primero define la información básica de tu viaje.");
+      toast.info("Configura tu viaje para comenzar.");
       router.push("/viajero/itinerarios/nuevo");
     }
   }, [meta, router]);
 
-  // Construir días desde meta
+  // Construcción de días
   const days: DayInfo[] = useMemo(() => {
     if (meta?.start && meta?.end) {
-      const interval = eachDayOfInterval({
-        start: meta.start,
-        end: meta.end,
-      });
+      const interval = eachDayOfInterval({ start: meta.start, end: meta.end });
       return interval.map((date, index) => ({
         key: dayKey(date),
         date,
@@ -475,9 +458,10 @@ export default function CrearItinerarioPage() {
     return [];
   }, [meta?.start, meta?.end]);
 
-  // Día seleccionado inicial
+  // Selección de día inicial
   useEffect(() => {
     if (!days.length) return;
+    // Si no hay seleccionado o el seleccionado ya no existe (cambio de fechas), poner el primero
     if (!selectedDayKey || !days.some((d) => d.key === selectedDayKey)) {
       setSelectedDayKey(days[0].key);
     }
@@ -485,29 +469,19 @@ export default function CrearItinerarioPage() {
 
   const currentDay = days.find((d) => d.key === selectedDayKey) ?? null;
 
-  const activitiesForCurrentDay: BuilderActivity[] = useMemo(() => {
+  // Filtrado de actividades
+  const activitiesForCurrentDay = useMemo(() => {
     if (!currentDay) return [];
     return actividades
       .filter((a) => sameDayKey(a.fecha, currentDay.key))
-      .sort((a, b) => {
-        const at = a.start_time ?? "";
-        const bt = b.start_time ?? "";
-        return at.localeCompare(bt);
-      });
+      .sort((a, b) => (a.start_time || "").localeCompare(b.start_time || ""));
   }, [actividades, currentDay]);
 
-  // Actividades para el mapa: todas ordenadas por fecha/hora
+  // Mapa
   const mapActivities = useMemo(
     () =>
       [...actividades]
-        .sort((a, b) => {
-          if (a.fecha.getTime() === b.fecha.getTime()) {
-            const at = a.start_time ?? "";
-            const bt = b.start_time ?? "";
-            return at.localeCompare(bt);
-          }
-          return a.fecha.getTime() - b.fecha.getTime();
-        })
+        .sort((a, b) => a.fecha.getTime() - b.fecha.getTime())
         .map((a) => ({
           id: a.id,
           nombre: a.lugar.nombre,
@@ -519,163 +493,118 @@ export default function CrearItinerarioPage() {
     [actividades]
   );
 
-  // DnD
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
+  // --- HANDLERS ---
 
   function handleDragEnd(event: any) {
     const { active, over } = event;
     if (!over || active.id === over.id || !currentDay) return;
 
     const key = currentDay.key;
+    const currentItems = actividades.filter((a) => sameDayKey(a.fecha, key));
+    const otherItems = actividades.filter((a) => !sameDayKey(a.fecha, key));
 
-    setActivities((prev) => {
-      const dayItems = prev.filter((a) => sameDayKey(a.fecha, key));
-      const otherItems = prev.filter((a) => !sameDayKey(a.fecha, key));
+    const oldIndex = currentItems.findIndex((a) => a.id === active.id);
+    const newIndex = currentItems.findIndex((a) => a.id === over.id);
 
-      const oldIndex = dayItems.findIndex((a) => a.id === active.id);
-      const newIndex = dayItems.findIndex((a) => a.id === over.id);
-      if (oldIndex === -1 || newIndex === -1) return prev;
+    if (oldIndex === -1 || newIndex === -1) return;
 
-      const reordered = arrayMove(dayItems, oldIndex, newIndex);
+    const reordered = arrayMove(currentItems, oldIndex, newIndex);
 
-      // Reajustar horarios ligeramente
-      let currentTime = reordered[0].start_time || "09:00";
-      const withTimes = reordered.map((a) => {
-        const [hStr, mStr] = currentTime.split(":");
-        const dateWithTime = new Date(a.fecha);
-        dateWithTime.setHours(Number(hStr), Number(mStr));
-        const nextTime = format(addMinutes(dateWithTime, 90), "HH:mm");
+    // Lógica simple de reajuste horario (opcional)
+    // Simplemente reordenamos en el array global
+    setActivities([...otherItems, ...reordered]);
+  }
 
-        const res = {
-          ...a,
-          start_time: currentTime,
-          end_time: format(addMinutes(dateWithTime, 60), "HH:mm"),
-        };
-        currentTime = nextTime;
-        return res;
-      });
-
-      return [...otherItems, ...withTimes];
+  function handleAddLugar(lugar: LugarData) {
+    if (!currentDay) {
+      toast.error("Selecciona un día primero.");
+      return;
+    }
+    // Verificar duplicados en el día
+    if (activitiesForCurrentDay.some((a) => a.lugar.id_api_place === lugar.id_api_place)) {
+      toast.warning("Este lugar ya está en el día actual.");
+      return;
+    }
+    
+    const act = createActivityFromLugar(lugar, currentDay.date);
+    addActivity(act);
+    toast.success("Lugar añadido", {
+      description: `${lugar.nombre} agregado al ${currentDay.label}.`,
     });
   }
 
-  function handleAddLugarToCurrentDay(lugar: LugarData) {
-    if (!currentDay) {
-      toast.error("Primero selecciona un día en tu itinerario.");
-      return;
-    }
-    const already = activitiesForCurrentDay.some(
-      (a) => a.lugar.id_api_place === lugar.id_api_place
-    );
-    if (already) {
-      toast.info("Ese lugar ya está en el día actual.");
-      return;
-    }
-    const activity = createActivityFromLugar(lugar, currentDay.date);
-    addActivity(activity);
-    toast.success(`"${lugar.nombre}" añadido al ${currentDay.label}.`);
-  }
-
-  function optimizeDayOrder() {
+  function handleOptimize() {
     if (!currentDay) return;
     const items = activitiesForCurrentDay;
     if (items.length <= 2) return;
 
     setOptimizing(true);
-
+    // Algoritmo "Greedy" simple (Vecino más cercano)
     const remaining = [...items];
-    const ordered: BuilderActivity[] = [];
-    let current = remaining.shift()!;
-    ordered.push(current);
+    const ordered: BuilderActivity[] = [remaining.shift()!]; // Empezar con el primero (o el que sea hotel/inicio)
 
     while (remaining.length) {
-      let bestIndex = 0;
-      let bestDist = distanceKm(current.lugar, remaining[0].lugar);
-      for (let i = 1; i < remaining.length; i++) {
-        const d = distanceKm(current.lugar, remaining[i].lugar);
-        if (d < bestDist) {
-          bestDist = d;
-          bestIndex = i;
+      const current = ordered[ordered.length - 1];
+      let bestIdx = 0;
+      let minDst = Infinity;
+
+      remaining.forEach((cand, i) => {
+        const dst = distanceKm(current.lugar, cand.lugar);
+        if (dst < minDst) {
+          minDst = dst;
+          bestIdx = i;
         }
-      }
-      current = remaining.splice(bestIndex, 1)[0];
-      ordered.push(current);
+      });
+      ordered.push(remaining.splice(bestIdx, 1)[0]);
     }
 
-    setActivities((prev) => {
-      const key = currentDay.key;
-      const other = prev.filter((a) => !sameDayKey(a.fecha, key));
-      return [...other, ...ordered];
-    });
+    // Actualizar store
+    const key = currentDay.key;
+    const other = actividades.filter((a) => !sameDayKey(a.fecha, key));
+    setActivities([...other, ...ordered]);
 
     setTimeout(() => {
       setOptimizing(false);
-      toast.success(`Ruta del ${currentDay.label} optimizada.`);
-    }, 250);
+      toast.success("Ruta optimizada", { description: "Ordenado por cercanía." });
+    }, 400);
   }
 
-  async function handleSaveItinerary() {
-    const state = useItineraryBuilderStore.getState();
-
-    if (!state.meta) {
-      toast.error("Falta la información básica del itinerario.");
-      return;
-    }
-    if (!state.actividades.length) {
-      toast.error("Agrega al menos una parada antes de guardar.");
-      return;
-    }
-
+  async function handleSave() {
+    if (!meta || !actividades.length) return;
     setSaving(true);
     try {
-      const payload = buildItineraryPayload(state.meta, state.actividades);
-      const promise = ItinerariosAPI.getInstance().createItinerario(payload);
-
-      await toast.promise(promise, {
-        loading: "Guardando itinerario...",
-        success: (data: any) =>
-          data?.message || "¡Itinerario guardado con éxito!",
-        error: (err: any) => err?.message || "Ocurrió un error al guardar.",
+      const payload = buildItineraryPayload(meta, actividades);
+      await ItinerariosAPI.getInstance().createItinerario(payload);
+      toast.success("¡Itinerario creado!", {
+        description: "Redirigiendo a tus viajes...",
       });
-
       useItineraryBuilderStore.getState().clear?.();
       router.push("/viajero/itinerarios");
     } catch (error: any) {
-      console.error(error);
-      toast.error(error?.message || "No se pudo guardar el itinerario.");
+      toast.error("Error al guardar", { description: error.message });
     } finally {
       setSaving(false);
     }
   }
 
-  function handleSaveDates(start: Date, end: Date) {
-    if (!meta) return;
-    setMeta({ ...meta, start, end });
-    setDatesDialogOpen(false);
-  }
+  // --- RENDER ---
 
   if (!meta) {
     return (
-      <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Cargando información del viaje...
-        </div>
+      <div className="flex h-screen items-center justify-center bg-background text-muted-foreground">
+        <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Preparando el viaje...
       </div>
     );
   }
 
-  const totalDays =
-    meta.start && meta.end
-      ? differenceInCalendarDays(meta.end, meta.start) + 1
-      : null;
+  const totalDays = differenceInCalendarDays(meta.end, meta.start) + 1;
+  const dropAnimation: DropAnimation = {
+    sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: "0.5" } } }),
+  };
 
   return (
     <>
-      {/* Modal detalles de actividad */}
+      {/* --- DIALOGS --- */}
       <ActivityDetailsDialog
         state={activityModal}
         onOpenChange={(open) => setActivityModal((prev) => ({ ...prev, open }))}
@@ -684,201 +613,173 @@ export default function CrearItinerarioPage() {
           setActivityModal({ open: false, activity: null });
         }}
       />
-
-      {/* Modal de búsqueda de lugares */}
       <PlaceSearchDialog
         open={searchDialogOpen}
         onOpenChange={setSearchDialogOpen}
         currentDay={currentDay}
-        onAddLugarToDay={handleAddLugarToCurrentDay}
-        defaultState={meta.regions?.[0] ?? undefined}
+        onAddLugarToDay={handleAddLugar}
+        defaultState={meta.regions?.[0]}
       />
-
-      {/* Modal para editar fechas */}
       <EditDatesDialog
         open={datesDialogOpen}
         onOpenChange={setDatesDialogOpen}
         meta={meta}
-        onSaveRange={handleSaveDates}
+        onSaveRange={(start, end) => {
+          setMeta({ ...meta, start, end });
+          setDatesDialogOpen(false);
+          toast.success("Fechas actualizadas");
+        }}
       />
 
-      <div className="flex min-h-[calc(100vh-4rem)] flex-col bg-background">
-        {/* Header */}
-        <div className="border-b bg-background/95 px-4 py-3">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="text-base font-semibold sm:text-lg">
-                {meta.title}
-              </h1>
-              <p className="text-xs text-muted-foreground sm:text-sm">
-                {meta.start && meta.end ? (
-                  <>
-                    {format(meta.start, "d MMM", { locale: es })} –{" "}
-                    {format(meta.end, "d MMM", { locale: es })} · {totalDays}{" "}
-                    día{(totalDays ?? 0) > 1 ? "s" : ""} · {actividades.length}{" "}
-                    parada
-                    {actividades.length === 1 ? "" : "s"} en total
-                  </>
-                ) : (
-                  "Ajusta los días y las paradas de tu viaje."
-                )}
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                className="rounded-full text-xs sm:text-sm"
-                onClick={() => setDatesDialogOpen(true)}
-              >
-                <CalendarDays className="mr-2 h-3 w-3" />
-                Editar fechas
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="rounded-full text-xs sm:text-sm"
-                onClick={() => setSearchDialogOpen(true)}
-              >
-                <Search className="mr-2 h-3 w-3" />
-                Buscar lugares
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="rounded-full text-xs sm:text-sm"
-                onClick={optimizeDayOrder}
-                disabled={optimizing || activitiesForCurrentDay.length <= 2}
-              >
-                {optimizing ? (
-                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                ) : (
-                  <Wand2 className="mr-2 h-3 w-3" />
-                )}
-                Optimizar día actual
-              </Button>
-              <Button
-                size="sm"
-                className="rounded-full text-xs sm:text-sm"
-                onClick={handleSaveItinerary}
-                disabled={saving}
-              >
-                {saving ? (
-                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                ) : (
-                  <Save className="mr-2 h-3 w-3" />
-                )}
-                Guardar itinerario
-              </Button>
+      {/* --- MAIN LAYOUT --- */}
+      <div className="flex h-[calc(100vh-4rem)] flex-col bg-background">
+        
+        {/* HEADER TOOLBAR */}
+        <header className="z-20 flex shrink-0 flex-col gap-3 border-b bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="truncate text-lg font-bold tracking-tight">{meta.title}</h1>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <CalendarDays className="h-3.5 w-3.5" />
+              <span>
+                {format(meta.start, "d MMM", { locale: es })} -{" "}
+                {format(meta.end, "d MMM", { locale: es })}
+              </span>
+              <span>•</span>
+              <span>{totalDays} días</span>
             </div>
           </div>
-        </div>
 
-        {/* Layout principal */}
-        <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
-          {/* Izquierda: días + actividades */}
-          <div className="flex w-full flex-col border-b md:w-[47%] md:border-b-0 md:border-r">
-            {/* Tabs de día */}
-            <div className="border-b bg-background/95 px-3 py-2 sm:px-4">
-              <Tabs
-                value={selectedDayKey ?? undefined}
-                onValueChange={(value) => setSelectedDayKey(value)}
-                className="w-full"
-              >
-                <TabsList className="flex max-w-full flex-wrap justify-start gap-1 bg-muted/60 p-1">
-                  {days.map((day) => (
-                    <TabsTrigger
-                      key={day.key}
-                      value={day.key}
-                      className="h-8 rounded-full px-3 text-xs sm:text-[13px]"
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+            <Button variant="outline" size="sm" onClick={() => setDatesDialogOpen(true)}>
+              <CalendarDays className="mr-2 h-3.5 w-3.5" /> Fechas
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setSearchDialogOpen(true)}>
+              <Search className="mr-2 h-3.5 w-3.5" /> Agregar lugar
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleOptimize}
+              disabled={optimizing || activitiesForCurrentDay.length < 3}
+              title="Reordenar por distancia"
+            >
+              {optimizing ? (
+                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Wand2 className="mr-2 h-3.5 w-3.5" />
+              )}
+              Optimizar
+            </Button>
+            <Button size="sm" onClick={handleSave} disabled={saving} className="min-w-[100px]">
+              {saving ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-2 h-3.5 w-3.5" />}
+              Guardar
+            </Button>
+          </div>
+        </header>
+
+        {/* WORKSPACE */}
+        <div className="relative flex flex-1 overflow-hidden">
+          
+          {/* --- LEFT PANEL: LISTA (Visible en desktop o si mobileView='list') --- */}
+          <div
+            className={cn(
+              "flex w-full flex-col border-r bg-background transition-all duration-300 md:w-[480px] lg:w-[520px] md:translate-x-0 absolute md:relative inset-0 z-10",
+              mobileView === "list" ? "translate-x-0" : "-translate-x-full"
+            )}
+          >
+            {/* Day Selector (Horizontal Scroll) */}
+            <div className="border-b bg-muted/30 py-2">
+              <ScrollArea className="w-full whitespace-nowrap">
+                <div className="flex px-4 gap-2">
+                  {days.map((d) => {
+                    const isSelected = selectedDayKey === d.key;
+                    return (
+                      <button
+                        key={d.key}
+                        onClick={() => setSelectedDayKey(d.key)}
+                        className={cn(
+                          "flex flex-col items-center justify-center rounded-lg px-4 py-2 text-sm transition-all border",
+                          isSelected
+                            ? "bg-background border-primary text-primary shadow-sm"
+                            : "border-transparent text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                        )}
+                      >
+                        <span className="font-semibold">{d.label}</span>
+                        <span className="text-[10px] opacity-80">{d.subtitle}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <ScrollBar orientation="horizontal" className="invisible" />
+              </ScrollArea>
+            </div>
+
+            {/* Activities List */}
+            <div className="flex-1 overflow-hidden bg-muted/5">
+              <ScrollArea className="h-full">
+                <div className="p-4 pb-24">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                      Itinerario · {currentDay?.label}
+                    </h3>
+                    <Badge variant="default" className="text-xs">
+                      {activitiesForCurrentDay.length} paradas
+                    </Badge>
+                  </div>
+
+                  {!activitiesForCurrentDay.length ? (
+                    <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed py-12 text-center">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                        <MapPin className="h-6 w-6 text-muted-foreground/50" />
+                      </div>
+                      <div className="max-w-[200px] space-y-1">
+                        <p className="font-medium">Día libre</p>
+                        <p className="text-xs text-muted-foreground">
+                          No hay actividades. Usa "Agregar lugar" para empezar.
+                        </p>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={() => setSearchDialogOpen(true)}>
+                        Explorar Lugares
+                      </Button>
+                    </div>
+                  ) : (
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleDragEnd}
                     >
-                      {day.label}
-                      <span className="ml-1 hidden text-[11px] text-muted-foreground sm:inline">
-                        {day.subtitle}
-                      </span>
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-                <TabsContent value={selectedDayKey ?? ""} />
-              </Tabs>
-
-              <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="rounded-full">
-                    {actividades.length} paradas totales
-                  </Badge>
-                  {currentDay && (
-                    <span>
-                      {activitiesForCurrentDay.length} parada
-                      {activitiesForCurrentDay.length === 1 ? "" : "s"} en{" "}
-                      {currentDay.label}
-                    </span>
+                      <SortableContext
+                        items={activitiesForCurrentDay.map((a) => a.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        {activitiesForCurrentDay.map((act) => (
+                          <SortableActivityCard
+                            key={act.id}
+                            activity={act}
+                            onChange={(id, patch) => updateActivity(id, patch)}
+                            onDelete={(id) => removeActivity(id)}
+                            onOpenModal={(activity) => setActivityModal({ open: true, activity })}
+                          />
+                        ))}
+                      </SortableContext>
+                      <DragOverlay dropAnimation={dropAnimation} />
+                    </DndContext>
                   )}
                 </div>
-                <div className="flex items-center gap-1">
-                  <Info className="h-3 w-3" />
-                  <span className="hidden sm:inline">
-                    Arrastra para reordenar tus paradas.
-                  </span>
-                </div>
-              </div>
+              </ScrollArea>
             </div>
-
-            {/* Lista de actividades */}
-            <ScrollArea className="flex-1">
-              <div className="p-3 sm:p-4">
-                {!currentDay ? (
-                  <p className="text-sm text-muted-foreground">
-                    Define un rango de fechas en el paso anterior para comenzar
-                    a planificar los días.
-                  </p>
-                ) : activitiesForCurrentDay.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    Aún no has agregado paradas para este día. Usa el botón{" "}
-                    <span className="font-medium">“Buscar lugares”</span> en la
-                    parte superior para encontrarlas.
-                  </p>
-                ) : (
-                  <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
-                  >
-                    <SortableContext
-                      items={activitiesForCurrentDay.map((a) => a.id)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      {activitiesForCurrentDay.map((activity) => (
-                        <SortableActivityCard
-                          key={activity.id}
-                          activity={activity}
-                          onChange={(id, patch) => updateActivity(id, patch)}
-                          onDelete={(id) => removeActivity(id)}
-                          onOpenModal={(activity) =>
-                            setActivityModal({ open: true, activity })
-                          }
-                        />
-                      ))}
-                    </SortableContext>
-                  </DndContext>
-                )}
-              </div>
-            </ScrollArea>
           </div>
 
-          {/* Derecha: solo mapa, sin panel apretado */}
-          <div className="flex w-full flex-col md:w-[53%]">
-            <div className="border-b bg-background/95 px-3 py-2 sm:px-4">
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span className="font-medium">Vista del mapa</span>
-                <span>
-                  Haz clic en las paradas de la izquierda para verlas sobre el
-                  mapa.
-                </span>
-              </div>
-            </div>
-            <div className="flex-1">
-              <CinematicMap
+          {/* --- RIGHT PANEL: MAPA (Visible en desktop o si mobileView='map') --- */}
+          <div
+            className={cn(
+              "absolute inset-0 z-0 w-full bg-muted transition-all duration-300 md:relative md:block",
+              mobileView === "map" ? "translate-x-0 block" : "translate-x-full hidden md:translate-x-0"
+            )}
+          >
+            {/* Cinematic Map toma el 100% del contenedor padre */}
+            <div className="h-full w-full">
+               <CinematicMap
                 activities={mapActivities}
                 days={days}
                 selectedDayKey={selectedDayKey}
@@ -886,6 +787,33 @@ export default function CrearItinerarioPage() {
               />
             </div>
           </div>
+
+          {/* --- MOBILE TOGGLE BUTTON (Solo visible en pantallas pequeñas) --- */}
+          <div className="absolute bottom-6 left-1/2 z-50 -translate-x-1/2 md:hidden">
+             <div className="flex items-center rounded-full border bg-background/90 p-1 shadow-lg backdrop-blur-md">
+                <button
+                   onClick={() => setMobileView("list")}
+                   className={cn(
+                      "flex items-center gap-2 rounded-full px-4 py-2 text-xs font-medium transition-all",
+                      mobileView === "list" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted"
+                   )}
+                >
+                   <List className="h-3.5 w-3.5" />
+                   Lista
+                </button>
+                <button
+                   onClick={() => setMobileView("map")}
+                   className={cn(
+                      "flex items-center gap-2 rounded-full px-4 py-2 text-xs font-medium transition-all",
+                      mobileView === "map" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted"
+                   )}
+                >
+                   <MapIcon className="h-3.5 w-3.5" />
+                   Mapa
+                </button>
+             </div>
+          </div>
+
         </div>
       </div>
     </>

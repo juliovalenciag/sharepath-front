@@ -568,7 +568,7 @@ export default function CreateItineraryForm() {
             </section>
 
             {/* Visibilidad */}
-            <section className="space-y-2">
+            {/* <section className="space-y-2">
               <label className="block text-sm font-medium">
                 ¿Quién puede ver este itinerario?
               </label>
@@ -594,7 +594,7 @@ export default function CreateItineraryForm() {
                   </Button>
                 ))}
               </div>
-            </section>
+            </section> */}
 
             {/* Compañeros de viaje */}
             <section className="space-y-2">
