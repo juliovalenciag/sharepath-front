@@ -20,10 +20,10 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from "@/component
 const formSchema = z.object({
   correo: z.string()
     .refine((email) => {
-      const emailRegex = /^[^\s@]+@(gmail\.com|hotmail\.com|alumno\.ipn\.mx)$/i;
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
       return emailRegex.test(email);
     }, {
-      message: "El correo debe terminar con @gmail.com, @hotmail.com, @alumno.ipn.mx.",
+      message: "Ingresa un correo válido",
     }),
   password: z.string()
     .min(8, {
