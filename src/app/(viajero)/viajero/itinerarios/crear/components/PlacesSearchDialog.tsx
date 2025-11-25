@@ -54,36 +54,34 @@ type PlaceFilters = {
 };
 
 const BASE_STATES = [
-  "CDMX",
-  "Estado de México",
+  "Ciudad de Mexico",
+  "Estado de Mexico",
   "Hidalgo",
-  "Puebla",
   "Morelos",
   "Querétaro",
-  "Tlaxcala",
-  "Veracruz",
-  "Guerrero",
 ];
 
 const CATEGORY_OPTIONS: { value: string; label: string }[] = [
-  { value: "museum", label: "Museos" },
+  { value: "amusement_park", label: "Parques de diversiones" },
+  { value: "bowling_alley", label: "Boliche" },
+  { value: "casino", label: "Casinos" },
+  { value: "movie_theater", label: "Cines" },
+  { value: "night_club", label: "Antros / Clubes nocturnos" },
+  { value: "stadium", label: "Estadios" },
+  { value: "aquarium", label: "Acuarios" },
+  { value: "campground", label: "Zonas de camping" },
   { value: "park", label: "Parques" },
   { value: "zoo", label: "Zoológicos" },
+  { value: "art_gallery", label: "Galerías de arte" },
+  { value: "library", label: "Bibliotecas" },
+  { value: "museum", label: "Museos" },
   { value: "tourist_attraction", label: "Atracciones turísticas" },
-  { value: "amusement_park", label: "Parques de diversiones" },
-  { value: "campground", label: "Campamentos" },
-  { value: "restaurant", label: "Restaurantes" },
-  { value: "cafe", label: "Cafés" },
   { value: "bar", label: "Bares" },
+  { value: "cafe", label: "Cafeterías" },
+  { value: "restaurant", label: "Restaurantes" },
+  { value: "beauty_salon", label: "Salones de belleza" },
+  { value: "spa", label: "Spas" },
 ];
-
-type PlaceSearchDialogProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  currentDay: DayInfo | null;
-  onAddLugarToDay: (lugar: LugarData) => void;
-  defaultState?: string;
-};
 
 // --- UTILIDADES ---
 function distanceKm(
@@ -128,6 +126,14 @@ const StarRating = ({
   );
 };
 
+type PlaceSearchDialogProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  currentDay: DayInfo | null;
+  onAddLugarToDay: (lugar: LugarData) => void;
+  defaultState?: string;
+};
+
 export function PlaceSearchDialog({
   open,
   onOpenChange,
@@ -158,6 +164,8 @@ export function PlaceSearchDialog({
   }, [defaultState]);
 
   // --- EFFECTS ---
+
+  // Carga inicial basada en defaultState (ej. CDMX) para mostrar recomendados
   useEffect(() => {
     if (!open) {
       setQuery("");
@@ -165,12 +173,33 @@ export function PlaceSearchDialog({
       setInitialLoaded(false);
       return;
     }
+
     if (open && defaultState && !initialLoaded) {
       setFilters((prev) => ({ ...prev, state: defaultState }));
       void loadInitialByState(defaultState);
-      setInitialLoaded(true);
     }
   }, [open, defaultState, initialLoaded]);
+
+  // Búsqueda automática cuando cambian estado / categoría
+  useEffect(() => {
+    if (!open) return;
+
+    // Si hay defaultState y aún no terminó la carga inicial, no disparamos todavía
+    if (defaultState && !initialLoaded) return;
+
+    // Evita buscar con todo México + todas las categorías + sin texto,
+    // para no pegarle a la API hasta que el usuario elija algo.
+    if (
+      filters.state === "__all__" &&
+      filters.category === "__all__" &&
+      !query.trim()
+    ) {
+      return;
+    }
+
+    void handleSearch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.state, filters.category]);
 
   // --- API CALLS ---
   async function loadInitialByState(state: string) {
@@ -191,6 +220,7 @@ export function PlaceSearchDialog({
         lugares = (resp as any).lugares;
       }
       setResults(lugares);
+      setInitialLoaded(true);
     } catch (error: any) {
       console.error(error);
       toast.error("Error cargando lugares sugeridos.");
@@ -200,32 +230,48 @@ export function PlaceSearchDialog({
   }
 
   async function handleSearch() {
-    if (!query.trim()) {
-      toast.info("Ingresa un término para buscar.");
-      return;
-    }
     setLoading(true);
     setSelectedPlace(null);
+
     try {
       const api = ItinerariosAPI.getInstance();
+
       const apiState =
         filters.state && filters.state !== "__all__"
           ? filters.state
           : undefined;
+
       const apiCategory =
         filters.category && filters.category !== "__all__"
           ? filters.category
           : undefined;
 
-      const resp = await api.getLugares(1, 60, apiState, apiCategory, query);
+      const searchQuery = query.trim();
+      const apiQuery = searchQuery || undefined;
+
+      const resp = await api.getLugares(
+        1,
+        60,
+        apiState,
+        apiCategory,
+        apiQuery as any
+      );
+
       let lugares: LugarData[] = [];
       if (Array.isArray(resp)) {
         lugares = resp as any;
       } else if (resp && Array.isArray((resp as any).lugares)) {
         lugares = (resp as any).lugares;
       }
+
       setResults(lugares);
-      if (!lugares.length) toast.message("No se encontraron coincidencias.");
+
+      if (
+        !lugares.length &&
+        (apiState || apiCategory || searchQuery.length > 0)
+      ) {
+        toast.message("No se encontraron coincidencias.");
+      }
     } catch (error: any) {
       console.error(error);
       toast.error("Error en la búsqueda.");
@@ -234,30 +280,68 @@ export function PlaceSearchDialog({
     }
   }
 
-  // --- FILTERING ---
+  // --- FILTERING + ORDEN POR RECOMENDADOS ---
   const filteredResults = useMemo(() => {
-    return results.filter((lugar) => {
+    const normalizedQuery = query.trim().toLowerCase();
+
+    const filtered = results.filter((lugar) => {
+      // Filtro por estado
       if (
         filters.state !== "__all__" &&
         filters.state &&
         lugar.mexican_state &&
         lugar.mexican_state !== filters.state
-      )
+      ) {
         return false;
+      }
+
+      // Filtro por categoría
       if (
         filters.category !== "__all__" &&
         filters.category &&
         `${lugar.category ?? ""}`.toLowerCase() !==
           filters.category.toLowerCase()
-      )
+      ) {
         return false;
-      if (filters.minRating && (lugar.google_score ?? 0) < filters.minRating)
+      }
+
+      // Filtro por rating mínimo
+      if (filters.minRating && (lugar.google_score ?? 0) < filters.minRating) {
         return false;
+      }
+
+      // Filtro por texto (búsqueda libre) aplicado en front
+      if (normalizedQuery) {
+        const name = (lugar.nombre ?? "").toLowerCase();
+        const cat = (lugar.category ?? "").toLowerCase();
+        const state = (lugar.mexican_state ?? "").toLowerCase();
+
+        const matches =
+          name.includes(normalizedQuery) ||
+          cat.includes(normalizedQuery) ||
+          state.includes(normalizedQuery);
+
+        if (!matches) return false;
+      }
+
       return true;
     });
-  }, [results, filters]);
 
-  // --- SUGGESTIONS ---
+    // Ordenar por "más recomendados": rating DESC, reseñas DESC, nombre
+    return filtered.sort((a, b) => {
+      const scoreA = a.google_score ?? 0;
+      const scoreB = b.google_score ?? 0;
+      if (scoreA !== scoreB) return scoreB - scoreA;
+
+      const reviewsA = a.total_reviews ?? 0;
+      const reviewsB = b.total_reviews ?? 0;
+      if (reviewsA !== reviewsB) return reviewsB - reviewsA;
+
+      return (a.nombre ?? "").localeCompare(b.nombre ?? "");
+    });
+  }, [results, filters, query]);
+
+  // --- SUGERENCIAS CERCA DEL LUGAR SELECCIONADO ---
   const suggested = useMemo(() => {
     if (!selectedPlace) return [] as LugarData[];
     return filteredResults
@@ -285,7 +369,6 @@ export function PlaceSearchDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex h-[90vh] w-[95vw] max-w-[95vw] flex-col gap-0 overflow-hidden rounded-xl border-border/50 p-0 shadow-2xl selection:bg-primary/20 selection:text-primary sm:max-w-[95vw] md:max-w-[90vw] lg:max-w-[1200px] xl:max-w-[1400px]">
-        
         {/* HEADER */}
         <DialogHeader className="shrink-0 border-b border-border/60 bg-background/95 px-6 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/80">
           <div className="flex flex-wrap items-center justify-between gap-y-2">
@@ -313,18 +396,16 @@ export function PlaceSearchDialog({
         </DialogHeader>
 
         {/* CONTAINER PRINCIPAL */}
-        {/* Aquí min-h-0 es clave para evitar que los hijos expandan el contenedor más allá del viewport */}
         <div className="flex flex-1 flex-col overflow-hidden min-h-0 md:flex-row">
-          
           {/* --- SIDEBAR: BUSCADOR Y LISTA --- */}
           <div
             className={cn(
               "flex flex-col border-r border-border/60 bg-muted/10 transition-all duration-300 dark:bg-card/30",
               selectedPlace ? "hidden md:flex" : "flex",
-              "w-full shrink-0 md:w-[360px] lg:w-[400px] h-full min-h-0" // Asegurar altura controlada
+              "w-full shrink-0 md:w-[360px] lg:w-[400px] h-full min-h-0"
             )}
           >
-            {/* BUSCADOR + FILTROS (Altura fija, shrink-0) */}
+            {/* BUSCADOR + FILTROS */}
             <div className="flex shrink-0 flex-col gap-3 border-b border-border/60 bg-background p-4 shadow-sm z-10 dark:bg-background/50">
               <div className="relative group">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
@@ -353,7 +434,8 @@ export function PlaceSearchDialog({
                   size="icon"
                   className={cn(
                     "h-9 w-9 shrink-0 rounded-lg transition-colors border-input dark:border-border/40",
-                    showFilters && "bg-secondary text-secondary-foreground dark:bg-primary/20 dark:text-primary"
+                    showFilters &&
+                      "bg-secondary text-secondary-foreground dark:bg-primary/20 dark:text-primary"
                   )}
                   onClick={() => setShowFilters(!showFilters)}
                 >
@@ -418,7 +500,9 @@ export function PlaceSearchDialog({
                         Rating Mínimo
                       </label>
                       <span className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400">
-                         {filters.minRating ? `${filters.minRating}+` : "Cualquiera"}
+                        {filters.minRating
+                          ? `${filters.minRating}+`
+                          : "Cualquiera"}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 rounded-lg border bg-background px-3 py-1.5 focus-within:ring-1 focus-within:ring-primary/30 dark:border-border/40 dark:bg-secondary/30">
@@ -446,7 +530,7 @@ export function PlaceSearchDialog({
               )}
             </div>
 
-            {/* LISTA DE RESULTADOS (flex-1 para ocupar el resto) */}
+            {/* LISTA DE RESULTADOS */}
             <div className="flex-1 overflow-hidden bg-muted/5 dark:bg-black/20">
               <ScrollArea className="h-full pr-3">
                 <div className="flex flex-col gap-2 p-3 pb-20">
@@ -462,7 +546,9 @@ export function PlaceSearchDialog({
                         <Search className="h-8 w-8 text-muted-foreground" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-foreground">Sin resultados</p>
+                        <p className="text-sm font-semibold text-foreground">
+                          Sin resultados
+                        </p>
                         <p className="text-xs max-w-[200px] mx-auto text-muted-foreground">
                           Intenta ajustar los filtros o buscar con otro término.
                         </p>
@@ -506,7 +592,9 @@ export function PlaceSearchDialog({
                             {lugar.category}
                           </span>
                           <span className="text-muted-foreground/40">•</span>
-                          <span className="truncate">{lugar.mexican_state}</span>
+                          <span className="truncate">
+                            {lugar.mexican_state}
+                          </span>
                         </div>
                         {typeof lugar.google_score === "number" && (
                           <div className="mt-1 flex items-center gap-1.5">
@@ -517,9 +605,9 @@ export function PlaceSearchDialog({
                           </div>
                         )}
                       </div>
-                      
+
                       {selectedPlace?.id_api_place === lugar.id_api_place && (
-                         <div className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary animate-pulse" />
+                        <div className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary animate-pulse" />
                       )}
                     </button>
                   ))}
@@ -529,15 +617,11 @@ export function PlaceSearchDialog({
           </div>
 
           {/* --- MAIN AREA: DETALLES --- */}
-          {/* CORRECCIÓN SCROLL: 
-             1. 'h-full' y 'min-h-0' en este contenedor padre aseguran que Flexbox no lo extienda infinitamente.
-             2. 'overflow-hidden' evita que el scroll se salga al padre principal.
-          */}
           <div
             className={cn(
               "relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-background md:flex dark:bg-background",
               !selectedPlace ? "hidden" : "flex",
-              "w-full min-w-0" 
+              "w-full min-w-0"
             )}
           >
             {selectedPlace ? (
@@ -554,10 +638,8 @@ export function PlaceSearchDialog({
                   </Button>
                 </div>
 
-                {/* SCROLL AREA: h-full asegura que ocupe el espacio disponible definido por el padre flex */}
                 <ScrollArea className="h-full w-full">
                   <div className="flex flex-col p-6 lg:p-8 pb-32 max-w-5xl mx-auto w-full">
-                    
                     {/* Hero Image */}
                     <div className="group relative mb-8 aspect-video w-full shrink-0 overflow-hidden rounded-2xl bg-muted shadow-sm ring-1 ring-border/50 sm:aspect-[21/9] dark:bg-muted/20">
                       {selectedPlace.foto_url ? (
@@ -572,54 +654,65 @@ export function PlaceSearchDialog({
                       ) : (
                         <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-muted/50 text-muted-foreground dark:bg-muted/10">
                           <MapPin className="h-16 w-16 opacity-10" />
-                          <p className="text-sm font-medium">Sin imagen disponible</p>
+                          <p className="text-sm font-medium">
+                            Sin imagen disponible
+                          </p>
                         </div>
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80" />
-                      
+
                       <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                         <div className="flex items-center gap-3 mb-2">
-                            <Badge className="bg-white/20 text-white hover:bg-white/30 backdrop-blur-md border-0 uppercase tracking-widest text-[10px]">
-                               {selectedPlace.category}
-                            </Badge>
-                            {selectedPlace.mexican_state && (
-                               <div className="flex items-center gap-1 text-xs font-medium text-white/90 drop-shadow-sm">
-                                  <Map className="h-3.5 w-3.5" />
-                                  {selectedPlace.mexican_state}
-                               </div>
-                            )}
-                         </div>
-                         <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight drop-shadow-md text-balance text-white">
-                            {selectedPlace.nombre}
-                         </h1>
+                        <div className="flex items-center gap-3 mb-2">
+                          <Badge className="bg-white/20 text-white hover:bg-white/30 backdrop-blur-md border-0 uppercase tracking-widest text-[10px]">
+                            {selectedPlace.category}
+                          </Badge>
+                          {selectedPlace.mexican_state && (
+                            <div className="flex items-center gap-1 text-xs font-medium text-white/90 drop-shadow-sm">
+                              <Map className="h-3.5 w-3.5" />
+                              {selectedPlace.mexican_state}
+                            </div>
+                          )}
+                        </div>
+                        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight drop-shadow-md text-balance text-white">
+                          {selectedPlace.nombre}
+                        </h1>
                       </div>
                     </div>
 
                     {/* Info & Rating */}
                     <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                       <div className="space-y-1">
-                         <div className="flex items-center gap-2">
-                            <h3 className="text-lg font-semibold text-foreground">Calificación</h3>
-                         </div>
-                         <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-1">
-                               <span className="text-2xl font-bold text-foreground">
-                                  {selectedPlace.google_score ? selectedPlace.google_score.toFixed(1) : "N/A"}
-                               </span>
-                               <span className="text-sm text-muted-foreground">/ 5.0</span>
-                            </div>
-                            {typeof selectedPlace.google_score === "number" && (
-                               <>
-                                  <div className="h-4 w-px bg-border" />
-                                  <div className="flex flex-col">
-                                     <StarRating score={selectedPlace.google_score} size={4} />
-                                     <span className="text-xs text-muted-foreground mt-0.5">
-                                        Basado en {selectedPlace.total_reviews} reseñas
-                                     </span>
-                                  </div>
-                               </>
-                            )}
-                         </div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-lg font-semibold text-foreground">
+                            Calificación
+                          </h3>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1">
+                            <span className="text-2xl font-bold text-foreground">
+                              {selectedPlace.google_score
+                                ? selectedPlace.google_score.toFixed(1)
+                                : "N/A"}
+                            </span>
+                            <span className="text-sm text-muted-foreground">
+                              / 5.0
+                            </span>
+                          </div>
+                          {typeof selectedPlace.google_score === "number" && (
+                            <>
+                              <div className="h-4 w-px bg-border" />
+                              <div className="flex flex-col">
+                                <StarRating
+                                  score={selectedPlace.google_score}
+                                  size={4}
+                                />
+                                <span className="text-xs text-muted-foreground mt-0.5">
+                                  Basado en {selectedPlace.total_reviews} reseñas
+                                </span>
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -630,38 +723,59 @@ export function PlaceSearchDialog({
                       <div className="rounded-2xl border bg-card p-5 shadow-sm transition-shadow hover:shadow-md dark:border-border/60">
                         <div className="mb-4 flex items-center gap-3">
                           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary dark:bg-primary/20">
-                             <Info className="h-5 w-5" />
+                            <Info className="h-5 w-5" />
                           </div>
-                          <h4 className="font-semibold text-foreground">Acerca de este lugar</h4>
+                          <h4 className="font-semibold text-foreground">
+                            Acerca de este lugar
+                          </h4>
                         </div>
                         <p className="text-sm leading-relaxed text-muted-foreground text-pretty">
-                          Este destino en <span className="font-medium text-foreground">{selectedPlace.mexican_state}</span> es 
-                          perfecto para viajeros interesados en experiencias de tipo <span className="font-medium text-foreground">{selectedPlace.category}</span>.
-                          <br /><br />
-                          Asegúrate de revisar el clima y los horarios locales antes de tu visita.
+                          Este destino en{" "}
+                          <span className="font-medium text-foreground">
+                            {selectedPlace.mexican_state}
+                          </span>{" "}
+                          es perfecto para viajeros interesados en experiencias
+                          de tipo{" "}
+                          <span className="font-medium text-foreground">
+                            {selectedPlace.category}
+                          </span>
+                          .<br />
+                          <br />
+                          Asegúrate de revisar el clima y los horarios locales
+                          antes de tu visita.
                         </p>
                       </div>
-                      
+
                       <div className="rounded-2xl border bg-card p-5 shadow-sm transition-shadow hover:shadow-md dark:border-border/60">
                         <div className="mb-4 flex items-center gap-3">
                           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary dark:bg-primary/20">
-                             <Navigation className="h-5 w-5" />
+                            <Navigation className="h-5 w-5" />
                           </div>
-                          <h4 className="font-semibold text-foreground">Ubicación y Coordenadas</h4>
+                          <h4 className="font-semibold text-foreground">
+                            Ubicación y Coordenadas
+                          </h4>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                           <div className="rounded-lg bg-muted/40 p-3 dark:bg-muted/20">
-                              <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Latitud</span>
-                              <div className="font-mono text-sm mt-1 text-foreground">{selectedPlace.latitud}</div>
-                           </div>
-                           <div className="rounded-lg bg-muted/40 p-3 dark:bg-muted/20">
-                              <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Longitud</span>
-                              <div className="font-mono text-sm mt-1 text-foreground">{selectedPlace.longitud}</div>
-                           </div>
+                          <div className="rounded-lg bg-muted/40 p-3 dark:bg-muted/20">
+                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">
+                              Latitud
+                            </span>
+                            <div className="font-mono text-sm mt-1 text-foreground">
+                              {selectedPlace.latitud}
+                            </div>
+                          </div>
+                          <div className="rounded-lg bg-muted/40 p-3 dark:bg-muted/20">
+                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">
+                              Longitud
+                            </span>
+                            <div className="font-mono text-sm mt-1 text-foreground">
+                              {selectedPlace.longitud}
+                            </div>
+                          </div>
                         </div>
                         <p className="mt-4 text-xs text-muted-foreground flex items-center gap-1.5">
-                           <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-500" />
-                           Ubicación verificada para rutas óptimas.
+                          <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-500" />
+                          Ubicación verificada para rutas óptimas.
                         </p>
                       </div>
                     </div>
@@ -670,8 +784,10 @@ export function PlaceSearchDialog({
                     {suggested.length > 0 && (
                       <div className="space-y-4 mb-15 ">
                         <div className="flex items-center gap-2">
-                           <Sparkles className="h-5 w-5 text-amber-500 fill-amber-500/20" />
-                           <h3 className="text-lg font-semibold text-foreground">Cerca de aquí</h3>
+                          <Sparkles className="h-5 w-5 text-amber-500 fill-amber-500/20" />
+                          <h3 className="text-lg font-semibold text-foreground">
+                            Cerca de aquí
+                          </h3>
                         </div>
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                           {suggested.map((s) => (
@@ -695,14 +811,15 @@ export function PlaceSearchDialog({
                                   {s.nombre}
                                 </p>
                                 <div className="flex items-center justify-between">
-                                   <p className="truncate text-xs text-muted-foreground">
-                                     {s.category}
-                                   </p>
-                                   {s.google_score && (
-                                      <span className="flex items-center gap-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
-                                         <Star className="h-2.5 w-2.5 fill-current" /> {s.google_score}
-                                      </span>
-                                   )}
+                                  <p className="truncate text-xs text-muted-foreground">
+                                    {s.category}
+                                  </p>
+                                  {s.google_score && (
+                                    <span className="flex items-center gap-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
+                                      <Star className="h-2.5 w-2.5 fill-current" />{" "}
+                                      {s.google_score}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -725,7 +842,9 @@ export function PlaceSearchDialog({
                           </span>
                         </span>
                       ) : (
-                        <span className="text-muted-foreground italic">Selecciona un día en el calendario</span>
+                        <span className="text-muted-foreground italic">
+                          Selecciona un día en el calendario
+                        </span>
                       )}
                     </div>
                     <div className="flex w-full gap-3 sm:w-auto">
@@ -738,12 +857,14 @@ export function PlaceSearchDialog({
                       </Button>
                       <Button
                         onClick={() => {
-                          if (!currentDay) {
+                          if (!currentDay || !selectedPlace) {
                             toast.error("Debes seleccionar un día primero.");
                             return;
                           }
                           onAddLugarToDay(selectedPlace);
-                          toast.success(`${selectedPlace.nombre} añadido al itinerario`);
+                          toast.success(
+                            `${selectedPlace.nombre} añadido al itinerario`
+                          );
                         }}
                         disabled={!canAdd}
                         className="flex-1 rounded-xl bg-primary font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] hover:shadow-xl sm:min-w-[180px] dark:shadow-none dark:hover:bg-primary/90"
@@ -765,7 +886,8 @@ export function PlaceSearchDialog({
                   Comienza tu Aventura
                 </h3>
                 <p className="max-w-xs text-muted-foreground text-balance leading-relaxed">
-                  Selecciona una atracción de la lista para ver sus fotos, reseñas y detalles exclusivos.
+                  Selecciona una atracción de la lista para ver sus fotos,
+                  reseñas y detalles exclusivos.
                 </p>
               </div>
             )}

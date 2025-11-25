@@ -58,11 +58,11 @@ import {
 /* ----------------------------- Datos y esquema ----------------------------- */
 
 const REGIONS = [
-  { value: "cdmx", label: "Ciudad de México", hint: "CDMX" },
-  { value: "edomex", label: "Estado de México", hint: "Edo. Méx." },
-  { value: "hgo", label: "Hidalgo", hint: "HGO" },
-  { value: "mor", label: "Morelos", hint: "MOR" },
-  { value: "qro", label: "Querétaro", hint: "QRO" },
+  { value: "Ciudad de Mexico", label: "Ciudad de México", hint: "CDMX" },
+  { value: "Estado de Mexico", label: "Estado de México", hint: "Edo. Méx." },
+  { value: "Hidalgo", label: "Hidalgo", hint: "HGO" },
+  { value: "Morelos", label: "Morelos", hint: "MOR" },
+  { value: "Querétaro", label: "Querétaro", hint: "QRO" },
 ] as const;
 
 const regionValues = REGIONS.map((r) => r.value) as [
