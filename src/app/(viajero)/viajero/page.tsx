@@ -3,6 +3,20 @@
 import * as React from "react";
 import Link from "next/link";
 import { SUGGESTIONS } from "@/lib/constants/mock";
+import { useState } from "react";
+import { any } from "zod";
+
+export interface PlaceResponse {
+  id_api_place:  string;
+  category:      string;
+  mexican_state: string;
+  nombre:        string;
+  latitud:       number;
+  longitud:      number;
+  foto_url:      null | string;
+  google_score:  number;
+  total_reviews: number;
+}
 
 import Estrellas from "@/components/dashboard-components/estrellas";
 import { useState, useEffect } from "react";
@@ -514,6 +528,7 @@ function PlaceCard({
   );
 }
 
+<<<<<<< HEAD
 // Componente de búsqueda mejorado
 function SearchFilters({ query, estadoSeleccionado, onQueryChange, onEstadoChange }) {
   // Tags más comunes de las publicaciones
@@ -540,6 +555,123 @@ function SearchFilters({ query, estadoSeleccionado, onQueryChange, onEstadoChang
               onChange={onQueryChange}
               className="pl-10 w-full"
             />
+=======
+export default function ViajeroLanding() {
+
+  const [destacados, setdestacados] = useState<PlaceResponse[]>([]);
+
+  React.useEffect(() => {
+    fetch('http://localhost:4000/lugar?pague=1&limit=6', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        token: localStorage.getItem('authToken') || ''
+      },
+    })
+    .then(response => response.json())
+    .then(data => {
+      setdestacados(data);
+    })
+  }, []);
+
+
+  const naturaleza = SUGGESTIONS.filter((x) => x.tag === "Naturaleza");
+  const cultura = SUGGESTIONS.filter((x) => x.tag === "Cultura");
+
+  return (
+    <div className="min-h-[calc(100dvh-64px)] bg-background text-foreground">
+      {/* HERO */}
+      <div className="relative">
+        <div className="absolute inset-0 opacity-[.12] bg-[url('https://images.pexels.com/photos/14071000/pexels-photo-14071000.jpeg')] bg-cover bg-center" />
+        <Section className="relative pt-10 md:pt-16 pb-10">
+          <div className="max-w-3xl">
+            <span className="inline-flex items-center gap-2 text-xs md:text-sm px-2.5 py-1 rounded-full border bg-card/70 backdrop-blur">
+              ✈️ Social + Planner • Comparte, sigue y planifica en equipo
+            </span>
+            <h1 className="mt-3 text-3xl md:text-5xl font-extrabold tracking-tight">
+              Tu viaje,{" "}
+              <span className="text-[var(--palette-blue)]">perfectamente</span>{" "}
+              planificado.
+            </h1>
+            <p className="mt-3 text-muted-foreground max-w-prose">
+              Crea itinerarios bellos y prácticos, descubre lugares confiables y
+              comparte tu plan con amigos. Todo sincronizado con mapa, tiempos y
+              recomendaciones.
+            </p>
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              <Link href="/viajero/itinerarios/nuevo" className={btn.primary}>
+                Crear mi itinerario
+              </Link>
+              <a href="#feed" className={btn.ghost}>
+                Ver comunidad
+              </a>
+            </div>
+            <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+              <div className="rounded-xl border p-3 bg-card/60">
+                <b>Itinerarios</b>
+                <div className="text-muted-foreground">por día, con mapa</div>
+              </div>
+              <div className="rounded-xl border p-3 bg-card/60">
+                <b>Colaboración</b>
+                <div className="text-muted-foreground">invita a tus amigos</div>
+              </div>
+              <div className="rounded-xl border p-3 bg-card/60">
+                <b>Explorar</b>
+                <div className="text-muted-foreground">lugares verificados</div>
+              </div>
+              <div className="rounded-xl border p-3 bg-card/60">
+                <b>Red social</b>
+                <div className="text-muted-foreground">sigue y comenta</div>
+              </div>
+            </div>
+          </div>
+        </Section>
+      </div>
+
+      {/* CARRUSEL DESTACADOS */}
+      <Section className="py-8">
+        <SnapCarousel title="Destacados para inspirarte">
+          {destacados.map((p : PlaceResponse) => (
+            <PlaceCard key={p.id_api_place} name={p.nombre} city={p.mexican_state} tag={p.category} img={p.foto_url} />
+          ))}
+        </SnapCarousel>
+      </Section>
+
+      {/* BLOQUE DOBLE CON SLIDERS TEMÁTICOS */}
+      <Section className="py-2 md:py-4">
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="rounded-2xl border p-4 bg-card">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold">Naturaleza que impresiona</h3>
+              <Link
+                href="/viajero/itinerarios/nuevo"
+                className="text-sm underline"
+              >
+                Armar ruta
+              </Link>
+            </div>
+            <SnapCarousel>
+              {naturaleza.map((p) => (
+                <PlaceCard key={p.id} {...p} />
+              ))}
+            </SnapCarousel>
+          </div>
+          <div className="rounded-2xl border p-4 bg-card">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold">Joyas culturales</h3>
+              <Link
+                href="/viajero/itinerarios/nuevo"
+                className="text-sm underline"
+              >
+                Armar ruta
+              </Link>
+            </div>
+            <SnapCarousel>
+              {cultura.map((p) => (
+                <PlaceCard key={p.id} {...p} />
+              ))}
+            </SnapCarousel>
+>>>>>>> b6adebc (No que que hice)
           </div>
         </div>
         

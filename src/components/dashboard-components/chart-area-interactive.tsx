@@ -16,7 +16,6 @@ import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
-  ChartTooltipContent,
 } from "@/components/ui/chart";
 import {
   Select,
@@ -252,10 +251,12 @@ export function ChartAreaInteractive() {
                 });
               }}
             />
-            <ChartTooltip
+            { /**
+             * <ChartTooltip
               cursor={false}
               defaultIndex={isMobile ? -1 : 10}
               content={
+                
                 <ChartTooltipContent
                   labelFormatter={(value) => {
                     return new Date(value).toLocaleDateString("en-US", {
@@ -264,9 +265,11 @@ export function ChartAreaInteractive() {
                     });
                   }}
                   indicator="dot"
-                />
+                /> 
               }
-            />
+            /> 
+             */}
+            
             <Area
               dataKey="mobile"
               type="natural"

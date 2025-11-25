@@ -4,11 +4,19 @@ import * as React from "react";
 import Link from "next/link";
 import {
   IconHomeFilled,
+<<<<<<< HEAD
   IconTable,
   IconMapPin,
   IconUsers,
   IconFileText,
   IconSettings,
+=======
+  IconCalendarFilled,
+  IconMessages,
+  IconCompassFilled,
+  IconMapPinFilled,
+  IconPlus,
+>>>>>>> b6adebc (No que que hice)
 } from "@tabler/icons-react";
 
 import { NavDocuments } from "@/components/dashboard-components/nav-documents";
@@ -25,6 +33,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { set } from "date-fns";
 
 const data = {
   user: {
@@ -50,6 +59,25 @@ const data = {
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+
+  const [user, setUser] = React.useState<null | { name: string; email: string; avatar: string }>(null)
+
+  React.useEffect(() => {
+    const storedUser = localStorage.getItem("usuario");
+    const user = {
+      name: storedUser
+        ? JSON.parse(storedUser).username
+        : "Harol Hater",
+      email: storedUser
+        ? JSON.parse(storedUser).correo
+        : "harol@hater.com",
+      avatar: storedUser
+        ? JSON.parse(storedUser).foto_url
+        : "./profile.png"
+    };
+    setUser(user)
+  }, [])
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -108,7 +136,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       <SidebarFooter>
-        <NavUser user={data.user} />
+        {user && <NavUser user={user} />}
       </SidebarFooter>
     </Sidebar>
   );

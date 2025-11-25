@@ -30,6 +30,7 @@ import { ThemeSwitcher } from "@/components/viajero/sidebar/theme-switcher";
 
 export default async function Layout({
   children,
+<<<<<<< HEAD
 }: Readonly<{ children: ReactNode }>) {
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
@@ -61,6 +62,13 @@ export default async function Layout({
     navbarStyle,
   };
 
+=======
+}: {
+  children: React.ReactNode;
+}) {
+  console.log("XD");
+  
+>>>>>>> b6adebc (No que que hice)
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
       <AppSidebar variant={sidebarVariant} collapsible={sidebarCollapsible} />
