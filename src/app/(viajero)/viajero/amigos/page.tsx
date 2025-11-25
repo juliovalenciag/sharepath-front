@@ -11,6 +11,7 @@ import {
   MessageCircle,
   Search,
   Sparkles,
+  UserMinus,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -220,416 +221,419 @@ export default function FriendsPage() {
 
   if (loading) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Cargando amigos...
-        </div>
+      <div className="flex min-h-[300px] w-full flex-col items-center justify-center gap-2">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground">Cargando tu red...</p>
       </div>
     );
   }
 
   if (errorMsg) {
     return (
-      <div className="mx-auto flex h-full w-full max-w-3xl flex-col items-center justify-center gap-4 px-4 py-6">
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle>Conexiones no disponibles</CardTitle>
-            <CardDescription>{errorMsg}</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3 text-sm text-muted-foreground">
-            <p>
-              Intenta recargar la página o verificar tu conexión. Si el problema
-              persiste, revisa el estado del servidor.
-            </p>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => window.location.reload()}
-              >
-                Reintentar
-              </Button>
-              <Button size="sm" variant="default" asChild>
-                <Link href="/viajero/buscar-viajero">
-                  <Search className="mr-1 h-3 w-3" />
-                  Buscar viajero
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="mx-auto flex h-full w-full max-w-xl flex-col items-center justify-center gap-6 px-4 py-12">
+        <div className="flex flex-col items-center gap-2 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+            <UserX className="h-6 w-6" />
+          </div>
+          <h3 className="text-lg font-semibold">Algo salió mal</h3>
+          <p className="text-sm text-muted-foreground max-w-sm">{errorMsg}</p>
+        </div>
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={() => window.location.reload()}>
+            Intentar de nuevo
+          </Button>
+          <Button asChild>
+            <Link href="/viajero/amigos/buscar-viajero">
+              Buscar manualmente
+            </Link>
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 lg:px-0">
-      {/* Header */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-xl font-semibold">Amigos</h1>
+    <div className="mx-auto w-full max-w-6xl space-y-8 px-4 py-8 lg:px-8">
+      {/* Header Section */}
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold tracking-tight">
+            Amigos y Conexiones
+          </h1>
           <p className="text-sm text-muted-foreground">
-            Gestiona tus amigos, solicitudes y nuevas conexiones dentro de
-            SharePath.
+            Gestiona tu red de viajeros y descubre nuevas aventuras juntos.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/viajero/buscar-viajero">
-              <Search className="mr-1 h-3 w-3" />
-              Buscar amigos
+          <Button variant="outline" size="sm" asChild className="h-9">
+            <Link href="/viajero/amigos/buscar-viajero">
+              <Search className="mr-2 h-4 w-4" />
+              Buscar
             </Link>
           </Button>
-          <Button variant="default" size="sm">
-            <UserPlus className="mr-1 h-3 w-3" />
-            Invitar por enlace
+          <Button size="sm" className="h-9">
+            <UserPlus className="mr-2 h-4 w-4" />
+            Invitar
           </Button>
         </div>
       </div>
 
-      {/* Resumen / Stats */}
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <SummaryCard
-          label="Amigos"
+          label="Total Amigos"
           value={totalFriends}
           icon={Users}
-          highlight
+          active
         />
         <SummaryCard
-          label="Solicitudes pendientes"
+          label="Solicitudes"
           value={totalRequests}
-          icon={UserPlus}
+          icon={UserCheck}
+          intent={totalRequests > 0 ? "warning" : "default"}
         />
         <SummaryCard
           label="Sugerencias"
           value={totalSuggestions}
           icon={Sparkles}
+          intent="info"
         />
       </div>
 
-      {/* Tabs principales */}
-      <Card className="border-none shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold">
-            Tu red de viajeros
-          </CardTitle>
-          <CardDescription className="text-xs">
-            Conecta con otros viajeros, acepta solicitudes y descubre nuevas
-            personas con intereses similares.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="friends" className="w-full">
-            <TabsList className="mb-4">
-              <TabsTrigger value="friends">Amigos ({totalFriends})</TabsTrigger>
-              <TabsTrigger value="requests">
-                Solicitudes ({totalRequests})
-              </TabsTrigger>
-              <TabsTrigger value="suggestions">
-                Sugerencias ({totalSuggestions})
-              </TabsTrigger>
-            </TabsList>
-
-            {/* Amigos */}
-            <TabsContent value="friends" className="space-y-3">
-              {friends.length === 0 ? (
-                <EmptyState
-                  icon={Users}
-                  title="Aún no tienes amigos agregados"
-                  description="Busca viajeros con intereses similares y envíales una solicitud."
-                  ctaLabel="Buscar amigos"
-                  ctaHref="/viajero/buscar-viajero"
-                />
-              ) : (
-                <div className="grid gap-3 md:grid-cols-2">
-                  {friends.map((friend) => (
-                    <FriendCard key={friend.id} friend={friend} />
-                  ))}
-                </div>
+      {/* Main Content Tabs */}
+      <Tabs defaultValue="friends" className="w-full space-y-6">
+        <div className="flex items-center justify-between">
+          <TabsList className="h-9 w-full justify-start rounded-lg bg-muted p-1 sm:w-auto">
+            <TabsTrigger value="friends" className="px-4 text-xs sm:text-sm">
+              Amigos
+              <Badge
+                variant="default"
+                className="ml-2 h-5 px-1.5 text-[10px] font-normal"
+              >
+                {totalFriends}
+              </Badge>
+            </TabsTrigger>
+            <TabsTrigger value="requests" className="px-4 text-xs sm:text-sm">
+              Solicitudes
+              {totalRequests > 0 && (
+                <Badge
+                  variant="destructive"
+                  className="ml-2 h-5 px-1.5 text-[10px] font-normal"
+                >
+                  {totalRequests}
+                </Badge>
               )}
-            </TabsContent>
+            </TabsTrigger>
+            <TabsTrigger
+              value="suggestions"
+              className="px-4 text-xs sm:text-sm"
+            >
+              Sugerencias
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-            {/* Solicitudes */}
-            <TabsContent value="requests" className="space-y-3">
-              {requests.length === 0 ? (
-                <EmptyState
-                  icon={UserPlus}
-                  title="No tienes solicitudes pendientes"
-                  description="Cuando alguien te envíe una solicitud, aparecerá aquí."
-                />
-              ) : (
-                <div className="space-y-3">
-                  {requests.map((req) => (
-                    <FriendRequestCard key={req.id} request={req} />
-                  ))}
-                </div>
-              )}
-            </TabsContent>
+        <TabsContent
+          value="friends"
+          className="animate-in fade-in-50 slide-in-from-bottom-2"
+        >
+          {friends.length === 0 ? (
+            <EmptyState
+              icon={Users}
+              title="Tu lista de amigos está vacía"
+              description="¡Es hora de socializar! Busca viajeros con tus mismos intereses para empezar."
+              actionLabel="Buscar viajeros"
+              actionHref="/viajero/amigos/buscar-viajero"
+            />
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
+              {friends.map((friend) => (
+                <FriendCard key={friend.id} friend={friend} />
+              ))}
+            </div>
+          )}
+        </TabsContent>
 
-            {/* Sugerencias */}
-            <TabsContent value="suggestions" className="space-y-3">
-              {suggestions.length === 0 ? (
-                <EmptyState
-                  icon={Sparkles}
-                  title="Sin sugerencias por ahora"
-                  description="A medida que interactúes con itinerarios y viajeros, te mostraremos sugerencias aquí."
-                />
-              ) : (
-                <div className="grid gap-3 md:grid-cols-2">
-                  {suggestions.map((s) => (
-                    <FriendSuggestionCard key={s.id} suggestion={s} />
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+        <TabsContent
+          value="requests"
+          className="animate-in fade-in-50 slide-in-from-bottom-2"
+        >
+          {requests.length === 0 ? (
+            <EmptyState
+              icon={UserCheck}
+              title="Todo al día"
+              description="No tienes solicitudes de amistad pendientes en este momento."
+            />
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {requests.map((req) => (
+                <FriendRequestCard key={req.id} request={req} />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent
+          value="suggestions"
+          className="animate-in fade-in-50 slide-in-from-bottom-2"
+        >
+          {suggestions.length === 0 ? (
+            <EmptyState
+              icon={Sparkles}
+              title="Sin sugerencias nuevas"
+              description="Vuelve más tarde o interactúa más con la plataforma para recibir recomendaciones personalizadas."
+            />
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {suggestions.map((s) => (
+                <FriendSuggestionCard key={s.id} suggestion={s} />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
 
-// ===== Componentes auxiliares =====
-
-type SummaryCardProps = {
-  label: string;
-  value: number;
-  icon: React.ComponentType<{ className?: string }>;
-  highlight?: boolean;
-};
+// ===== Componentes Auxiliares Mejorados =====
 
 function SummaryCard({
   label,
   value,
   icon: Icon,
-  highlight = false,
-}: SummaryCardProps) {
+  active = false,
+  intent = "default",
+}: {
+  label: string;
+  value: number;
+  icon: any;
+  active?: boolean;
+  intent?: "default" | "warning" | "info";
+}) {
+  const colors = {
+    default: "bg-primary/10 text-primary",
+    warning: "bg-orange-500/10 text-orange-600",
+    info: "bg-blue-500/10 text-blue-600",
+  };
+
   return (
     <Card
-      className={
-        highlight ? "border-primary/40 bg-primary/5 shadow-sm" : "bg-card/60"
-      }
+      className={`overflow-hidden transition-all hover:shadow-md ${
+        active ? "border-primary/50 ring-1 ring-primary/20" : ""
+      }`}
     >
-      <CardContent className="flex items-center gap-3 p-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-          <Icon className="h-4 w-4 text-primary" />
+      <CardContent className="flex items-center gap-4 p-4">
+        <div
+          className={`flex h-10 w-10 items-center justify-center rounded-lg ${colors[intent]}`}
+        >
+          <Icon className="h-5 w-5" />
         </div>
-        <div className="flex flex-col">
-          <span className="text-xs text-muted-foreground">{label}</span>
-          <span className="text-sm font-semibold">{value}</span>
+        <div>
+          <p className="text-sm font-medium text-muted-foreground">{label}</p>
+          <p className="text-2xl font-bold tracking-tight">{value}</p>
         </div>
       </CardContent>
     </Card>
   );
 }
 
-type FriendCardProps = {
-  friend: Friend;
-};
-
-function FriendCard({ friend }: FriendCardProps) {
+function FriendCard({ friend }: { friend: Friend }) {
   return (
-    <Card className="border bg-card/70 shadow-sm">
-      <CardContent className="flex items-center justify-between gap-3 p-3">
-        <div className="flex items-center gap-3">
-          <Avatar className="h-10 w-10 rounded-xl">
-            <AvatarImage src={friend.avatar || undefined} alt={friend.name} />
-            <AvatarFallback className="rounded-xl">
-              {getInitials(friend.name)}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex flex-col gap-0.5">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold">{friend.name}</span>
-              <span className="text-[11px] text-muted-foreground">
+    <Card className="group flex flex-col justify-between overflow-hidden transition-all hover:border-primary/30 hover:shadow-md">
+      <CardContent className="flex flex-col gap-4 p-4">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex gap-3">
+            <Avatar className="h-12 w-12 border-2 border-background shadow-sm">
+              <AvatarImage src={friend.avatar} alt={friend.name} />
+              <AvatarFallback className="bg-primary/5 font-medium text-primary">
+                {getInitials(friend.name)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="space-y-1">
+              <h4 className="font-semibold leading-none">{friend.name}</h4>
+              <p className="text-xs text-muted-foreground">
                 @{friend.username}
-              </span>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-              {friend.city || friend.country ? (
-                <span className="flex items-center gap-1">
-                  <MapPin className="h-3 w-3" />
-                  {friend.city && <span>{friend.city}</span>}
-                  {friend.city && friend.country && <span>•</span>}
-                  {friend.country && <span>{friend.country}</span>}
-                </span>
-              ) : null}
-              {friend.mutualCount > 0 && (
-                <span>{friend.mutualCount} amigos en común</span>
-              )}
-              {friend.isOnline && (
-                <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  En línea
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-        <div className="flex flex-col items-end gap-1">
-          <Button variant="outline" size="icon">
-            <MessageCircle className="h-4 w-4" />
-            <span className="sr-only">Enviar mensaje</span>
-          </Button>
-          <Button variant="ghost" className="text-red-500">
-            <UserX className="mr-1 h-3 w-3" />
-            <span className="text-[11px]">Eliminar</span>
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-type FriendRequestCardProps = {
-  request: FriendRequest;
-};
-
-function FriendRequestCard({ request }: FriendRequestCardProps) {
-  return (
-    <Card className="border bg-card/70 shadow-sm">
-      <CardContent className="flex items-center justify-between gap-3 p-3">
-        <div className="flex items-center gap-3">
-          <Avatar className="h-10 w-10 rounded-xl">
-            <AvatarImage src={request.avatar || undefined} alt={request.name} />
-            <AvatarFallback className="rounded-xl">
-              {getInitials(request.name)}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex flex-col gap-0.5">
-            <span className="text-sm font-semibold">{request.name}</span>
-            <span className="text-[11px] text-muted-foreground">
-              @{request.username}
-            </span>
-            {request.message && (
-              <p className="mt-1 text-[11px] text-muted-foreground/80 line-clamp-2">
-                {request.message}
               </p>
-            )}
-            {request.dateLabel && (
-              <span className="mt-1 text-[10px] text-muted-foreground/70">
-                Solicitud enviada el {request.dateLabel}
-              </span>
-            )}
+              {friend.isOnline && (
+                <div className="flex items-center gap-1.5 pt-1">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+                  </span>
+                  <span className="text-[10px] font-medium text-emerald-600">
+                    En línea
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-        <div className="flex flex-col gap-1">
-          <Button size="sm" className="h-7 text-xs">
-            <UserCheck className="mr-1 h-3 w-3" />
-            Aceptar
-          </Button>
           <Button
-            size="sm"
-            variant="outline"
-            className="h-7 border-destructive/40 text-[11px] text-destructive"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground"
           >
-            <UserX className="mr-1 h-3 w-3" />
-            Rechazar
+            <MessageCircle className="h-4 w-4" />
           </Button>
+        </div>
+
+        <div className="space-y-2 rounded-lg bg-muted/40 p-2.5 text-xs text-muted-foreground">
+          {(friend.city || friend.country) && (
+            <div className="flex items-center gap-2">
+              <MapPin className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">
+                {[friend.city, friend.country].filter(Boolean).join(", ")}
+              </span>
+            </div>
+          )}
+          {friend.mutualCount > 0 && (
+            <div className="flex items-center gap-2">
+              <Users className="h-3.5 w-3.5 shrink-0" />
+              <span>{friend.mutualCount} amigos en común</span>
+            </div>
+          )}
         </div>
       </CardContent>
+      <div className="border-t bg-muted/10 p-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start text-xs text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+        >
+          <UserMinus className="mr-2 h-3.5 w-3.5" />
+          Dejar de seguir
+        </Button>
+      </div>
     </Card>
   );
 }
 
-type FriendSuggestionCardProps = {
-  suggestion: FriendSuggestion;
-};
-
-function FriendSuggestionCard({ suggestion }: FriendSuggestionCardProps) {
+function FriendRequestCard({ request }: { request: FriendRequest }) {
   return (
-    <Card className="border bg-card/70 shadow-sm">
-      <CardContent className="flex items-center justify-between gap-3 p-3">
-        <div className="flex items-center gap-3">
-          <Avatar className="h-10 w-10 rounded-xl">
-            <AvatarImage
-              src={suggestion.avatar || undefined}
-              alt={suggestion.name}
-            />
-            <AvatarFallback className="rounded-xl">
-              {getInitials(suggestion.name)}
-            </AvatarFallback>
+    <Card className="overflow-hidden transition-all hover:shadow-md">
+      <CardContent className="p-4">
+        <div className="flex gap-3">
+          <Avatar className="h-10 w-10">
+            <AvatarImage src={request.avatar} alt={request.name} />
+            <AvatarFallback>{getInitials(request.name)}</AvatarFallback>
           </Avatar>
-          <div className="flex flex-col gap-0.5">
-            <span className="text-sm font-semibold">{suggestion.name}</span>
-            <span className="text-[11px] text-muted-foreground">
-              @{suggestion.username}
-            </span>
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-              {(suggestion.city || suggestion.country) && (
-                <span className="flex items-center gap-1">
-                  <MapPin className="h-3 w-3" />
-                  {suggestion.city && <span>{suggestion.city}</span>}
-                  {suggestion.city && suggestion.country && <span>•</span>}
-                  {suggestion.country && <span>{suggestion.country}</span>}
+          <div className="flex-1 space-y-1">
+            <div className="flex justify-between">
+              <h4 className="font-medium text-sm">{request.name}</h4>
+              {request.dateLabel && (
+                <span className="text-[10px] text-muted-foreground">
+                  {request.dateLabel}
                 </span>
               )}
-              {suggestion.mutualCount > 0 && (
-                <span>{suggestion.mutualCount} amigos en común</span>
-              )}
             </div>
-            {suggestion.interests.length > 0 && (
-              <div className="mt-1 flex flex-wrap gap-1">
-                {suggestion.interests.slice(0, 3).map((i) => (
-                  <Badge
-                    key={i}
-                    variant="outline"
-                    className="text-[10px] font-normal"
-                  >
-                    {i}
-                  </Badge>
-                ))}
-                {suggestion.interests.length > 3 && (
-                  <Badge variant="outline" className="text-[10px] font-normal">
-                    +{suggestion.interests.length - 3} más
-                  </Badge>
-                )}
+            <p className="text-xs text-muted-foreground">@{request.username}</p>
+            {request.message && (
+              <div className="mt-2 rounded-md bg-muted p-2 text-xs italic text-muted-foreground">
+                &quot;{request.message}&quot;
               </div>
             )}
           </div>
         </div>
-        <div className="flex flex-col gap-1">
-          <Button size="sm" className="h-7 text-xs">
-            <UserPlus className="mr-1 h-3 w-3" />
-            Agregar
-          </Button>
-          <Button size="sm" variant="outline" className="h-7 text-[11px]">
-            Ocultar
-          </Button>
-        </div>
       </CardContent>
+      <div className="grid grid-cols-2 gap-px bg-border border-t">
+        <Button
+          variant="ghost"
+          className="rounded-none bg-card hover:bg-primary/5 hover:text-primary h-10 text-xs font-medium"
+        >
+          <UserCheck className="mr-2 h-3.5 w-3.5" /> Aceptar
+        </Button>
+        <Button
+          variant="ghost"
+          className="rounded-none bg-card hover:bg-destructive/5 hover:text-destructive h-10 text-xs font-medium"
+        >
+          <UserX className="mr-2 h-3.5 w-3.5" /> Rechazar
+        </Button>
+      </div>
     </Card>
   );
 }
 
-type EmptyStateProps = {
-  icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  description: string;
-  ctaLabel?: string;
-  ctaHref?: string;
-};
+function FriendSuggestionCard({
+  suggestion,
+}: {
+  suggestion: FriendSuggestion;
+}) {
+  return (
+    <Card className="flex flex-col justify-between transition-all hover:border-primary/40">
+      <CardContent className="p-4">
+        <div className="flex items-center gap-3 mb-3">
+          <Avatar className="h-12 w-12">
+            <AvatarImage src={suggestion.avatar} alt={suggestion.name} />
+            <AvatarFallback>{getInitials(suggestion.name)}</AvatarFallback>
+          </Avatar>
+          <div>
+            <h4 className="font-medium text-sm">{suggestion.name}</h4>
+            <p className="text-xs text-muted-foreground">
+              @{suggestion.username}
+            </p>
+            {suggestion.mutualCount > 0 && (
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                {suggestion.mutualCount} amigos en común
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-1.5 min-h-[24px]">
+          {suggestion.interests.slice(0, 3).map((tag) => (
+            <Badge
+              key={tag}
+              variant="secondary"
+              className="rounded-md px-1.5 py-0 text-[10px] font-normal"
+            >
+              {tag}
+            </Badge>
+          ))}
+          {suggestion.interests.length > 3 && (
+            <Badge
+              variant="outline"
+              className="rounded-md px-1.5 py-0 text-[10px] font-normal"
+            >
+              +{suggestion.interests.length - 3}
+            </Badge>
+          )}
+        </div>
+      </CardContent>
+      <div className="p-3 pt-0 mt-auto">
+        <Button className="w-full h-8 text-xs" variant="outline">
+          <UserPlus className="mr-2 h-3.5 w-3.5" />
+          Conectar
+        </Button>
+      </div>
+    </Card>
+  );
+}
 
 function EmptyState({
   icon: Icon,
   title,
   description,
-  ctaLabel,
-  ctaHref,
-}: EmptyStateProps) {
+  actionLabel,
+  actionHref,
+}: {
+  icon: any;
+  title: string;
+  description: string;
+  actionLabel?: string;
+  actionHref?: string;
+}) {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed bg-muted/30 px-4 py-6 text-center">
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-        <Icon className="h-5 w-5 text-primary" />
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed bg-muted/20 p-8 text-center animate-in zoom-in-95 duration-300">
+      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+        <Icon className="h-7 w-7 text-muted-foreground/50" />
       </div>
-      <div className="space-y-1">
-        <h3 className="text-sm font-semibold">{title}</h3>
-        <p className="text-xs text-muted-foreground">{description}</p>
-      </div>
-      {ctaLabel && ctaHref && (
-        <Button size="sm" variant="outline" asChild>
-          <Link href={ctaHref}>{ctaLabel}</Link>
+      <h3 className="mt-4 text-base font-semibold">{title}</h3>
+      <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+        {description}
+      </p>
+      {actionLabel && actionHref && (
+        <Button className="mt-6" size="sm" asChild>
+          <Link href={actionHref}>{actionLabel}</Link>
         </Button>
       )}
     </div>

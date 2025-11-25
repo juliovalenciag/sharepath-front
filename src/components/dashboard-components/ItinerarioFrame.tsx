@@ -84,6 +84,15 @@ const ItinerarioFrame: React.FC<ItinerarioFrameProps> = ({
       router.push(`/viajero/itinerarios/${id}/ver`);
     }, 2000);
   };
+
+  const handlePublicar = (id: number) => {
+    setMostrarAlerta(true);
+    setTimeout(() => {
+      setMostrarAlerta(false);
+      router.push(`/viajero/itinerarios/${id}/publicar`);
+    }, 2000);
+  };
+
   const [mostrarAlerta, setMostrarAlerta] = useState(false);
   // --- FIN LÓGICA CALENDARIO ---
 
@@ -147,7 +156,7 @@ const ItinerarioFrame: React.FC<ItinerarioFrameProps> = ({
               <Button
                 size="sm"
                 className="mt-4 bg-primary hover:bg-secondary text-white px-3 py-2 rounded-lg w-auto h-auto text-base"
-                onClick={() => handleVerDetalles(Number(itinerario.id))} // Pasa el id dinámicamente
+                onClick={() => handlePublicar(Number(itinerario.id))} // Pasa el id dinámicamente
               >
                 Publicar
               </Button>

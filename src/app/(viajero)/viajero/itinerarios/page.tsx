@@ -50,6 +50,7 @@ export default function PublicacionPage() {
 
   return (
     <div className="grid grid-cols-1">
+      <h1 className="text-4xl font-bold text-shadow-primary mb-2">Mis itinerarios</h1>
       {itinerarios.length > 0 ? (
         itinerarios.map((itinerarioApi) => {
           const datosParaElFrame = transformarItinerario(itinerarioApi);
