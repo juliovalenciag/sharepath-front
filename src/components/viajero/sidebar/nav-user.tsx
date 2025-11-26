@@ -58,7 +58,8 @@ export function NavUser() {
             ? localStorage.getItem("authToken")
             : null;
 
-        const res = await fetch("https://harol-lovers.up.railway.app/user", {
+        // const res = await fetch("https://harol-lovers.up.railway.app/user", {
+        const res = await fetch("http://localhost:4000/user", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
