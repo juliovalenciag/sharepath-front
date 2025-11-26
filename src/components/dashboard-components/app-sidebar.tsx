@@ -4,19 +4,11 @@ import * as React from "react";
 import Link from "next/link";
 import {
   IconHomeFilled,
-<<<<<<< HEAD
   IconTable,
   IconMapPin,
   IconUsers,
   IconFileText,
   IconSettings,
-=======
-  IconCalendarFilled,
-  IconMessages,
-  IconCompassFilled,
-  IconMapPinFilled,
-  IconPlus,
->>>>>>> b6adebc (No que que hice)
 } from "@tabler/icons-react";
 
 import { NavDocuments } from "@/components/dashboard-components/nav-documents";

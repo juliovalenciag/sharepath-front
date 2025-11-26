@@ -58,26 +58,7 @@ export default function SignInPage() {
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
 
-<<<<<<< HEAD
     const promise: Promise<Usuario> = api.doLogin(values.correo, values.password);
-=======
-    const promise = fetch(`${HOST}/auth`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ correo, password }),
-    }).then(async (res) => {
-      console.log(res);
-        if (!res.ok) {
-            const errorData = await res.json();
-            console.log(errorData);
-            
-            throw new Error(errorData.message || 'Ocurrió un error al iniciar sesión.');
-        }
-        return res.json();
-    });
->>>>>>> b6adebc (No que que hice)
 
     toast.promise(promise, {
       loading: "Iniciando sesión...",

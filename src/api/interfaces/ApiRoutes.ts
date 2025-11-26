@@ -160,7 +160,7 @@ export interface ApiRoutes {
     getUser: () => Promise<Usuario>;
     updateUser: (body: UpdateUserRequest) => Promise<Usuario>;
     updatePassword: (body: UpdatePasswordRequest) => Promise<{ message: string }>;
-    verifyPassword: (body: VerifyPasswordRequest) => Promise<{ valid: boolean }>;
+    verifyPassword: (body: VerifyPasswordRequest) => Promise<{ message: boolean }>;
     searchUsers: (query: string) => Promise<SearchUserResponse>;
     deleteUser: () => Promise<{ message: string }>;
 
