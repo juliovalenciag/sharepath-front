@@ -38,6 +38,7 @@ export default function EditAccountPage() {
   const profileSchema = z.object({
     nombre_completo: z
       .string()
+      .trim()
       .min(1, "El nombre es requerido")
       .regex(
         /^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]+$/,
@@ -45,6 +46,7 @@ export default function EditAccountPage() {
       ),
     username: z
       .string()
+      .trim()
       .min(5, "El nombre de usuario debe tener al menos 5 caracteres"),
   });
 
