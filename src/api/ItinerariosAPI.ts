@@ -19,7 +19,10 @@ import {
     RespondFriend, 
     ListRequest, 
     ListFriend, 
-    Amigo
+    Amigo,
+    ShareItineraryRequest,
+    Publicacion,
+    AverageRatingResponse
 } from "./interfaces/ApiRoutes";
 
 
@@ -254,5 +257,21 @@ export class ItinerariosAPI implements ApiRoutes {
 
     async getFriends(): Promise<ListFriend> {
         return await this.get<ListFriend>("/amigo", true);
+    }
+
+    // ... (tus métodos existentes)
+
+    // ===== PUBLICACIONES =====
+
+    async getAverageRating(publicationId: number): Promise<AverageRatingResponse> {
+        return await this.get<AverageRatingResponse>(`/publicacion/${publicationId}/promedio`, false);
+    }
+
+    async shareItinerary(itinerarioId: number, body: ShareItineraryRequest): Promise<Publicacion> {
+        return await this.post<Publicacion>(`/publicacion/share/${itinerarioId}`, true, body);
+    }
+
+    async getMyPublications(): Promise<Publicacion[]> {
+        return await this.get<Publicacion[]>("/publicacion/", true);
     }
 }

@@ -171,3 +171,28 @@ export interface ApiRoutes {
     getFriends: () => Promise<ListFriend>; 
 
 }
+
+export interface ShareItineraryRequest {
+    descripcion: string;
+    privacity_mode: boolean;
+}
+
+export interface Publicacion {
+    id: number;
+    descripcion: string;
+    privacity_mode: boolean;
+    itinerario: any; 
+    user_shared: Usuario;
+}
+
+export interface AverageRatingResponse {
+    publicationId: number;
+    averageRating: number;
+    reviewCount: number;
+}
+
+export interface ApiRoutes {
+    getAverageRating: (publicationId: number) => Promise<AverageRatingResponse>;
+    shareItinerary: (itinerarioId: number, body: ShareItineraryRequest) => Promise<Publicacion>;
+    getMyPublications: () => Promise<Publicacion[]>;
+}
