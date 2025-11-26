@@ -25,12 +25,13 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { set } from "date-fns";
 
 const data = {
   user: {
-    name: "Admin",
-    email: "admin@sharepath.com",
-    avatar: "profile.png",
+    username: "Admin",
+    correo: "admin@sharepath.com",
+    foto_url: "profile.png",
   },
   // Sección General
   navMain: [
@@ -50,6 +51,25 @@ const data = {
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+
+  const [user, setUser] = React.useState<null | { name: string; email: string; avatar: string }>(null)
+
+  React.useEffect(() => {
+    const storedUser = localStorage.getItem("usuario");
+    const user = {
+      name: storedUser
+        ? JSON.parse(storedUser).username
+        : "Harol Hater",
+      email: storedUser
+        ? JSON.parse(storedUser).correo
+        : "harol@hater.com",
+      avatar: storedUser
+        ? JSON.parse(storedUser).foto_url
+        : "./profile.png"
+    };
+    setUser(user)
+  }, [])
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -77,19 +97,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <path d="M2 17l10 5 10-5" />
                   <path d="M2 12l10 5 10-5" />
                 </svg>
-                <span className="text-base font-semibold">SharePath</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              tooltip="Gestionar"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
-              asChild
-            >
-              <Link href="/dashboard" className="flex items-center gap-2 justify-center">
-                <IconTable className="size-4" />
-                <span>Gestionar</span>
+                <span className="text-base font-semibold">Share Path</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -108,7 +116,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       <SidebarFooter>
-        <NavUser user={data.user} />
+        {user && <NavUser user={user} />}
       </SidebarFooter>
     </Sidebar>
   );

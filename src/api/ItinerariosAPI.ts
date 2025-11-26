@@ -19,7 +19,10 @@ import {
     RespondFriend, 
     ListRequest, 
     ListFriend, 
-    Amigo
+    Amigo,
+    ShareItineraryRequest,
+    Publicacion,
+    AverageRatingResponse
 } from "./interfaces/ApiRoutes";
 
 
@@ -227,8 +230,8 @@ export class ItinerariosAPI implements ApiRoutes {
         return await this.put<{ message: string }>("/user/update-password", true, body);
     }
 
-    async verifyPassword(body: VerifyPasswordRequest): Promise<{ valid: boolean }> {
-        return await this.post<{ valid: boolean }>("/user/verify-password", true, body);
+    async verifyPassword(body: VerifyPasswordRequest): Promise<{ message: boolean }> {
+        return await this.post<{ message: boolean }>("/user/verify-password", true, body);
     }
 
     async searchUsers(query: string): Promise<SearchUserResponse> {
@@ -254,5 +257,21 @@ export class ItinerariosAPI implements ApiRoutes {
 
     async getFriends(): Promise<ListFriend> {
         return await this.get<ListFriend>("/amigo", true);
+    }
+
+    // ... (tus métodos existentes)
+
+    // ===== PUBLICACIONES =====
+
+    async getAverageRating(publicationId: number): Promise<AverageRatingResponse> {
+        return await this.get<AverageRatingResponse>(`/publicacion/${publicationId}/promedio`, false);
+    }
+
+    async shareItinerary(itinerarioId: number, body: ShareItineraryRequest): Promise<Publicacion> {
+        return await this.post<Publicacion>(`/publicacion/share/${itinerarioId}`, true, body);
+    }
+
+    async getMyPublications(): Promise<Publicacion[]> {
+        return await this.get<Publicacion[]>("/publicacion/", true);
     }
 }

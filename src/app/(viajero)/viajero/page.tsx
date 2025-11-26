@@ -3,6 +3,19 @@
 import * as React from "react";
 import Link from "next/link";
 import { SUGGESTIONS } from "@/lib/constants/mock";
+import { any } from "zod";
+
+export interface PlaceResponse {
+  id_api_place:  string;
+  category:      string;
+  mexican_state: string;
+  nombre:        string;
+  latitud:       number;
+  longitud:      number;
+  foto_url:      null | string;
+  google_score:  number;
+  total_reviews: number;
+}
 
 import Estrellas from "@/components/dashboard-components/estrellas";
 import { useState, useEffect } from "react";

@@ -13,18 +13,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import Link from "next/link";
 import { Usuario } from "@/api/interfaces/ApiRoutes";
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 import { toast } from "sonner";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 
 export default function EditAccountPage() {
   const api = ItinerariosAPI.getInstance();
 
   const router = useRouter();
   const [user, setUser] = useState<Usuario | null>(null);
-  const [nombre, setNombre] = useState("");
-  const [username, setUsername] = useState("");
+  // estado local solo para preview/foto/privacidad
   const [privacidad, setPrivacidad] = useState("publica");
   const [loadingDelete, setLoadingDelete] = useState(false);
 
@@ -32,41 +34,92 @@ export default function EditAccountPage() {
   const [foto, setFoto] = useState<File | undefined>(undefined);
   const [preview, setPreview] = useState<string | null>(null);
 
+  // Zod schema para validaciones (nombre y username)
+  const profileSchema = z.object({
+    nombre_completo: z
+      .string()
+      .trim()
+      .min(1, "El nombre es requerido")
+      .regex(
+        /^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]+$/,
+        "El nombre solo puede contener letras y espacios"
+      ),
+    username: z
+      .string()
+      .trim()
+      .min(5, "El nombre de usuario debe tener al menos 5 caracteres"),
+  });
+
+  type ProfileForm = z.infer<typeof profileSchema>;
+
+  const form = useForm<ProfileForm>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      nombre_completo: "",
+      username: "",
+    },
+  });
+
+  // --- Estado y validaciones para cambio de contraseña ---
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [verified, setVerified] = useState(false); // Es un booleano
+  const [verifying, setVerifying] = useState(false);
+  const [updating, setUpdating] = useState(false);
+
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$_?¿*]).{8,}$/;
+
+  const verifySchema = z.string().min(1, "Ingresa tu contraseña actual");
+  const newPasswordSchema = z
+    .string()
+    .min(8, "La contraseña debe tener mínimo 8 caracteres.")
+    .regex(passwordRegex, {
+      message:
+        "La contraseña debe contener mayúscula, minúscula, número y un carácter especial válido (#, $, _, ?, ¿, *).",
+    });
+
   // Obtener datos del usuario al montar
   useEffect(() => {
     api.getUser().then((data) => {
       setUser(data);
-      setNombre(data.nombre_completo || "");
-      setUsername(data.username || "");
+      // reset del formulario con valores del usuario
+      form.reset({
+        nombre_completo: data.nombre_completo || "",
+        username: data.username || "",
+      });
       setPrivacidad(data.privacity_mode ? "publica" : "privada");
       // establecer preview inicial desde la URL del usuario
       setPreview(data.foto_url || null);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleSave = async () => {
+  const handleSave = async (values: ProfileForm) => {
     if (!user) return;
-    const body = {
-      nombre_completo: nombre,
-      username,
+
+    const body: any = {
+      nombre_completo: values.nombre_completo.trim(),
+      username: values.username.trim(),
       privacity_mode: privacidad === "publica",
       ...(foto ? { foto } : {}),
-    }
+    };
+
     toast.promise(
       api.updateUser(body),
       {
         loading: "Guardando cambios...",
         success: (data) => {
           setUser(data);
-          setNombre(data.nombre_completo || "");
-          setUsername(data.username || "");
+          form.reset({
+            nombre_completo: data.nombre_completo || "",
+            username: data.username || "",
+          });
           setPrivacidad(data.privacity_mode ? "publica" : "privada");
-          // establecer preview inicial desde la URL del usuario
           setPreview(data.foto_url || null);
           return "Perfil actualizado correctamente";
         },
         error: (err) => {
-          return `${err.message}`
+          return `${err.message}`;
         },
       }
     );
@@ -85,7 +138,6 @@ export default function EditAccountPage() {
 
     setLoadingDelete(true);
 
-
     toast.promise(api.deleteUser(), {
       loading: "Eliminando cuenta...",
       success: () => {
@@ -98,10 +150,77 @@ export default function EditAccountPage() {
         setLoadingDelete(false);
         return `Error al eliminar la cuenta: ${err.message}`;
       }
-    })
-    
-    
-    
+    }); // CORRECCIÓN: Se agregó ;
+  };
+
+  const handleVerifyCurrent = async () => {
+    try {
+      verifySchema.parse(currentPassword);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        toast.error(err.errors[0].message);
+      } else {
+        toast.error("Contraseña inválida");
+      }
+      return;
+    }
+
+    setVerifying(true);
+    try {
+      const resp = await api.verifyPassword({ password: currentPassword });
+      toast.success(resp.message);      
+      
+      // CORRECCIÓN PRINCIPAL: verified es booleano, no string.
+      setVerified(true); 
+
+    } catch (error: any) {      
+      toast.error(error?.message || "Error al verificar contraseña.");
+      setVerified(false);
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleUpdatePassword = async () => {
+    try {
+      newPasswordSchema.parse(newPassword);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        toast.error(err.errors[0].message);
+      } else {
+        toast.error("Contraseña inválida");
+      }
+      return;
+    }
+
+    if (!verified) {
+      toast.error("Primero verifica tu contraseña actual.");
+      return;
+    }
+
+    setUpdating(true);
+    // Ajusta los campos según lo que espere el backend si es necesario
+    const bodyd = {
+      newPassword: newPassword,
+    };
+
+    toast.promise(
+      api.updatePassword(body),
+      {
+        loading: "Cambiando contraseña...",
+        success: (data) => {
+          setVerified(false);
+          setCurrentPassword("");
+          setNewPassword("");
+          setUpdating(false); // CORRECCIÓN: Resetear estado de carga
+          return "Contraseña actualizada correctamente";
+        },
+        error: (err) => {
+          setUpdating(false); // CORRECCIÓN: Resetear estado de carga en error
+          return err.message || "Error al actualizar contraseña";
+        },
+      }
+    ); // CORRECCIÓN: Se agregó ;
   };
 
   if (!user) {
@@ -138,7 +257,7 @@ export default function EditAccountPage() {
                 alt="Foto de perfil"
               />
               <AvatarFallback>
-                { `${user.username?.charAt(0).toUpperCase()}${user.username?.charAt(1)?.toUpperCase()}` || "U" }
+                {user.username ? user.username.slice(0, 2).toUpperCase() : "U"}
               </AvatarFallback>
             </Avatar>
           </label>
@@ -148,84 +267,142 @@ export default function EditAccountPage() {
          </div>
        </div>
 
-      {/* Formulario */}
+      {/* Formulario usando react-hook-form + zod */}
       <Card className="bg-muted/30">
         <CardContent className="p-6 flex flex-col gap-5">
-          <div>
-            <label className="block text-sm font-medium mb-1">Nombre</label>
-            <Input
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              placeholder="Nombre completo"
-            />
-          </div>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSave)}>
+              <FormField
+                control={form.control}
+                name="nombre_completo"
+                render={({ field }) => (
+                  <FormItem>
+                    <label className="block text-sm font-medium mb-1">Nombre</label>
+                    <FormControl>
+                      <Input
+                        placeholder="Nombre completo"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Usuario</label>
-            <Input
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Nombre de usuario"
-            />
-          </div>
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <label className="block text-sm font-medium mb-1">Usuario</label>
+                    <FormControl>
+                      <Input
+                        placeholder="Nombre de usuario"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Privacidad de la cuenta
-            </label>
-            <Select value={privacidad} onValueChange={setPrivacidad}>
-              <SelectTrigger>
-                <SelectValue>
-                  {privacidad === "publica" ? (
-                    <span className="flex items-center gap-2">
-                      Pública <Globe className="h-4 w-4" />
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      Privada <Lock className="h-4 w-4" />
-                    </span>
-                  )}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="publica">
-                  <span className="flex items-center gap-2">
-                    Pública <Globe className="h-4 w-4" />
-                  </span>
-                </SelectItem>
-                <SelectItem value="privada">
-                  <span className="flex items-center gap-2">
-                    Privada <Lock className="h-4 w-4" />
-                  </span>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Privacidad de la cuenta
+                </label>
+                <Select value={privacidad} onValueChange={setPrivacidad}>
+                  <SelectTrigger>
+                    <SelectValue>
+                      {privacidad === "publica" ? (
+                        <span className="flex items-center gap-2">
+                          Pública <Globe className="h-4 w-4" />
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          Privada <Lock className="h-4 w-4" />
+                        </span>
+                      )}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="publica">
+                      <span className="flex items-center gap-2">
+                        Pública <Globe className="h-4 w-4" />
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="privada">
+                      <span className="flex items-center gap-2">
+                        Privada <Lock className="h-4 w-4" />
+                      </span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <div className="flex flex-col sm:flex-row justify-between gap-4 mt-4">
-            <Link href="/viajero/configuracion/cuenta/editar/cambContr">
-              <Button variant="outline" className="w-full sm:w-auto">
-                Cambiar contraseña
+              <div className="flex flex-col sm:flex-row justify-between gap-4 mt-4">
+                <Button
+                  type="submit"
+                  className="bg-primary text-white hover:bg-primary/90 w-full sm:w-auto"
+                >
+                  Aceptar cambios
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="w-full sm:w-auto"
+                  onClick={handleDelete}
+                  disabled={loadingDelete}
+                >
+                  {loadingDelete ? "Eliminando..." : "Eliminar cuenta"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </CardContent>
+
+        {/* Formulario para verificar y actualizar contraseña */}
+        <CardContent className="p-6 border-t">
+          <h3 className="text-lg font-medium mb-3">Actualizar contraseña</h3>
+
+          <div className="flex flex-col gap-3">
+            <div>
+              <label className="block text-sm font-medium mb-1">Contraseña actual</label>
+              <Input
+                type="password"
+                placeholder="Ingresa tu contraseña actual"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+              />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Button onClick={handleVerifyCurrent} disabled={verifying}>
+                {verifying ? "Verificando..." : "Verificar contraseña"}
               </Button>
-            </Link>
-            <Button
-              onClick={handleSave}
-              className="bg-primary text-white hover:bg-primary/90 w-full sm:w-auto"
-            >
-              Aceptar cambios
-            </Button>
-            <Button
-              variant="destructive"
-              className="w-full sm:w-auto"
-              onClick={handleDelete}
-              disabled={loadingDelete}
-            >
-              {loadingDelete ? "Eliminando..." : "Eliminar cuenta"}
-            </Button>
+              {verified && <span className="text-sm text-green-600">Contraseña verificada</span>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Nueva contraseña</label>
+              <Input
+                type="password"
+                placeholder="Nueva contraseña"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                disabled={!verified}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                La contraseña debe tener mínimo 8 caracteres, incluir mayúscula, minúscula, número y un carácter especial (#, $, _, ?, ¿, *).
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Button onClick={handleUpdatePassword} disabled={!verified || updating}>
+                {updating ? "Actualizando..." : "Cambiar contraseña"}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
     </div>
   );
 }
-
