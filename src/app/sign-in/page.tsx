@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -36,6 +36,8 @@ const formSchema = z.object({
       message: "La contraseña debe contener mayúscula, minúscula, número y un carácter especial válido (#, $, _, ?, ¿, *).",
     })
 })
+
+const HOST = "https://harol-lovers.up.railway.app"
 
 export default function SignInPage() {
   const [showPassword, setShowPassword] = useState(false);

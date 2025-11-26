@@ -8,7 +8,7 @@ import * as L from 'leaflet';
 import 'leaflet-routing-machine';
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 
-import { lugar } from "@/app/(dashboard)/dashboard/vermapa/page"
+import { lugar } from "@/app/(dashboard)/dashboard/createItinerario/page"
 
 interface RutaProps{
     destinos: lugar[],
@@ -23,7 +23,7 @@ export default function Ruta({ destinos }: RutaProps)
     useEffect(() =>
     {
         const destinosLeaflet = destinos.map((lugar) =>
-            L.latLng(lugar.lat, lugar.lng)
+            L.latLng(lugar.latitud, lugar.longitud)
         );
 
         if ( destinosLeaflet.length < 2 ) //No dibujar la ruta si hay menos de dos puntos

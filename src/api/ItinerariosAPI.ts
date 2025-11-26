@@ -227,8 +227,8 @@ export class ItinerariosAPI implements ApiRoutes {
         return await this.put<{ message: string }>("/user/update-password", true, body);
     }
 
-    async verifyPassword(body: VerifyPasswordRequest): Promise<{ valid: boolean }> {
-        return await this.post<{ valid: boolean }>("/user/verify-password", true, body);
+    async verifyPassword(body: VerifyPasswordRequest): Promise<{ message: boolean }> {
+        return await this.post<{ message: boolean }>("/user/verify-password", true, body);
     }
 
     async searchUsers(query: string): Promise<SearchUserResponse> {
