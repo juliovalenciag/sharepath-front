@@ -11,7 +11,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
 const PreguntaSchema = z.object({
-  pregunta3: z.array(z.string()).min(1, "Seleccione al menos una opcion "), 
+  pregunta3: z.array(z.string()).min(1, "Seleccione al menos una opcion ").max(3, "Seleccione maximo tres"), 
 });
 type PreguntaValues = z.infer<typeof PreguntaSchema>;
 
@@ -72,19 +72,17 @@ export default function Pregunta3Page() {
         lugares_preferidos: finalData.pregunta1, 
         estados_visitados:finalData.pregunta2, 
         actividades_preferidas: finalData.pregunta3 }), 
-      }).then(async (res) => {
-         if (!res.ok) {
-            const errorData = await res.json();
-            throw new Error(errorData.message || 'Ocurrió un error al guardar las respuestas.');
-        }
-        const result = await res.json(); 
+      })
+         if (!promise.ok) 
+          //throw new Error(text); 
+
         toast.success('Preferencias guardadas con éxito', {
           description: 'Gracias tus respuestas han sido registradas.',
         });
       router.push('/viajero');
 
        // return res.json();
-    });
+  
 
   };
 
@@ -108,7 +106,7 @@ export default function Pregunta3Page() {
                   
                   <FormControl>
                     <div className="flex flex-wrap gap-3 mt-4">
-                      {['Gastronomía', 'Museos y arte', 'Actividades culturales', 'Bares o discos', 'Caminatas', 'Compras o entretenimiento'].map((opt) => {
+                      {['Tours', 'Probar comida', 'Culturales', 'Bailar', 'Caminatas', 'Compras', 'Entretenimiento', 'Visitar Museos', 'Vida nocturna'].map((opt) => {
                         const isSelected = (field.value || []).includes(opt);
                         
                         return (
