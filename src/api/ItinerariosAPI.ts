@@ -259,8 +259,6 @@ export class ItinerariosAPI implements ApiRoutes {
         return await this.get<ListFriend>("/amigo", true);
     }
 
-    // ... (tus métodos existentes)
-
     // ===== PUBLICACIONES =====
 
     async getAverageRating(publicationId: number): Promise<AverageRatingResponse> {
