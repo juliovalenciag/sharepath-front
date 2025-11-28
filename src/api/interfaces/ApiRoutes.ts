@@ -112,7 +112,14 @@ export interface SearchUserResponse {
     users: Usuario[];
 }
 
-// Amigo 
+export interface Preferencias {
+    id: number, 
+    usuario: Usuario, 
+    correo: string, 
+    lugares_preferidos : string [], 
+    estados_visitados : string [], 
+    actividades_preferidas : string []
+}
 export interface Amigo {
     id: number, 
     status: number, 
@@ -165,7 +172,7 @@ export interface ApiRoutes {
     deleteUser: () => Promise<{ message: string }>;
 
     // Amigo 
-    sendFriendRequest: (correo: string) => Promise<SendFriend>;
+    sendFriendRequest: (receiving: string) => Promise<SendFriend>;
     respondFriendRequest: (id: number, state: number) => Promise<RespondFriend>;
     getRequests: () => Promise<ListRequest>;
     getFriends: () => Promise<ListFriend>; 

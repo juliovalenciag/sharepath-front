@@ -22,7 +22,7 @@ import {
     Amigo,
     ShareItineraryRequest,
     Publicacion,
-    AverageRatingResponse
+    AverageRatingResponse,
 } from "./interfaces/ApiRoutes";
 
 
@@ -273,5 +273,5 @@ export class ItinerariosAPI implements ApiRoutes {
 
     async getMyPublications(): Promise<Publicacion[]> {
         return await this.get<Publicacion[]>("/publicacion/", true);
-    }
+    } 
 }

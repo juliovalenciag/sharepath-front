@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { FiEye, FiEyeOff } from "react-icons/fi";
-import { Usuario } from "@/api/interfaces/ApiRoutes";
+
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 
 // 1. Definimos el "contrato" de validación con Zod
@@ -124,11 +124,9 @@ export default function SignUpPage() {
       if (!correoVal ||!usernameVal || !passwordVal ||!nombreVal)
           throw new Error("Datos inválidos");
    
-      const registerResponse = await api.doRegister({  nombre_completo: values.nombre_completo, correo: values.correo, 
+      const registerResponse = await api.doRegister({ nombre_completo: values.nombre_completo, correo: values.correo, 
         username: values.username, password: values.password, role: "user", privacity_mode: false,
       });
-
-      // 3. LOGIN AUTOMÁTICO
       const user = await api.doLogin(values.correo, values.password);
 
       return registerResponse;

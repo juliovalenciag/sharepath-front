@@ -61,28 +61,27 @@ export default function Pregunta3Page() {
     //implementacion del back 
     const token = localStorage.getItem("token"); 
     console.log("token del new user: ", token); 
-
-    const promise = await fetch("http://localhost:3000/preferencias/register", {
-      method: "POST", 
+    const res = await fetch("https://harol-lovers.up.railway.app/preferencias/register", {
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Token": `Bearer ${token}`
-      }, 
-      body: JSON.stringify({
-        lugares_preferidos: finalData.pregunta1, 
-        estados_visitados:finalData.pregunta2, 
-        actividades_preferidas: finalData.pregunta3 }), 
-      })
-         if (!promise.ok) 
-          //throw new Error(text); 
-
-        toast.success('Preferencias guardadas con éxito', {
-          description: 'Gracias tus respuestas han sido registradas.',
-        });
-      router.push('/viajero');
-
-       // return res.json();
+        "token": `Bearer ${token}`
+      },
+    body: JSON.stringify({
+      lugares_preferidos: finalData.pregunta1,
+      estados_visitados: finalData.pregunta2,
+      actividades_preferidas: finalData.pregunta3
+     })
+   });
+   
+   const text = await res.text();
+   console.log("response:", text);
   
+   if (!res.ok) 
+   throw new Error(text);
+
+  toast.success("Preferencias guardadas con éxito");
+  router.push("/viajero");
 
   };
 
