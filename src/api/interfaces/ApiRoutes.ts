@@ -234,3 +234,22 @@ export interface ApiRoutes {
     shareItinerary: (itinerarioId: number, body: ShareItineraryRequest) => Promise<Publicacion>;
     getMyPublications: () => Promise<Publicacion[]>;
 }
+
+export interface Actividad {
+    fecha:       string;        
+    description: string;
+    lugarId:     string;
+    // Campos extendidos para tu UI moderna
+    start_time?: string | null; 
+    end_time?:   string | null;
+}
+
+export interface CreateItinerarioRequest {
+    title:       string;
+    actividades: Actividad[];
+    // Campos extendidos del BuilderMeta
+    start_date?: string;
+    end_date?:   string;
+    regions?:    string[];
+    visibility?: "private" | "friends" | "public"; 
+}

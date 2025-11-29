@@ -7,7 +7,7 @@ import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 import {
   getCategoryName,
   getDefaultImageForCategory,
-} from "@/components/dashboard-components/category-utils";
+} from "@/lib/category-utils";
 import { ItinerarioData, Actividad } from "@/api/interfaces/ApiRoutes";
 
 export default function PublicacionPage() {

@@ -1,7 +1,9 @@
 // src/lib/itinerary-builder-store.ts
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import { RegionKey } from "./constants/regions";
 
-// ========== Tipos base ==========
+// ========== TIPOS ==========
 
 export type BuilderPlace = {
   id_api_place: string;
@@ -17,46 +19,43 @@ export type BuilderPlace = {
 
 export type BuilderActivity = {
   id: string;
-  fecha: Date;
+  fecha: Date; // Se guarda como string ISO, se hidrata a Date
   description: string;
   lugar: BuilderPlace;
-  start_time: string | null;
-  end_time: string | null;
+  start_time: string | null; // "10:00"
+  end_time: string | null; // "11:00"
 };
 
 export type BuilderMeta = {
   title: string;
   start: Date;
   end: Date;
-  regions: string[];
-  visibility: "private" | "friends" | "public";
+  regions: RegionKey[];
+  visibility: "private" | "friends" | "public"; // Agregado para soportar tu flujo completo
+  companions: string[];
 };
 
-// ========== Helpers internos ==========
+// Helpers de comparación para evitar re-renders innecesarios
+function shallowEqualArray<T>(a: T[], b: T[]): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  return a.every((val, i) => val === b[i]);
+}
 
 type SetActivitiesInput =
   | BuilderActivity[]
   | ((prev: BuilderActivity[]) => BuilderActivity[]);
 
-function shallowEqualArray<T>(a: T[], b: T[]): boolean {
-  if (a === b) return true;
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) return false;
-  }
-  return true;
-}
-
-// ========== Estado del builder ==========
-
 type ItineraryBuilderState = {
   meta: BuilderMeta | null;
   actividades: BuilderActivity[];
 
+  // Acciones
   setMeta: (meta: BuilderMeta | null) => void;
+
   /**
-   * Reemplaza la lista de actividades.
-   * Acepta un array nuevo o una función (prev) => next.
+   * Actualiza la lista completa de actividades.
+   * Útil para reordenamiento (drag & drop) o optimización.
    */
   setActivities: (input: SetActivitiesInput) => void;
 
@@ -65,76 +64,87 @@ type ItineraryBuilderState = {
   removeActivity: (id: string) => void;
 
   /**
-   * Limpia todo el estado del builder (meta + actividades).
+   * Borra todo el estado y el localStorage asociado.
    */
   clear: () => void;
 };
 
+// ========== STORE ==========
+
 export const useItineraryBuilderStore = create<ItineraryBuilderState>()(
-  (set) => ({
-    meta: null,
-    actividades: [],
-
-    setMeta: (meta) => {
-      set((state) => {
-        // Si es exactamente el mismo objeto, no dispares update
-        if (state.meta === meta) return state;
-        return { ...state, meta };
-      });
-    },
-
-    setActivities: (input) => {
-      set((state) => {
-        const prev = state.actividades;
-        const next =
-          typeof input === "function"
-            ? (input as (prev: BuilderActivity[]) => BuilderActivity[])(prev)
-            : input;
-
-        // Evita rerenders si el array es superficialmente igual
-        if (shallowEqualArray(prev, next)) return state;
-
-        return { ...state, actividades: next };
-      });
-    },
-
-    addActivity: (activity) => {
-      set((state) => {
-        // Evita duplicar por id
-        if (state.actividades.some((a) => a.id === activity.id)) {
-          return state;
-        }
-        return { ...state, actividades: [...state.actividades, activity] };
-      });
-    },
-
-    updateActivity: (id, patch) => {
-      set((state) => {
-        const updated = state.actividades.map((a) =>
-          a.id === id ? { ...a, ...patch } : a
-        );
-        if (shallowEqualArray(state.actividades, updated)) return state;
-        return { ...state, actividades: updated };
-      });
-    },
-
-    removeActivity: (id) => {
-      set((state) => {
-        const filtered = state.actividades.filter((a) => a.id !== id);
-        if (filtered.length === state.actividades.length) return state;
-        return { ...state, actividades: filtered };
-      });
-    },
-
-    clear: () => ({
+  persist(
+    (set, get) => ({
       meta: null,
       actividades: [],
+
+      setMeta: (meta) => {
+        const current = get().meta;
+        // Evitamos actualización si es idéntico (optimización)
+        if (JSON.stringify(current) === JSON.stringify(meta)) return;
+        set({ meta });
+      },
+
+      setActivities: (input) => {
+        set((state) => {
+          const prev = state.actividades;
+          const next = typeof input === "function" ? input(prev) : input;
+
+          if (shallowEqualArray(prev, next)) return state;
+          return { actividades: next };
+        });
+      },
+
+      addActivity: (activity) => {
+        set((state) => {
+          // Prevenir duplicados de ID (seguridad extra)
+          if (state.actividades.some((a) => a.id === activity.id)) return state;
+          return { actividades: [...state.actividades, activity] };
+        });
+      },
+
+      updateActivity: (id, patch) => {
+        set((state) => ({
+          actividades: state.actividades.map((a) =>
+            a.id === id ? { ...a, ...patch } : a
+          ),
+        }));
+      },
+
+      removeActivity: (id) => {
+        set((state) => ({
+          actividades: state.actividades.filter((a) => a.id !== id),
+        }));
+      },
+
+      clear: () => set({ meta: null, actividades: [] }),
     }),
-  })
+    {
+      name: "itinerary-builder-storage-v2", // Nombre clave en localStorage
+      storage: createJSONStorage(() => localStorage),
+
+      // --- HIDRATACIÓN ---
+      // Convierte los strings de fecha de vuelta a objetos Date reales al recargar la página
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+
+        if (state.meta) {
+          state.meta.start = new Date(state.meta.start);
+          state.meta.end = new Date(state.meta.end);
+        }
+
+        if (state.actividades) {
+          state.actividades = state.actividades.map((a) => ({
+            ...a,
+            fecha: new Date(a.fecha),
+          }));
+        }
+      },
+    }
+  )
 );
 
-// ========== Helper para payload del backend ==========
-
+// ========== HELPER PARA PAYLOAD (Conexión con Backend) ==========
+// Este helper prepara los datos para que coincidan con lo que tu API espera
 export function buildItineraryPayload(
   meta: BuilderMeta,
   actividades: BuilderActivity[]
@@ -143,14 +153,18 @@ export function buildItineraryPayload(
     title: meta.title,
     visibility: meta.visibility,
     regions: meta.regions,
-    start_date: meta.start.toISOString().slice(0, 10),
+    start_date: meta.start.toISOString().slice(0, 10), // YYYY-MM-DD
     end_date: meta.end.toISOString().slice(0, 10),
+
+    // Mapeo hacia la interfaz 'Actividad' del backend
     actividades: actividades.map((a) => ({
       fecha: a.fecha.toISOString().slice(0, 10),
-      description: a.description,
+      description: a.description || "", // Aseguramos string vacío, no null
       lugarId: a.lugar.id_api_place,
-      start_time: a.start_time,
-      end_time: a.end_time,
+
+      // Datos extra que agregamos a la interfaz en el paso anterior
+      start_time: a.start_time || null,
+      end_time: a.end_time || null,
     })),
   };
 }
