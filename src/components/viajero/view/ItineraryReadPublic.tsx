@@ -1,20 +1,20 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
-import { Camera, Star, MapPin, Calendar, Tag } from "lucide-react";
+import { Camera, MapPin, Calendar, Tag, Plus, X, ArrowLeft } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function ItineraryPublishView({ id }: { id: string }) {
   const router = useRouter();
   const [itinerario, setItinerario] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("dia-1");
-  const fileInputRefs = useRef<{[key: string]: HTMLInputElement | null}>({});
+  const [descripcion, setDescripcion] = useState("");
+  const [fotos, setFotos] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -56,8 +56,8 @@ export default function ItineraryPublishView({ id }: { id: string }) {
             lng: act.lugar.longitud,
             calificacion: act.lugar.calificacion || 4,
             fecha: act.fecha,
-            horario: "Todo el día", // Podrías obtener esto de tu API
-            tags: [act.lugar.category] // Podrías agregar más tags
+            horario: "Todo el día",
+            tags: [act.lugar.category]
           });
         });
 
@@ -69,6 +69,11 @@ export default function ItineraryPublishView({ id }: { id: string }) {
             lugares: actividadesPorDia[fecha],
           }));
 
+        // Recopilar todas las fotos disponibles
+        const todasLasFotos = actividadesOrdenadas
+          .filter((act: any) => act.fotoPersonal || act.lugar.foto_url)
+          .map((act: any) => act.fotoPersonal || act.lugar.foto_url);
+
         setItinerario({
           id: data.id,
           titulo: data.title,
@@ -77,12 +82,11 @@ export default function ItineraryPublishView({ id }: { id: string }) {
             diasTotales: dias.length,
             totalLugares: actividadesOrdenadas.length,
             categorias: [...new Set(actividadesOrdenadas.map((a: any) => a.lugar.category))],
-          },
-          usuario: {
-            nombre: "Tu nombre", // Aquí podrías obtener el nombre del usuario
-            fotoPerfil: "/placeholder-avatar.jpg"
           }
         });
+
+        setFotos(todasLasFotos);
+        setDescripcion(data.descripcion || "");
       } catch (err) {
         console.error("Error cargando itinerario:", err);
       } finally {
@@ -92,69 +96,47 @@ export default function ItineraryPublishView({ id }: { id: string }) {
     fetchData();
   }, [id]);
 
-  // Guardar cambios
-  const guardarCambios = async (lugarId: string, nuevosDatos: any) => {
+  // Manejar subida de fotos
+  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    const newPhotos: string[] = [];
+    
+    Array.from(files).forEach(file => {
+      const imageUrl = URL.createObjectURL(file);
+      newPhotos.push(imageUrl);
+    });
+
+    setFotos(prev => [...prev, ...newPhotos]);
+  };
+
+  // Eliminar foto
+  const removePhoto = (index: number) => {
+    setFotos(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Publicar itinerario
+  const publicarItinerario = async () => {
     try {
-      const res = await fetch(`https://harol-lovers.up.railway.app/actividad/${lugarId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          token: localStorage.getItem("authToken") || "",
-        },
-        body: JSON.stringify({
-          descripcionPersonal: nuevosDatos.descripcion,
-          fotoPersonal: nuevosDatos.imageUrl,
-        }),
+      console.log("Publicando itinerario:", {
+        descripcion,
+        fotos: fotos.length,
+        id: itinerario.id
       });
-
-      if (res.ok) {
-        setItinerario((prev: any) => ({
-          ...prev,
-          dias: prev.dias.map((d: any) => ({
-            ...d,
-            lugares: d.lugares.map((l: any) =>
-              l.id === lugarId ? { ...l, ...nuevosDatos } : l
-            ),
-          })),
-        }));
-      }
+      
+      alert('¡Itinerario publicado exitosamente!');
+      router.push('/viajero/itinerarios');
     } catch (error) {
-      console.error("Error guardando cambios:", error);
+      console.error("Error publicando itinerario:", error);
+      alert('Error al publicar el itinerario');
     }
-  };
-
-  // Subir imagen
-  const handleImageUpload = (file: File, lugarId: string) => {
-    const imageUrl = URL.createObjectURL(file);
-    
-    const lugar = itinerario.dias
-      .flatMap((d: any) => d.lugares)
-      .find((l: any) => l.id === lugarId);
-    
-    if (lugar) {
-      const nuevosDatos = { ...lugar, imageUrl };
-      setItinerario((prev: any) => ({
-        ...prev,
-        dias: prev.dias.map((d: any) => ({
-          ...d,
-          lugares: d.lugares.map((l: any) =>
-            l.id === lugarId ? nuevosDatos : l
-          ),
-        })),
-      }));
-      guardarCambios(lugarId, nuevosDatos);
-    }
-  };
-
-  // Trigger file input
-  const triggerFileInput = (lugarId: string) => {
-    fileInputRefs.current[lugarId]?.click();
   };
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
         <p className="mt-4 text-lg">Cargando tu itinerario...</p>
       </div>
     </div>
@@ -172,185 +154,170 @@ export default function ItineraryPublishView({ id }: { id: string }) {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header sólido */}
-      <header className="sticky top-0 z-10 bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Button variant="ghost" onClick={() => router.push('/viajero/itinerarios')}>
-            ← Volver
-          </Button>
-          <h1 className="text-xl font-bold text-gray-900">Preparar Publicación</h1>
+    <div className="min-h-screen">
+      {/* Header minimalista */}
+      <header className="sticky top-0 z-10 border-b backdrop-blur-sm bg-white/95">
+        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <Button 
-            className="bg-green-600 hover:bg-green-700 text-white"
-            onClick={() => alert('¡Itinerario publicado!')}
+            variant="ghost" 
+            size="icon"
+            onClick={() => router.push('/viajero/itinerarios')}
+            className="w-10 h-10"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <h1 className="text-xl font-bold">Crear Publicación</h1>
+          <Button 
+            onClick={publicarItinerario}
+            disabled={!descripcion.trim() || fotos.length === 0}
           >
             Publicar
           </Button>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-6">
-        {/* Información del itinerario */}
-        <Card className="mb-8 border border-gray-200 shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="flex-1">
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">{itinerario.titulo}</h1>
-                <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
-                    <span>{itinerario.resumen.diasTotales} días</span>
+      <main className="max-w-4xl mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Columna izquierda - Galería de fotos */}
+          <div className="space-y-6">
+            <Card className="overflow-hidden">
+              <CardContent className="p-0">
+                {/* Galería de fotos */}
+                {fotos.length > 0 ? (
+                  <div className="grid grid-cols-3 gap-1 p-1">
+                    {fotos.map((foto, index) => (
+                      <div key={index} className="relative aspect-square group">
+                        <img
+                          src={foto}
+                          alt={`Foto ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          onClick={() => removePhoto(index)}
+                          className="absolute top-1 right-1 w-6 h-6 bg-black/70 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                    
+                    {/* Botón para añadir más fotos */}
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center hover:border-gray-400 transition-colors"
+                    >
+                      <Plus className="w-8 h-8 mb-2" />
+                      <span className="text-sm">Añadir más</span>
+                    </button>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <MapPin className="w-4 h-4" />
-                    <span>{itinerario.resumen.totalLugares} lugares</span>
+                ) : (
+                  /* Estado vacío */
+                  <div 
+                    className="aspect-square flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition-colors"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Camera className="w-12 h-12 mb-4 opacity-50" />
+                    <p className="text-lg font-medium mb-2">Añade fotos de tu viaje</p>
+                    <p className="text-sm opacity-70">Haz clic para seleccionar fotos</p>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Tag className="w-4 h-4" />
-                    <span>{itinerario.resumen.categorias.length} categorías</span>
+                )}
+                
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handlePhotoUpload}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Información del itinerario */}
+            <Card>
+              <CardContent className="p-4">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 mx-auto mb-2">
+                      <Calendar className="w-4 h-4" />
+                    </div>
+                    <p className="text-2xl font-bold">{itinerario.resumen.diasTotales}</p>
+                    <p className="text-xs opacity-70">días</p>
                   </div>
+                  <div>
+                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 mx-auto mb-2">
+                      <MapPin className="w-4 h-4" />
+                    </div>
+                    <p className="text-2xl font-bold">{itinerario.resumen.totalLugares}</p>
+                    <p className="text-xs opacity-70">lugares</p>
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 mx-auto mb-2">
+                      <Tag className="w-4 h-4" />
+                    </div>
+                    <p className="text-2xl font-bold">{itinerario.resumen.categorias.length}</p>
+                    <p className="text-xs opacity-70">categorías</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Columna derecha - Información y descripción */}
+          <div className="space-y-6">
+            {/* Título del itinerario */}
+            <div>
+              <h1 className="text-2xl font-bold mb-4">{itinerario.titulo}</h1>
+              
+              {/* Descripción */}
+              <div className="space-y-3">
+                <Label htmlFor="descripcion" className="text-sm font-medium">
+                  Comparte tu experiencia
+                </Label>
+                <Textarea
+                  id="descripcion"
+                  value={descripcion}
+                  onChange={(e) => setDescripcion(e.target.value)}
+                  placeholder="Cuenta la historia de tu viaje... ¿Qué hizo especial este itinerario? ¿Qué recomiendas a otros viajeros?"
+                  rows={8}
+                  className="resize-none"
+                />
+                <div className="flex justify-between items-center text-sm opacity-70">
+                  <span>Esta descripción aparecerá en tu publicación</span>
+                  <span>{descripcion.length}/500</span>
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Tabs para días */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full mb-8" style={{ gridTemplateColumns: `repeat(${itinerario.dias.length}, minmax(0, 1fr))` }}>
-            {itinerario.dias.map((dia: any) => (
-              <TabsTrigger key={dia.dia} value={`dia-${dia.dia}`} className="text-sm">
-                Día {dia.dia}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          {itinerario.dias.map((dia: any) => (
-            <TabsContent key={dia.dia} value={`dia-${dia.dia}`} className="space-y-6">
-              {dia.lugares.map((lugar: any) => (
-                <Card key={lugar.id} className="border border-gray-200 shadow-sm overflow-hidden">
-                  <div className="flex flex-col md:flex-row">
-                    {/* Columna de imagen */}
-                    <div className="md:w-1/2 relative">
-                      <img
-                        src={lugar.imageUrl || "/placeholder.jpg"}
-                        className="w-full h-64 md:h-80 object-cover"
-                        alt={lugar.titulo}
-                      />
-                      <div className="absolute top-3 right-3">
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          ref={el => fileInputRefs.current[lugar.id] = el}
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) handleImageUpload(file, lugar.id);
-                          }}
-                        />
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          className="bg-white/90 hover:bg-white backdrop-blur-sm"
-                          onClick={() => triggerFileInput(lugar.id)}
-                        >
-                          <Camera className="w-4 h-4 mr-2" />
-                          Cambiar foto
-                        </Button>
+            {/* Vista previa de días */}
+            <Card>
+              <CardContent className="p-4">
+                <h3 className="font-bold mb-4">Tu itinerario</h3>
+                <div className="space-y-4">
+                  {itinerario.dias.map((dia: any) => (
+                    <div key={dia.dia} className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-medium">
+                        {dia.dia}
                       </div>
-                    </div>
-                    
-                    {/* Columna de información */}
-                    <div className="md:w-1/2 p-6 space-y-4">
-                      {/* Header del lugar */}
-                      <div>
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">{lugar.titulo}</h3>
-                        
-                        {/* Fila 1: Día y Horario */}
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <Calendar className="h-4 w-4" />
-                            <span>Día {dia.dia}</span>
-                          </div>
-                          <span className="text-sm text-gray-600">
-                            {lugar.horario}
-                          </span>
-                        </div>
-
-                        {/* Fila 2: Ubicación y Tags */}
-                        <div className="flex flex-col sm:flex-row gap-3 text-sm mb-4">
-                          <div className="flex items-center gap-2 flex-1">
-                            <MapPin className="h-4 w-4 text-gray-600" />
-                            <span className="text-gray-700">{lugar.estado}</span>
-                          </div>
-
-                          {/* Tags */}
-                          <div className="flex flex-wrap gap-2">
-                            {lugar.tags?.map((tag: string, index: number) => (
-                              <span 
-                                key={index} 
-                                className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full border border-gray-200"
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Descripción */}
-                      <div className="space-y-3">
-                        <Label htmlFor={`desc-${lugar.id}`} className="text-sm font-medium text-gray-700">
-                          Tu experiencia:
-                        </Label>
-                        <Textarea
-                          id={`desc-${lugar.id}`}
-                          value={lugar.descripcion}
-                          onChange={(e) => {
-                            setItinerario((prev: any) => ({
-                              ...prev,
-                              dias: prev.dias.map((d: any) => ({
-                                ...d,
-                                lugares: d.lugares.map((l: any) =>
-                                  l.id === lugar.id 
-                                    ? { ...l, descripcion: e.target.value }
-                                    : l
-                                ),
-                              })),
-                            }));
-                          }}
-                          onBlur={() => guardarCambios(lugar.id, lugar)}
-                          placeholder="Comparte tu experiencia en este lugar... ¿Qué te pareció? ¿Qué recomiendas?"
-                          rows={4}
-                          className="resize-none border-gray-300 focus:border-primary"
-                        />
-                        <div className="flex justify-between items-center">
-                          <p className="text-xs text-gray-500">
-                            Tu descripción se guarda automáticamente
-                          </p>
-                          <span className="text-xs text-gray-500">
-                            {lugar.descripcion?.length || 0}/500
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Calificación */}
-                      <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-medium text-gray-700">Calificación del lugar:</span>
-                          <div className="flex items-center gap-1">
-                            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                            <span className="text-sm font-medium">{lugar.calificacion}/5</span>
-                          </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm mb-2">
+                          Día {dia.dia}
+                        </p>
+                        <div className="space-y-1">
+                          {dia.lugares.map((lugar: any, index: number) => (
+                            <p key={index} className="text-sm opacity-70">
+                              • {lugar.titulo}
+                            </p>
+                          ))}
                         </div>
                       </div>
                     </div>
-                  </div>
-                </Card>
-              ))}
-            </TabsContent>
-          ))}
-        </Tabs>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </main>
     </div>
   );
