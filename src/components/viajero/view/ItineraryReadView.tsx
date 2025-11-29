@@ -267,19 +267,21 @@ export default function ItineraryReadView({ id }: { id: string }) {
           })}
         </div>
 
-        {/* COLUMNA DERECHA: Mapa y Tarjeta de Información */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="grid grid-cols-1 gap-6 h-full">
-            {/* 1. Área del Mapa (real) */}
-            <div className="flex flex-col h-[350px] md:h-[450px] bg-gray-100 border-4 border-gray-300 rounded-xl overflow-hidden shadow-2xl">
-              <div className="p-4 bg-gray-800 text-white font-semibold flex items-center">
-                <Map className="w-5 h-5 mr-2" />
-                Vista de Mapa
-              </div>
-              <div className="flex-grow">
-                <ItineraryMap places={placesForMap} />
-              </div>
+        {/* COLUMNA DERECHA: Mapa y resumen siempre debajo */}
+        <div className="lg:col-span-2 flex flex-col gap-4">
+          {/* Mapa */}
+          <div className="relative h-[350px] md:h-[450px] bg-gray-100 border-4 border-gray-300 rounded-xl shadow-2xl">
+            <div className="p-4 bg-gray-800 text-white font-semibold flex items-center rounded-t-xl">
+              <Map className="w-5 h-5 mr-2" />
+              Vista de Mapa
             </div>
+            <div className="h-[calc(100%-64px)] overflow-hidden rounded-b-xl">
+              <ItineraryMap places={placesForMap} />
+            </div>
+          </div>
+
+          {/* Resumen: mismo ancho que el mapa, siempre debajo sin encimarse */}
+          <div className="w-full">
             <TripStats
               diasTotales={itinerario.resumen.diasTotales}
               totalLugares={itinerario.resumen.totalLugares}

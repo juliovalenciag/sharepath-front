@@ -1,5 +1,6 @@
 "use client";
-
+import { useRouter } from "next/navigation"; 
+import Cookies from "js-cookie";             
 import { useEffect, useState } from "react";
 import {
   EllipsisVertical,
@@ -45,6 +46,13 @@ type SidebarUser = {
 };
 
 export function NavUser() {
+  const router = useRouter();
+  const handleLogout = () => {
+    Cookies.remove("auth_token");       
+    localStorage.removeItem("authToken");
+    router.push("/sign-in");            
+    router.refresh();                    
+  };
   const { isMobile } = useSidebar();
   const [user, setUser] = useState<SidebarUser | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
@@ -199,7 +207,10 @@ export function NavUser() {
             {/* 
               TODO: Aquí podrías conectar tu lógica de logout cuando el proyecto lo requiera.
             */}
-            <DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={handleLogout} 
+              className="cursor-pointer text-red-600 focus:text-red-600"
+            >
               <LogOut />
               Cerrar Sesión
             </DropdownMenuItem>

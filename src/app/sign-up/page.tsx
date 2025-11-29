@@ -111,7 +111,7 @@ export default function SignUpPage() {
       formData.append("foto", values.foto);
     }
 
-    const promise = fetch("https://harol-lovers.up.railway.app/auth/register", {
+    const promise = fetch("https://harol-lovers.up.railway.app/auth/register/", {
       method: "POST",
       body: formData,
     }).then(async (res) => {

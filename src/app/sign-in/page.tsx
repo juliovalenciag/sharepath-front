@@ -1,6 +1,6 @@
 "use client";
-
-import { useState } from "react";
+import Cookies from 'js-cookie';
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -37,6 +37,8 @@ const formSchema = z.object({
     })
 })
 
+const HOST = "https://harol-lovers.up.railway.app"
+
 export default function SignInPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -61,6 +63,7 @@ export default function SignInPage() {
     toast.promise(promise, {
       loading: "Iniciando sesión...",
       success: (data) => {
+        Cookies.set("auth_token", JSON.stringify(data), { expires: 1 });
         const userRole = data.role;
         let redirectPath = '/viajero';
 

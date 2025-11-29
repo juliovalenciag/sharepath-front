@@ -160,7 +160,7 @@ export interface ApiRoutes {
     getUser: () => Promise<Usuario>;
     updateUser: (body: UpdateUserRequest) => Promise<Usuario>;
     updatePassword: (body: UpdatePasswordRequest) => Promise<{ message: string }>;
-    verifyPassword: (body: VerifyPasswordRequest) => Promise<{ valid: boolean }>;
+    verifyPassword: (body: VerifyPasswordRequest) => Promise<{ message: boolean }>;
     searchUsers: (query: string) => Promise<SearchUserResponse>;
     deleteUser: () => Promise<{ message: string }>;
 
@@ -170,4 +170,29 @@ export interface ApiRoutes {
     getRequests: () => Promise<ListRequest>;
     getFriends: () => Promise<ListFriend>; 
 
+}
+
+export interface ShareItineraryRequest {
+    descripcion: string;
+    privacity_mode: boolean;
+}
+
+export interface Publicacion {
+    id: number;
+    descripcion: string;
+    privacity_mode: boolean;
+    itinerario: any; 
+    user_shared: Usuario;
+}
+
+export interface AverageRatingResponse {
+    publicationId: number;
+    averageRating: number;
+    reviewCount: number;
+}
+
+export interface ApiRoutes {
+    getAverageRating: (publicationId: number) => Promise<AverageRatingResponse>;
+    shareItinerary: (itinerarioId: number, body: ShareItineraryRequest) => Promise<Publicacion>;
+    getMyPublications: () => Promise<Publicacion[]>;
 }
