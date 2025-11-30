@@ -93,6 +93,23 @@ export interface LugaresListResponse {
     total:   number;
 }
 
+export interface RecommendationRequest {
+    lugarIds?: string[];
+    query?: string;
+    limit?: number;
+}
+
+export interface RecommendedLugar extends LugarData {
+    hybridScore: number;
+    proximityScore: number;
+    preferenceScore: number;
+    ratingScore: number;
+}
+
+export interface OptimizationRequest {
+    lugarIds: string[];
+}
+
 export interface UpdateUserRequest {
     username?:       string;
     nombre_completo?: string;
@@ -138,6 +155,19 @@ export interface ListRequest {
 export interface ListFriend {
     friends: Usuario[]; 
 }
+
+export interface FriendSuggestion {
+    username: string;
+    nombre_completo: string;
+    correo: string;
+    foto_url: string | null;
+}
+
+export interface FriendSuggestionResponse {
+    message: string;
+    data: FriendSuggestion[];
+}
+
 export interface ApiRoutes {
     // Auth
     doLogin: (correo: string, password: string) => Promise<Usuario>;
@@ -156,6 +186,12 @@ export interface ApiRoutes {
     getLugarById: (id: string) => Promise<LugarData>;
     deleteLugar: (id: string) => Promise<{ message: string }>;
 
+    // Recomendación de lugares
+    getRecommendations: (body: RecommendationRequest) => Promise<RecommendedLugar[]>;
+    
+    // Optimización de ruta
+    optimizeRoute: (body: OptimizationRequest) => Promise<LugarData[]>;
+
     // Usuario
     getUser: () => Promise<Usuario>;
     updateUser: (body: UpdateUserRequest) => Promise<Usuario>;
@@ -170,6 +206,8 @@ export interface ApiRoutes {
     getRequests: () => Promise<ListRequest>;
     getFriends: () => Promise<ListFriend>; 
 
+    // Sugerencias de amigos
+    getFriendSuggestions: () => Promise<FriendSuggestionResponse>;
 }
 
 export interface ShareItineraryRequest {
