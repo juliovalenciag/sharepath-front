@@ -10,7 +10,7 @@ import { PreguntaWrapper } from '@/components/cuestionario/PreguntaWrapper';
 import { useState, useEffect } from 'react';
 
 const PreguntaSchema = z.object({
-  pregunta1: z.array(z.string()).min(1, "Seleccione al menos una opcion "),
+  pregunta1: z.array(z.string()).min(1, "Seleccione al menos una opcion ").max(3, "Seleccione maximo tres"),
 });
 
 type PreguntaValues = z.infer<typeof PreguntaSchema>;
@@ -75,7 +75,7 @@ export default function Pregunta1Page() {
                   
                   <FormControl>
                     <div className="flex flex-wrap gap-3 mt-4">
-                      {['Eventos culturales', 'Montañas', 'Pueblos mágicos', 'Parques', 'Restaurantes', 'Lugares históricos'].map((opt) => {
+                      {['Pueblos mágicos', 'Zonas arqueológicas', 'Museos', 'Parques','Zoológicos', 'Parques de diversión', 'Campamentos', 'Restaurantes', 'Cafes', 'Bares'].map((opt) => {
                         const isSelected = (field.value || []).includes(opt);
                         
                         return (
