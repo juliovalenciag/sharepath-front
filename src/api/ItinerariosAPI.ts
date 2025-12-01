@@ -8,6 +8,9 @@ import {
     CreateItinerarioRequest,
     CreateItinerarioResponse,
     ItinerarioListResponse,
+    RecommendationRequest,
+    RecommendedLugar,
+    OptimizationRequest,
     CreateLugarRequest,
     LugarData,
     LugaresListResponse,
@@ -20,6 +23,7 @@ import {
     ListRequest, 
     ListFriend, 
     Amigo,
+    FriendSuggestionResponse,
     ShareItineraryRequest,
     Publicacion,
     AverageRatingResponse,
@@ -187,6 +191,15 @@ export class ItinerariosAPI implements ApiRoutes {
         return await this.delete<{ message: string }>(`/itinerario/${id}`);
     }
 
+    // ===== RECOMENDACIÓN Y OPTIMIZACIÓN =====
+    async getRecommendations(body: RecommendationRequest): Promise<RecommendedLugar[]> {
+        return await this.post<RecommendedLugar[]>("/itinerario/recommendation", true, body);
+    }
+
+    async optimizeRoute(body: OptimizationRequest): Promise<LugarData[]> {
+        return await this.post<LugarData[]>("/itinerario/optimization", true, body);
+    }
+
     // ===== LUGARES =====
     async createLugar(body: CreateLugarRequest): Promise<LugarData> {
         return await this.post<LugarData>("/lugar/registro", true, body);
@@ -284,6 +297,10 @@ export class ItinerariosAPI implements ApiRoutes {
     async getRecomen(): Promise<ListRecomen> {
         return await this.get<ListRecomen>("/recomendacion", true);
     }    
+    // ===== SUGERENCIAS DE AMIGOS =====
+    async getFriendSuggestions(): Promise<FriendSuggestionResponse> {
+        return await this.get<FriendSuggestionResponse>("/amigo/sugerencias", true);
+    }
 
     // ===== PUBLICACIONES =====
 
