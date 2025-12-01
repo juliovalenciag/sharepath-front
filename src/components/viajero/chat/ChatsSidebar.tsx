@@ -22,8 +22,8 @@ export function ChatsSidebar({
   );
 
   return (
-    <div className="h-full grid grid-rows-[auto_auto_minmax(0,1fr)] bg-gradient-to-bl from-blue-200 to-blue-900 rounded-3xl">
-      <header className="px-4 py-3 border-b">
+    <div className="h-full grid grid-rows-[auto_auto_minmax(0,1fr)] bg-white border-1 border-gray-800 rounded-3xl shadow-sm overflow-hidden dark:bg-[#111b21] dark:border-gray-700 transition-colors">
+      <header className="px-4 py-3 border-b bg-[#2196F3] dark:bg-[#1565C0] dark:border-gray-700 transition-colors">
         {/* <h2 className="text-lg font-semibold">Chats</h2> */}
         <h2 className="text-xl font-bold text-white">Chats</h2>
       </header>
@@ -31,7 +31,7 @@ export function ChatsSidebar({
       <div className="px-3 pt-3 pb-2">
         <div className="relative">
           <input
-            className="w-full h-10 rounded-[var(--radius)] border bg-background pl-9 pr-3 outline-none focus:ring-2 focus:ring-[var(--ring)]"
+            className="text-sm w-full h-10 rounded-lg border pl-9 pr-3 outline-none focus:ring-2 focus:ring-[#2196F3] border-gray-300 bg-white text-gray-900 placeholder-gray-500 dark:border-gray-600 dark:bg-[#202c33] dark:text-gray-100 dark:placeholder-gray-400 transition-colors"
             placeholder="Buscar un chat"
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -51,9 +51,11 @@ export function ChatsSidebar({
             <button
               onClick={() => onSelect(c.id)}
               className={cn(
-                "w-full cursor-pointer text-left px-3 py-3 grid items-center grid-cols-[40px_1fr_auto] gap-3 hover:bg-muted",
+                "w-full cursor-pointer text-left px-3 py-3 grid items-center grid-cols-[40px_1fr_auto] gap-3 hover:bg-[#e8f0ff] dark:hover:bg-[#202c33] transition-colors",
                 // activeId === c.id && "bg-muted"
-                activeId === c.id && "bg-black/20"
+                activeId === c.id
+                ? "bg-[#e8f0ff] dark:bg-[#2a3942]" 
+                : "bg-transparent" 
               )}
             >
               {/* Avatar stack */}
@@ -69,12 +71,12 @@ export function ChatsSidebar({
                   en el mensaje nuevo que tiene la notificacion, el circulo se muestra verde, en lugar de gris */}
                   {/* Lo de arriba ya se reviso */}
               </div>
-              <div className="min-w-0 bg-white rounded-xl p-2">
-                <p className="truncate font-medium dark:text-black">{c.title ?? "Grupo"}</p>
+              <div className="min-w-0 rounded-xl p-2 border shadow-sm bg-white border-gray-200 dark:bg-[#202c33] dark:border-gray-700 dark:shadow-md dark:text-gray-200 transition-all">
+                <p className="truncate font-medium text-black dark:text-white">{c.title ?? "Grupo"}</p>
                 {/* <p className="text-xs text-muted-foreground truncate">
                   {c.lastMessage?.text ?? "Sin mensajes"}
                 </p> */}
-                <p className="text-xs text-black truncate">
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                   {c.lastMessage?.text ?? "Sin mensajes"}
                 </p>
               </div>

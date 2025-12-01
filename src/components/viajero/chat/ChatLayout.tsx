@@ -187,7 +187,7 @@ if (!selfUser) {
   }
 
 return (
-  <div className="grid grid-cols-[1fr_2fr] gap-2 h-160">
+  <div className="grid grid-cols-[1fr_2fr] gap-2 h-full bg-white dark:bg-[#0b141a] transition-colors">
       {/* Barra lateral de Chats (contactos) */}
       <aside>
         {
