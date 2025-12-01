@@ -40,8 +40,6 @@ import {
 
 
 // Datos
-
-
 const publicaciones = [
   {
     id: 1,

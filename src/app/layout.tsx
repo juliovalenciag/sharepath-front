@@ -25,6 +25,8 @@ import {
   type ThemeMode,
 } from "@/types/preferences/theme";
 
+import { SocketProvider } from "@/context/socketContext";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -80,8 +82,10 @@ export default async function RootLayout({
             enableColorScheme
           >
             <ActiveThemeProvider initialTheme={activeThemeValue}>
+              <SocketProvider>
               <StyleGlideProvider />
               {children}
+              </SocketProvider>
             </ActiveThemeProvider>
           </ThemeProvider>
 
