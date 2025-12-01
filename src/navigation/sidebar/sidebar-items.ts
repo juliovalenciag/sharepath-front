@@ -66,7 +66,7 @@ export interface NavGroup {
 export const sidebarItems: NavGroup[] = [
   {
     id: 1,
-    label: "Itinerarios",
+    label: "Itinerario",
     items: [
       {
         title: "Descubre",
@@ -102,9 +102,9 @@ export const sidebarItems: NavGroup[] = [
       },
       {
         title: "Chat",
-        url: "/viajero/chat",
+        url: "/viajero/chats",
         icon: MessageSquare,
-        comingSoon: true,
+        comingSoon: false,
       },
       {
         title: "Notificaciones",

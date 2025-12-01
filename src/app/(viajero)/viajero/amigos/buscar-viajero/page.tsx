@@ -35,6 +35,7 @@ interface ViajeroData {
 }
 
 const API_URL = "https://harol-lovers.up.railway.app";
+// const API_URL = "http://localhost:4000";
 
 // ===== Componentes Internos =====
 
