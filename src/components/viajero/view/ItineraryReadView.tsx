@@ -5,6 +5,11 @@ import dynamic from "next/dynamic";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import {
+  getCategoryName,
+  getDefaultImageForCategory,
+} from "@/lib/category-utils";
+
 
 // Carga dinámica en cliente para evitar SSR
 const ItineraryMap = dynamic(
@@ -56,7 +61,7 @@ function TripStats({
               key={t}
               className="px-2.5 py-1 text-xs rounded-full ring-1 ring-border bg-[oklch(0.98_0_0)] dark:bg-[oklch(0.28_0_0)]"
             >
-              {t}
+              {getCategoryName(t)}
             </span>
           ))}
         </div>
@@ -247,7 +252,7 @@ export default function ItineraryReadView({ id }: { id: string }) {
                   <h4 className="text-lg font-bold flex items-center justify-between">
                     {lugar.titulo}
                     <span className="ml-2 px-2 py-0.5 text-xs bg-blue-100 text-primary rounded-full">
-                      {lugar.categoria}
+                      {getCategoryName(lugar.categoria)}
                     </span>
                   </h4>
                   <p className="text-sm text-gray-700">
@@ -262,19 +267,21 @@ export default function ItineraryReadView({ id }: { id: string }) {
           })}
         </div>
 
-        {/* COLUMNA DERECHA: Mapa y Tarjeta de Información */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="grid grid-cols-1 gap-6 h-full">
-            {/* 1. Área del Mapa (real) */}
-            <div className="flex flex-col h-[350px] md:h-[450px] bg-gray-100 border-4 border-gray-300 rounded-xl overflow-hidden shadow-2xl">
-              <div className="p-4 bg-gray-800 text-white font-semibold flex items-center">
-                <Map className="w-5 h-5 mr-2" />
-                Vista de Mapa
-              </div>
-              <div className="flex-grow">
-                <ItineraryMap places={placesForMap} />
-              </div>
+        {/* COLUMNA DERECHA: Mapa y resumen siempre debajo */}
+        <div className="lg:col-span-2 flex flex-col gap-4">
+          {/* Mapa */}
+          <div className="relative h-[350px] md:h-[450px] bg-gray-100 border-4 border-gray-300 rounded-xl shadow-2xl">
+            <div className="p-4 bg-gray-800 text-white font-semibold flex items-center rounded-t-xl">
+              <Map className="w-5 h-5 mr-2" />
+              Vista de Mapa
             </div>
+            <div className="h-[calc(100%-64px)] overflow-hidden rounded-b-xl">
+              <ItineraryMap places={placesForMap} />
+            </div>
+          </div>
+
+          {/* Resumen: mismo ancho que el mapa, siempre debajo sin encimarse */}
+          <div className="w-full">
             <TripStats
               diasTotales={itinerario.resumen.diasTotales}
               totalLugares={itinerario.resumen.totalLugares}

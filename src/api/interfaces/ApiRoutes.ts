@@ -83,6 +83,7 @@ export interface LugarData {
     nombre:        string;
     latitud:       number;
     longitud:      number;
+    descripcion:   string;
     foto_url:      string;
     google_score:  number;
     total_reviews: number;
@@ -91,6 +92,23 @@ export interface LugarData {
 export interface LugaresListResponse {
     lugares: LugarData[];
     total:   number;
+}
+
+export interface RecommendationRequest {
+    lugarIds?: string[];
+    query?: string;
+    limit?: number;
+}
+
+export interface RecommendedLugar extends LugarData {
+    hybridScore: number;
+    proximityScore: number;
+    preferenceScore: number;
+    ratingScore: number;
+}
+
+export interface OptimizationRequest {
+    lugarIds: string[];
 }
 
 export interface UpdateUserRequest {
@@ -112,6 +130,69 @@ export interface SearchUserResponse {
     users: Usuario[];
 }
 
+export interface Preferencias {
+    id: number, 
+    usuario: Usuario, 
+    correo: string, 
+    lugares_preferidos : string [], 
+    estados_visitados : string [], 
+    actividades_preferidas : string []
+}
+export interface Amigo {
+    id: number, 
+    status: number, 
+    receiving_user: Usuario, 
+    requesting_user: Usuario, 
+    fecha_amistad: string | null
+}
+
+export interface SendFriend {
+    message : string; 
+    data: Amigo; 
+}
+
+export interface RespondFriend {
+    message: string; 
+    data: Amigo; 
+}
+export interface ListRequest {
+    message: string; 
+    data: Amigo[]; 
+}
+
+export type ListFriend = Amigo[]; 
+
+export type ListRecomen = Array <{
+    id: number; 
+    title: string; 
+    owner: any; 
+    actividades: any[]; 
+    score : number; 
+    
+}>
+
+export type SearchFriend = Usuario[]; 
+
+export interface Block {
+    message: string; 
+}
+
+
+export interface UnBlock {
+    message: string;  
+}
+export interface FriendSuggestion {
+    username: string;
+    nombre_completo: string;
+    correo: string;
+    foto_url: string | null;
+}
+
+export interface FriendSuggestionResponse {
+    message: string;
+    data: FriendSuggestion[];
+}
+
 export interface ApiRoutes {
     // Auth
     doLogin: (correo: string, password: string) => Promise<Usuario>;
@@ -124,19 +205,83 @@ export interface ApiRoutes {
 
     // Lugares
     createLugar: (body: CreateLugarRequest) => Promise<LugarData>;
-<<<<<<< HEAD
+
     getLugares: (page: number, limit: number, state?: string, category?: string, nombre?:string) => Promise<LugaresListResponse>;
-=======
-    getLugares: (page: number, limit: number, state?: string, category?: string) => Promise<LugaresListResponse>;
->>>>>>> origin
+
     getLugarById: (id: string) => Promise<LugarData>;
     deleteLugar: (id: string) => Promise<{ message: string }>;
+
+    // Recomendación de lugares
+    getRecommendations: (body: RecommendationRequest) => Promise<RecommendedLugar[]>;
+    
+    // Optimización de ruta
+    optimizeRoute: (body: OptimizationRequest) => Promise<LugarData[]>;
 
     // Usuario
     getUser: () => Promise<Usuario>;
     updateUser: (body: UpdateUserRequest) => Promise<Usuario>;
     updatePassword: (body: UpdatePasswordRequest) => Promise<{ message: string }>;
-    verifyPassword: (body: VerifyPasswordRequest) => Promise<{ valid: boolean }>;
+    verifyPassword: (body: VerifyPasswordRequest) => Promise<{ message: boolean }>;
     searchUsers: (query: string) => Promise<SearchUserResponse>;
     deleteUser: () => Promise<{ message: string }>;
+
+    // Amigo 
+    sendFriendRequest: (receiving: string) => Promise<SendFriend>;
+    respondFriendRequest: (id: number, state: number) => Promise<RespondFriend>;
+    getRequests: () => Promise<ListRequest>;
+    getFriends: () => Promise<ListFriend>; 
+    searchFriend :  (query: string) => Promise<SearchFriend>;
+    deleteFriend: (correo: string) => Promise<{ message: string }>;
+    block : (user: string) => Promise<Block>;
+    unblock : (user: string) => Promise<UnBlock>;
+                       
+    //Recomendacion de new user
+    getRecomen: () => Promise<ListRecomen>;
+    
+    // Sugerencias de amigos
+    getFriendSuggestions: () => Promise<FriendSuggestionResponse>;
+}
+
+export interface ShareItineraryRequest {
+    descripcion: string;
+    privacity_mode: boolean;
+}
+
+export interface Publicacion {
+    id: number;
+    descripcion: string;
+    privacity_mode: boolean;
+    itinerario: any; 
+    user_shared: Usuario;
+}
+
+export interface AverageRatingResponse {
+    publicationId: number;
+    averageRating: number;
+    reviewCount: number;
+}
+
+export interface ApiRoutes {
+    getAverageRating: (publicationId: number) => Promise<AverageRatingResponse>;
+    shareItinerary: (itinerarioId: number, body: ShareItineraryRequest) => Promise<Publicacion>;
+    getMyPublications: () => Promise<Publicacion[]>;
+}
+
+export interface Actividad {
+    fecha:       string;        
+    description: string;
+    lugarId:     string;
+    // Campos extendidos para tu UI moderna
+    start_time?: string | null; 
+    end_time?:   string | null;
+}
+
+export interface CreateItinerarioRequest {
+    title:       string;
+    actividades: Actividad[];
+    // Campos extendidos del BuilderMeta
+    start_date?: string;
+    end_date?:   string;
+    regions?:    string[];
+    visibility?: "private" | "friends" | "public"; 
 }

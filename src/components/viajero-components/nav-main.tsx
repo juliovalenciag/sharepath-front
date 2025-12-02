@@ -2,14 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  IconCirclePlusFilled,
-  IconCalendarWeekFilled,
-  type Icon,
-} from "@tabler/icons-react";
-import { Button } from "@/components/ui/button";
+import { type Icon } from "@tabler/icons-react";
 import {
   SidebarGroup,
+  SidebarGroupLabel,
   SidebarGroupContent,
   SidebarMenu,
   SidebarMenuButton,
@@ -18,39 +14,17 @@ import {
 
 export function NavMain({
   items,
+  label,
 }: {
   items: { title: string; url: string; icon?: Icon }[];
+  label?: string;
 }) {
   const pathname = usePathname();
 
   return (
     <SidebarGroup>
-      <SidebarGroupContent className="flex flex-col gap-2">
-        {/* Acciones rápidas*/}
-        <SidebarMenu>
-          <SidebarMenuItem className="flex items-center gap-2">
-            <SidebarMenuButton
-              tooltip="Crear Itinerario"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
-              asChild
-            >
-              {/* Si quieres que navegue, cambia href a la ruta destino */}
-              <Link href="/dashboard/itinerario">
-                <IconCirclePlusFilled />
-                <span>Crear Itinerario</span>
-              </Link>
-            </SidebarMenuButton>
-            <Button
-              size="icon"
-              className="size-8 group-data-[collapsible=icon]:opacity-0"
-              variant="outline"
-            >
-              <IconCalendarWeekFilled />
-              <span className="sr-only">Calendar</span>
-            </Button>
-          </SidebarMenuItem>
-        </SidebarMenu>
-
+      {label && <SidebarGroupLabel>{label}</SidebarGroupLabel>}
+      <SidebarGroupContent>
         {/* Navegación principal */}
         <SidebarMenu>
           {items.map((item) => {

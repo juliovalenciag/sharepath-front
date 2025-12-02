@@ -1,6 +1,6 @@
 "use client";
-
-import { useState } from "react";
+import Cookies from 'js-cookie';
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -20,10 +20,10 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from "@/component
 const formSchema = z.object({
   correo: z.string()
     .refine((email) => {
-      const emailRegex = /^[^\s@]+@(gmail\.com|hotmail\.com|alumno\.ipn\.mx)$/i;
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
       return emailRegex.test(email);
     }, {
-      message: "El correo debe terminar con @gmail.com, @hotmail.com, @alumno.ipn.mx.",
+      message: "Ingresa un correo válido",
     }),
   password: z.string()
     .min(8, {
@@ -36,6 +36,8 @@ const formSchema = z.object({
       message: "La contraseña debe contener mayúscula, minúscula, número y un carácter especial válido (#, $, _, ?, ¿, *).",
     })
 })
+
+const HOST = "https://harol-lovers.up.railway.app"
 
 export default function SignInPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -61,6 +63,7 @@ export default function SignInPage() {
     toast.promise(promise, {
       loading: "Iniciando sesión...",
       success: (data) => {
+        Cookies.set("auth_token", JSON.stringify(data), { expires: 1 });
         const userRole = data.role;
         let redirectPath = '/viajero';
 

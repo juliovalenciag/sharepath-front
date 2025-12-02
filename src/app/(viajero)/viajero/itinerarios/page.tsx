@@ -7,7 +7,7 @@ import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 import {
   getCategoryName,
   getDefaultImageForCategory,
-} from "@/components/viajero-components/category-utils";
+} from "@/lib/category-utils";
 import { ItinerarioData, Actividad } from "@/api/interfaces/ApiRoutes";
 
 export default function PublicacionPage() {
@@ -49,25 +49,23 @@ export default function PublicacionPage() {
   };
 
   return (
-    <>
-      <h1 className="text-3xl font-bold mb-6">Mis Itinerarios</h1>
-      <div className="grid grid-cols-1 gap-6">
-        {itinerarios.length > 0 ? (
-          itinerarios.map((itinerarioApi) => {
-            const datosParaElFrame = transformarItinerario(itinerarioApi);
-            return (
-              <ItinerarioFrame
-                key={datosParaElFrame.id}
-                itinerario={datosParaElFrame}
-                onItinerarioDeleted={handleDeleteSuccess}
-              />
-            );
-          })
-        ) : (
-          <div className="p-10">No has creado ningún itinerario todavía.</div>
-        )}
-      </div>
-    </>
+    <div className="grid grid-cols-1">
+      <h1 className="text-4xl font-bold text-shadow-primary mb-2">Mis itinerarios</h1>
+      {itinerarios.length > 0 ? (
+        itinerarios.map((itinerarioApi) => {
+          const datosParaElFrame = transformarItinerario(itinerarioApi);
+          return (
+            <ItinerarioFrame
+              key={datosParaElFrame.id}
+              itinerario={datosParaElFrame}
+              onItinerarioDeleted={handleDeleteSuccess}
+            />
+          );
+        })
+      ) : (
+        <div className="p-10">No has creado ningún itinerario todavía.</div>
+      )}
+    </div>
   );
 }
 

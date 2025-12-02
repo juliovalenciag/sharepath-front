@@ -3,19 +3,12 @@
 import * as React from "react";
 import Link from "next/link";
 import {
-  IconCamera,
-  IconFileAi,
-  IconFileDescription,
-  IconHelp,
-  IconInnerShadowTop,
-  IconSearch,
-  IconSettings,
-  IconUsers,
   IconHomeFilled,
-  IconCalendarFilled,
-  IconMessages,
-  IconCompassFilled,
-  IconMapPinFilled,
+  IconTable,
+  IconMapPin,
+  IconUsers,
+  IconFileText,
+  IconSettings,
 } from "@tabler/icons-react";
 
 import { NavDocuments } from "@/components/viajero-components/nav-documents";
@@ -32,68 +25,51 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { set } from "date-fns";
 
 const data = {
   user: {
-    name: "Harol",
-    email: "harol@hater.com",
-    avatar: "profile.png",
+    username: "Admin",
+    correo: "admin@sharepath.com",
+    foto_url: "profile.png",
   },
+  // Sección General
   navMain: [
     { title: "Inicio", url: "/dashboard", icon: IconHomeFilled },
-    {
-      title: "Itinerarios",
-      url: "/dashboard/itinerarios",
-      icon: IconCalendarFilled,
-    },
-    { title: "Ver Mapa", url: "/dashboard/vermapa", icon: IconMapPinFilled },
+    { title: "CRUD", url: "/dashboard/CRUD", icon: IconTable },
   ],
-  navClouds: [
-    {
-      title: "Capture",
-      icon: IconCamera,
-      isActive: true,
-      url: "#",
-      items: [
-        { title: "Active Proposals", url: "#" },
-        { title: "Archived", url: "#" },
-      ],
-    },
-    {
-      title: "Proposal",
-      icon: IconFileDescription,
-      url: "#",
-      items: [
-        { title: "Active Proposals", url: "#" },
-        { title: "Archived", url: "#" },
-      ],
-    },
-    {
-      title: "Prompts",
-      icon: IconFileAi,
-      url: "#",
-      items: [
-        { title: "Active Proposals", url: "#" },
-        { title: "Archived", url: "#" },
-      ],
-    },
+  // Sección Gestión
+  navGestion: [
+    { title: "Lugares", url: "/dashboard/lugares", icon: IconMapPin },
+    { title: "Usuarios", url: "/dashboard/usuarios", icon: IconUsers },
+    { title: "Reportes", url: "/dashboard/reportes", icon: IconFileText },
   ],
+  // Sección Otros
   navSecondary: [
-    { title: "Configuración", url: "/dashboard/settings", icon: IconSettings },
-    { title: "Obtener Ayuda", url: "/help", icon: IconHelp },
-    { title: "Buscar", url: "/search", icon: IconSearch },
-  ],
-  documents: [
-    { name: "Chats", url: "/dashboard/chats", icon: IconMessages },
-    {
-      name: "Notificaciones",
-      url: "/dashboard/notificaciones",
-      icon: IconUsers,
-    },
+    { title: "Configuración", url: "/dashboard/configuracion", icon: IconSettings },
   ],
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+
+  const [user, setUser] = React.useState<null | { name: string; email: string; avatar: string }>(null)
+
+  React.useEffect(() => {
+    const storedUser = localStorage.getItem("usuario");
+    const user = {
+      name: storedUser
+        ? JSON.parse(storedUser).username
+        : "Harol Hater",
+      email: storedUser
+        ? JSON.parse(storedUser).correo
+        : "harol@hater.com",
+      avatar: storedUser
+        ? JSON.parse(storedUser).foto_url
+        : "./profile.png"
+    };
+    setUser(user)
+  }, [])
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -101,10 +77,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
+              className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
               {/* Usa Link de Next para navegación cliente */}
-              <Link href="/viajero" className="flex items-center gap-2">
+              <Link href="/dashboard" className="flex items-center gap-2">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="24"
@@ -129,14 +105,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
 
       <SidebarContent>
-        {/* Estas tres usan Link internamente en las implementaciones de abajo */}
-        <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        {/* Sección General */}
+        <NavMain items={data.navMain} label="General" />
+        
+        {/* Sección Gestión */}
+        <NavDocuments items={data.navGestion} label="Gestión" />
+        
+        {/* Sección Otros */}
+        <NavSecondary items={data.navSecondary} label="Otros" className="mt-auto" />
       </SidebarContent>
 
       <SidebarFooter>
-        <NavUser user={data.user} />
+        {user && <NavUser user={user} />}
       </SidebarFooter>
     </Sidebar>
   );

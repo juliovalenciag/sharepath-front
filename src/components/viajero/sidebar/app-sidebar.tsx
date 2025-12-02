@@ -93,6 +93,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             : null;
 
         const res = await fetch("https://harol-lovers.up.railway.app/user", {
+        // const res = await fetch("http://localhost:4000/user", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -152,7 +153,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             puedes integrarlos aquí con tu NavDocuments/NavSecondary modernos */}
       </SidebarContent>
 
-      <SidebarFooter>
+      {/* <SidebarFooter>
         {loadingUser && (
           <div className="px-4 py-2 text-xs text-muted-foreground">
             Cargando cuenta...
@@ -166,7 +167,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             No se pudo cargar la cuenta
           </div>
         )}
-      </SidebarFooter>
+      </SidebarFooter> */}
     </Sidebar>
   );
 }

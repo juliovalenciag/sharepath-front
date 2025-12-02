@@ -1,5 +1,7 @@
 "use client";
-
+//ESTE ARCHIVO YA NO SE UTILIZA
+import { useRouter } from "next/navigation"; 
+import Cookies from "js-cookie";             
 import { useEffect, useState } from "react";
 import {
   EllipsisVertical,
@@ -11,7 +13,7 @@ import {
   Edit,
   Bell,
 } from "lucide-react";
-
+import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -45,6 +47,13 @@ type SidebarUser = {
 };
 
 export function NavUser() {
+  const router = useRouter();
+  const handleLogout = () => {
+    Cookies.remove("auth_token");       
+    localStorage.removeItem("authToken");
+    router.push("/sign-in");            
+    router.refresh();                    
+  };
   const { isMobile } = useSidebar();
   const [user, setUser] = useState<SidebarUser | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
@@ -59,6 +68,7 @@ export function NavUser() {
             : null;
 
         const res = await fetch("https://harol-lovers.up.railway.app/user", {
+        // const res = await fetch("http://localhost:4000/user", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -186,8 +196,10 @@ export function NavUser() {
                 Perfil
               </DropdownMenuItem>
               <DropdownMenuItem>
+                <Link href="/viajero/configuracion/cuenta">
                 <Edit />
                 Cuenta
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <Bell />
@@ -198,9 +210,12 @@ export function NavUser() {
             {/* 
               TODO: Aquí podrías conectar tu lógica de logout cuando el proyecto lo requiera.
             */}
-            <DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={handleLogout} 
+              className="cursor-pointer text-red-600 focus:text-red-600"
+            >
               <LogOut />
-              Cerrar Sesión
+              Cerrar sesión
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

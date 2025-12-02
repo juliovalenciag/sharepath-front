@@ -66,7 +66,7 @@ export interface NavGroup {
 export const sidebarItems: NavGroup[] = [
   {
     id: 1,
-    label: "Itinerarios",
+    label: "Itinerario",
     items: [
       {
         title: "Descubre",
@@ -102,58 +102,58 @@ export const sidebarItems: NavGroup[] = [
       },
       {
         title: "Chat",
-        url: "/viajero/chat",
+        url: "/viajero/chats",
         icon: MessageSquare,
-        comingSoon: true,
+        comingSoon: false,
       },
-      {
-        title: "Notificaciones",
-        url: "/viajero/notificaciones",
-        icon: Calendar,
-        comingSoon: true,
-      },
+      // {
+      //   title: "Notificaciones",
+      //   url: "/viajero/notificaciones",
+      //   icon: Calendar,
+      //   comingSoon: true,
+      // },
     ],
   },
-  {
-    id: 3,
-    label: "Otros",
-    items: [
-      {
-        title: "Configuración",
-        url: "/configuracion",
-        icon: Settings,
-        subItems: [
-          {
-            title: "Perfil",
-            url: "/viajero/configuracion/perfil",
-            icon: User,
-            newTab: false,
-          },
-          {
-            title: "Cuenta",
-            url: "/viajero/configuracion/cuenta",
-            icon: UserPen,
-            newTab: false,
-          },
-          {
-            title: "Apariencia",
-            url: "/viajero/configuracion/apariencia",
-            icon: LayoutPanelLeft,
-            newTab: false,
+  // {
+  //   id: 3,
+  //   label: "Otros",
+  //   items: [
+  //     {
+  //       title: "Configuración",
+  //       url: "/configuracion",
+  //       icon: Settings,
+  //       subItems: [
+  //         {
+  //           title: "Perfil",
+  //           url: "/viajero/configuracion/perfil",
+  //           icon: User,
+  //           newTab: false,
+  //         },
+  //         {
+  //           title: "Cuenta",
+  //           url: "/viajero/configuracion/cuenta",
+  //           icon: UserPen,
+  //           newTab: false,
+  //         },
+  //         {
+  //           title: "Apariencia",
+  //           url: "/viajero/configuracion/apariencia",
+  //           icon: LayoutPanelLeft,
+  //           newTab: false,
          
-          },
-          {
-            title: "Notificaciones",
-            url: "/viajero/configuracion/notificaciones",
-            newTab: false,
-          },
-          {
-            title: "Pantalla",
-            url: "/viajero/configuracion/pantalla",
-            newTab: false,
-          },
-        ],
-      },
-    ],
-  },
+  //         },
+  //         {
+  //           title: "Notificaciones",
+  //           url: "/viajero/configuracion/notificaciones",
+  //           newTab: false,
+  //         },
+  //         {
+  //           title: "Pantalla",
+  //           url: "/viajero/configuracion/pantalla",
+  //           newTab: false,
+  //         },
+  //       ],
+  //     },
+  //   ],
+  // },
 ];

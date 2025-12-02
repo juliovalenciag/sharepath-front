@@ -1,297 +1,497 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { useState } from "react";
+import {
+	Card,
+	CardContent,
+	CardHeader,
+	CardTitle,
+	CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
+	IconUsers,
+	IconMapPin,
+	IconStar,
+	IconTrendingUp,
+} from "@tabler/icons-react";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+	Area,
+	AreaChart,
+	CartesianGrid,
+	XAxis,
+	YAxis,
+	Tooltip,
+	ResponsiveContainer,
+} from "recharts";
 
-// Componente para cada publicación individual
-function PublicacionItem({ publicacion }) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [emblaApi, setEmblaApi] = useState(null);
+// Datos para la gráfica de usuarios por mes
+const usuariosPorMes2024 = [
+	{ mes: "Ene", usuarios: 45 },
+	{ mes: "Feb", usuarios: 52 },
+	{ mes: "Mar", usuarios: 68 },
+	{ mes: "Abr", usuarios: 73 },
+	{ mes: "May", usuarios: 85 },
+	{ mes: "Jun", usuarios: 92 },
+	{ mes: "Jul", usuarios: 105 },
+	{ mes: "Ago", usuarios: 118 },
+	{ mes: "Sep", usuarios: 125 },
+	{ mes: "Oct", usuarios: 142 },
+	{ mes: "Nov", usuarios: 158 },
+	{ mes: "Dic", usuarios: 165 },
+];
 
-  // Obtener información del día actual basado en el slide
-  const actividadActual = publicacion.itinerario[currentIndex];
-  const diaActual = actividadActual?.dia || 1;
-  
-  // Obtener el rango de días del itinerario completo
-  const diasUnicos = [...new Set(publicacion.itinerario.map(item => item.dia))];
-  const totalDias = Math.max(...diasUnicos);
+const usuariosPorMes2025 = [
+	{ mes: "Ene", usuarios: 178 },
+	{ mes: "Feb", usuarios: 192 },
+	{ mes: "Mar", usuarios: 205 },
+	{ mes: "Abr", usuarios: 218 },
+	{ mes: "May", usuarios: 235 },
+	{ mes: "Jun", usuarios: 248 },
+	{ mes: "Jul", usuarios: 265 },
+	{ mes: "Ago", usuarios: 282 },
+	{ mes: "Sep", usuarios: 298 },
+	{ mes: "Oct", usuarios: 315 },
+	{ mes: "Nov", usuarios: 332 },
+	{ mes: "Dic", usuarios: 350 },
+];
 
-  // Detecta el cambio de slide
-  useEffect(() => {
-    if (!emblaApi) return;
+// Datos de nuevos usuarios para la tabla
+const nuevosUsuarios = [
+	{
+		id: 1,
+		nombre: "María González",
+		email: "maria.gonzalez@email.com",
+		fechaRegistro: "2025-11-15",
+		estado: "Activo",
+		itinerarios: 3,
+		avatar: "https://i.pravatar.cc/150?img=1",
+	},
+	{
+		id: 2,
+		nombre: "Carlos Ramírez",
+		email: "carlos.ramirez@email.com",
+		fechaRegistro: "2025-11-14",
+		estado: "Activo",
+		itinerarios: 1,
+		avatar: "https://i.pravatar.cc/150?img=2",
+	},
+	{
+		id: 3,
+		nombre: "Ana López",
+		email: "ana.lopez@email.com",
+		fechaRegistro: "2025-11-13",
+		estado: "Activo",
+		itinerarios: 2,
+		avatar: "https://i.pravatar.cc/150?img=3",
+	},
+	{
+		id: 4,
+		nombre: "Juan Pérez",
+		email: "juan.perez@email.com",
+		fechaRegistro: "2025-11-12",
+		estado: "Pendiente",
+		itinerarios: 0,
+		avatar: "https://i.pravatar.cc/150?img=4",
+	},
+	{
+		id: 5,
+		nombre: "Laura Martínez",
+		email: "laura.martinez@email.com",
+		fechaRegistro: "2025-11-11",
+		estado: "Activo",
+		itinerarios: 4,
+		avatar: "https://i.pravatar.cc/150?img=5",
+	},
+];
 
-    const handleSelect = () => {
-      setCurrentIndex(emblaApi.selectedScrollSnap());
-    };
-
-    emblaApi.on("select", handleSelect);
-    return () => emblaApi.off("select", handleSelect);
-  }, [emblaApi]);
-
-  return (
-    <div className="flex flex-col md:flex-row gap-6 mb-8 p-4 border rounded-lg">
-      {/* Carrusel de fotos */}
-      <div className="md:w-1/2 relative">
-        <Carousel
-          opts={{
-            align: "start",
-            loop: true,
-          }}
-          setApi={setEmblaApi}
-          className="w-full"
-        >
-          <CarouselContent>
-            {publicacion.itinerario.map((foto, index) => (
-              <CarouselItem key={index}>
-                <div className="p-1">
-                  <Card>
-                    <CardContent className="flex aspect-square items-center justify-center p-2">
-                      <img
-                        src={foto.url}
-                        alt={`Foto ${index + 1}`}
-                        className="w-full h-full object-cover rounded-md"
-                      />
-                    </CardContent>
-                  </Card>
-                </div>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          <CarouselPrevious className="absolute left-2 top-1/2 transform -translate-y-1/2 z-10" />
-          <CarouselNext className="absolute right-2 top-1/2 transform -translate-y-1/2 z-10" />
-        </Carousel>
-      </div>
-
-      {/* Información de la publicación */}
-      <div className="md:w-1/2 space-y-4">
-        {/* Título del itinerario */}
-        <h2 className="text-xl font-semibold">{publicacion.titulo}</h2>
-
-        {/* Header del usuario */}
-        <div className="flex items-center gap-3">
-          <img
-            src={publicacion.usuario.fotoPerfil}
-            alt="Foto de perfil"
-            className="w-10 h-10 rounded-full object-cover"
-          />
-          <div>
-            <h3 className="font-medium">{publicacion.usuario.nombre}</h3>
-            <p className="text-sm text-muted-foreground">{publicacion.estado}</p>
-          </div>
-        </div>
-
-        {/* Información de la actividad actual */}
-        {actividadActual && (
-          <div className="space-y-3">
-            {/* Indicador de día */}
-            <div className="flex items-center justify-between p-3 border rounded-lg">
-              <div className="flex items-center gap-2">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
-                <span className="font-semibold">Día {diaActual}</span>
-              </div>
-              <span className="text-sm text-muted-foreground">
-                {currentIndex + 1} de {publicacion.itinerario.length} actividades
-              </span>
-            </div>
-
-            {/* Horario y ubicación */}
-            <div className="flex flex-col sm:flex-row gap-4 text-sm">
-              <div className="flex items-center gap-2 flex-1">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <span>{actividadActual.horario}</span>
-              </div>
-
-              <div className="flex items-center gap-2 flex-1">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
-                <span className="truncate">{actividadActual.ubicacion}</span>
-              </div>
-            </div>
-
-            {/* Tags */}
-            <div className="flex flex-wrap gap-1">
-              {actividadActual.tags.map((tag, index) => (
-                <Badge key={index} variant="outline" className="text-xs">
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-
-            {/* Descripción */}
-            <p className="text-sm leading-relaxed">
-              {actividadActual.descripcion}
-            </p>
-
-            {/* Calificación */}
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M12 17.27l6.18 3.73-1.64-7.03L21 9.24l-7.19-.61L12 2 10.19 8.63 3 9.24l4.46 4.73-1.64 7.03L12 17.27z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <span className="font-medium">{actividadActual.calificacion}</span>
-              </div>
-              <span className="text-sm text-muted-foreground">/5.0</span>
-            </div>
-
-            {/* Indicador de progreso general */}
-            <div className="text-center text-xs text-muted-foreground pt-2 border-t">
-              Desliza para ver {totalDias > 1 ? `más actividades (${totalDias} días en total)` : "más actividades"}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+// Datos de destinos populares con imágenes
+const destinosPopulares = [
+	{
+		id: 1,
+		nombre: "Teotihuacán",
+		visitas: 1250,
+		calificacion: 4.8,
+		imagen:
+			"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ0eOqiCnR48ykeWdoQSvhnWdO6jTLEfmFnfQ&s",
+		descripcion: "Zona arqueológica con pirámides del Sol y la Luna",
+	},
+	{
+		id: 2,
+		nombre: "Chapultepec",
+		visitas: 2100,
+		calificacion: 4.6,
+		imagen:
+			"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTUB4eDXywgdKuPz6V6BEBIV2xp_9vjB-LYuQ&s",
+		descripcion: "Parque urbano más grande de América",
+	},
+	{
+		id: 3,
+		nombre: "Centro Histórico",
+		visitas: 1850,
+		calificacion: 4.9,
+		imagen:
+			"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS9_0FMj_pljb1LpjvUvlO6xymKT8itvIfwSg&s",
+		descripcion: "Patrimonio de la Humanidad UNESCO",
+	},
+	{
+		id: 4,
+		nombre: "Xochimilco",
+		visitas: 980,
+		calificacion: 4.5,
+		imagen:
+			"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSIikF5Tbzn3zKiv7E5TpGAW4BNmZK7HK7YtA&s",
+		descripcion: "Canales tradicionales y trajineras",
+	},
+];
 
 // Componente principal
-export default function Publicacion() {
-  const [query, setQuery] = useState("");
-  const [estadoSeleccionado, setEstadoSeleccionado] = useState("todos");
+export default function DashboardAdmin() {
+	const [añoSeleccionado, setAñoSeleccionado] = useState("2025");
+	const [destinoSeleccionado, setDestinoSeleccionado] =
+		useState<null | (typeof destinosPopulares)[number]>(null);
+	const [modalAbierto, setModalAbierto] = useState(false);
 
-  const handleSearchChange = (e) => {
-    setQuery(e.target.value);
-  };
-  const handleEstadoChange = (e) => {
-    setEstadoSeleccionado(e.target.value);
-  };
+	function abrirModal(destino: (typeof destinosPopulares)[number]) {
+		setDestinoSeleccionado(destino);
+		setModalAbierto(true);
+	}
+	function cerrarModal() {
+		setModalAbierto(false);
+		setDestinoSeleccionado(null);
+	}
 
-  const publicacionesFiltradas = publicaciones.filter((publicacion) => {
-    const coincideTexto =
-      publicacion.usuario.nombre.toLowerCase().includes(query.toLowerCase()) ||
-      publicacion.titulo.toLowerCase().includes(query.toLowerCase()) ||
-      publicacion.itinerario.some((item) =>
-        item.ubicacion.toLowerCase().includes(query.toLowerCase())
-      );
+	const datosGrafica =
+		añoSeleccionado === "2024" ? usuariosPorMes2024 : usuariosPorMes2025;
 
-    const coincideEstado =
-      estadoSeleccionado === "todos" ||
-      publicacion.estado === estadoSeleccionado;
+	// Calcular estadísticas
+	const totalUsuarios = datosGrafica.reduce(
+		(acc, mes) => acc + mes.usuarios,
+		0
+	);
+	const promedioUsuarios = Math.round(totalUsuarios / datosGrafica.length);
+	const crecimiento =
+		datosGrafica.length > 1
+			? Math.round(
+					((
+						datosGrafica[datosGrafica.length - 1].usuarios -
+						datosGrafica[0].usuarios
+					) / datosGrafica[0].usuarios) *
+						100
+			  )
+			: 0;
 
-    return coincideTexto && coincideEstado;
-  });
+	return (
+		<div className="container mx-auto py-6 px-4 space-y-6">
+			{/* Header */}
+			<div className="flex flex-col gap-2">
+				<h1 className="text-3xl font-bold">Dashboard Administrador</h1>
+				<p className="text-muted-foreground">
+					Bienvenido al panel de administración
+				</p>
+			</div>
 
+			{/* Tarjetas de estadísticas */}
+			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+				<Card>
+					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+						<CardTitle className="text-sm font-medium">
+							Total Usuarios
+						</CardTitle>
+						<IconUsers className="h-4 w-4 text-muted-foreground" />
+					</CardHeader>
+					<CardContent>
+						<div className="text-2xl font-bold">{totalUsuarios}</div>
+						<p className="text-xs text-muted-foreground">
+							En {añoSeleccionado}
+						</p>
+					</CardContent>
+				</Card>
 
-  return (
-    <div className="container mx-auto py-6 px-4">
-      <div className="flex flex-col sm:flex-row gap-3 justify-between items-center mb-8">
-        <div>
-          <h1 className="text-2xl font-bold">Itinerarios de Viaje</h1>
-          <p className="text-muted-foreground">
-            Descubre experiencias compartidas por viajeros
-          </p>
-        </div>
+				<Card>
+					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+						<CardTitle className="text-sm font-medium">
+							Promedio Mensual
+						</CardTitle>
+						<IconTrendingUp className="h-4 w-4 text-muted-foreground" />
+					</CardHeader>
+					<CardContent>
+						<div className="text-2xl font-bold">{promedioUsuarios}</div>
+						<p className="text-xs text-muted-foreground">
+							Usuarios/mes
+						</p>
+					</CardContent>
+				</Card>
 
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          {/* Buscador */}
-          <Input
-            placeholder="Buscar itinerarios..."
-            value={query}
-            onChange={handleSearchChange}
-            className="flex-1 sm:w-64"
-          />
-          {/* Selector de estado */}
-          <Select value={estadoSeleccionado} onValueChange={setEstadoSeleccionado}>
-            <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="Selecciona un estado" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos</SelectItem>
-              <SelectItem value="CDMX">CDMX</SelectItem>
-              <SelectItem value="EDOMEX">EDOMEX</SelectItem>
-              <SelectItem value="Hidalgo">Hidalgo</SelectItem>
-              <SelectItem value="Morelos">Morelos</SelectItem>
-              <SelectItem value="Queretaro">Querétaro</SelectItem>
-            </SelectContent>
-          </Select>
+				<Card>
+					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+						<CardTitle className="text-sm font-medium">Crecimiento</CardTitle>
+						<IconTrendingUp className="h-4 w-4 text-muted-foreground" />
+					</CardHeader>
+					<CardContent>
+						<div className="text-2xl font-bold">+{crecimiento}%</div>
+						<p className="text-xs text-muted-foreground">Este año</p>
+					</CardContent>
+				</Card>
 
-          <Button type="button">Buscar</Button>
-        </div>
-      </div>
+				<Card>
+					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+						<CardTitle className="text-sm font-medium">
+							Destinos Activos
+						</CardTitle>
+						<IconMapPin className="h-4 w-4 text-muted-foreground" />
+					</CardHeader>
+					<CardContent>
+						<div className="text-2xl font-bold">
+							{destinosPopulares.length}
+						</div>
+						<p className="text-xs text-muted-foreground">
+							Lugares registrados
+						</p>
+					</CardContent>
+				</Card>
+			</div>
 
-      <div className="space-y-6">
-        {publicacionesFiltradas.length > 0 ? (
-          publicacionesFiltradas.map((p) => (
-            <PublicacionItem key={p.id} publicacion={p} />
-          ))
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">
-              No se encontraron itinerarios
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+			{/* Gráfica de nuevos usuarios */}
+			<Card>
+				<CardHeader>
+					<div className="flex items-center justify-between">
+						<div>
+							<CardTitle>Nuevos Usuarios</CardTitle>
+							<CardDescription>
+								Registro de usuarios por mes
+							</CardDescription>
+						</div>
+						<Select
+							value={añoSeleccionado}
+							onValueChange={setAñoSeleccionado}
+						>
+							<SelectTrigger className="w-32">
+								<SelectValue placeholder="Año" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="2024">2024</SelectItem>
+								<SelectItem value="2025">2025</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
+				</CardHeader>
+				<CardContent>
+					<ResponsiveContainer width="100%" height={350}>
+						<AreaChart data={datosGrafica}>
+							<defs>
+								<linearGradient
+									id="colorUsuarios"
+									x1="0"
+									y1="0"
+									x2="0"
+									y2="1"
+								>
+									<stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
+									<stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+								</linearGradient>
+							</defs>
+							<CartesianGrid strokeDasharray="3 3" />
+							<XAxis dataKey="mes" />
+							<YAxis />
+							<Tooltip />
+							<Area
+								type="monotone"
+								dataKey="usuarios"
+								stroke="#2563eb"
+								strokeWidth={2}
+								fillOpacity={1}
+								fill="url(#colorUsuarios)"
+							/>
+						</AreaChart>
+					</ResponsiveContainer>
+				</CardContent>
+			</Card>
+
+			{/* Tabla de nuevos usuarios */}
+			<Card>
+				<CardHeader>
+					<CardTitle>Usuarios Recientes</CardTitle>
+					<CardDescription>
+						Últimos usuarios registrados en la plataforma
+					</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<Table>
+						<TableHeader>
+							<TableRow>
+								<TableHead>Usuario</TableHead>
+								<TableHead>Email</TableHead>
+								<TableHead>Fecha Registro</TableHead>
+								<TableHead>Estado</TableHead>
+								<TableHead className="text-right">
+									Itinerarios
+								</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{nuevosUsuarios.map((usuario) => (
+								<TableRow key={usuario.id}>
+									<TableCell className="font-medium">
+										<div className="flex items-center gap-3">
+											<img
+												src={usuario.avatar}
+												alt={usuario.nombre}
+												className="h-8 w-8 rounded-full object-cover"
+											/>
+											<span>{usuario.nombre}</span>
+										</div>
+									</TableCell>
+									<TableCell>{usuario.email}</TableCell>
+									<TableCell>{usuario.fechaRegistro}</TableCell>
+									<TableCell>
+										<Badge
+											variant={
+												usuario.estado === "Activo"
+													? "default"
+													: "secondary"
+											}
+										>
+											{usuario.estado}
+										</Badge>
+									</TableCell>
+									<TableCell className="text-right">
+										{usuario.itinerarios}
+									</TableCell>
+								</TableRow>
+							))}
+						</TableBody>
+					</Table>
+				</CardContent>
+			</Card>
+
+			{/* Tarjetas de destinos populares con imágenes */}
+			<div>
+				<h2 className="text-2xl font-bold mb-4">Destinos Populares</h2>
+				<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+					{destinosPopulares.map((destino) => (
+						<Card
+							key={destino.id}
+							className="overflow-hidden cursor-pointer"
+							onClick={() => abrirModal(destino)}
+						>
+							<div className="aspect-video relative">
+								<img
+									src={destino.imagen}
+									alt={destino.nombre}
+									className="w-full h-full object-cover"
+								/>
+							</div>
+							<CardHeader>
+								<CardTitle className="text-lg">
+									{destino.nombre}
+								</CardTitle>
+								<CardDescription className="line-clamp-2">
+									{destino.descripcion}
+								</CardDescription>
+							</CardHeader>
+							<CardContent className="space-y-2">
+								<div className="flex items-center justify-between text-sm">
+									<div className="flex items-center gap-1">
+										<IconStar className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+										<span className="font-medium">
+											{destino.calificacion}
+										</span>
+									</div>
+									<div className="flex items-center gap-1 text-muted-foreground">
+										<IconUsers className="h-4 w-4" />
+										<span>{destino.visitas} visitas</span>
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+					))}
+				</div>
+			</div>
+
+			{/* Modal de destino seleccionado */}
+			{modalAbierto && destinoSeleccionado && (
+				<div
+					className="fixed inset-0 z-50 flex items-center justify-center p-4"
+					onClick={(e) => {
+						if (e.target === e.currentTarget) cerrarModal();
+					}}
+				>
+					{/* Fondo */}
+					<div className="absolute inset-0 bg-black/40" />
+
+					{/* Contenido */}
+					<div className="relative z-10 w-full max-w-md rounded-xl bg-white shadow-2xl dark:bg-neutral-900">
+						<div className="flex items-center justify-between border-b px-4 py-3">
+							<h3 className="text-lg font-semibold">
+								{destinoSeleccionado.nombre}
+							</h3>
+							<Button variant="ghost" size="sm" onClick={cerrarModal}>
+								Cerrar
+							</Button>
+						</div>
+
+						<div className="px-4 py-3 space-y-3">
+							<div className="flex items-center gap-2">
+								<Badge variant="secondary">
+									{destinoSeleccionado.calificacion} ★
+								</Badge>
+								<Badge variant="outline">
+									{destinoSeleccionado.visitas} visitas
+								</Badge>
+							</div>
+
+							<p className="text-sm text-muted-foreground">
+								{destinoSeleccionado.descripcion}
+							</p>
+
+							{/* Datos adicionales simulados: ubicación y categoría */}
+							<div className="grid grid-cols-2 gap-3 text-sm">
+								<div className="rounded-lg border p-3">
+									<p className="text-xs text-muted-foreground">
+										Ubicación
+									</p>
+									<p className="font-medium">México</p>
+								</div>
+								<div className="rounded-lg border p-3">
+									<p className="text-xs text-muted-foreground">
+										Categoría
+									</p>
+									<p className="font-medium">Destino Turístico</p>
+								</div>
+							</div>
+
+							<div className="rounded-lg overflow-hidden border">
+								<img
+									src={destinoSeleccionado.imagen}
+									alt={destinoSeleccionado.nombre}
+									className="w-full h-40 object-cover"
+								/>
+							</div>
+						</div>
+
+						<div className="flex justify-end gap-2 border-t px-4 py-3">
+
+						</div>
+					</div>
+				</div>
+			)}
+		</div>
+	);
 }
