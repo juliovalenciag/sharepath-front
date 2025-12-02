@@ -74,6 +74,7 @@ export interface CreateLugarRequest {
     foto_url:      string;
     google_score:  number;
     total_reviews: number;
+    descripcion:  string;
 }
 
 export interface LugarData {
@@ -86,6 +87,7 @@ export interface LugarData {
     foto_url:      string;
     google_score:  number;
     total_reviews: number;
+    descripcion:  string;
 }
 
 export interface LugaresListResponse {
