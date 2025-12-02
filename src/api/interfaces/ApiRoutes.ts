@@ -129,7 +129,14 @@ export interface SearchUserResponse {
     users: Usuario[];
 }
 
-// Amigo 
+export interface Preferencias {
+    id: number, 
+    usuario: Usuario, 
+    correo: string, 
+    lugares_preferidos : string [], 
+    estados_visitados : string [], 
+    actividades_preferidas : string []
+}
 export interface Amigo {
     id: number, 
     status: number, 
@@ -140,22 +147,39 @@ export interface Amigo {
 
 export interface SendFriend {
     message : string; 
-    data: Amigo[]; 
+    data: Amigo; 
 }
 
 export interface RespondFriend {
     message: string; 
-    data: Amigo[]; 
+    data: Amigo; 
 }
 export interface ListRequest {
     message: string; 
     data: Amigo[]; 
 }
 
-export interface ListFriend {
-    friends: Usuario[]; 
+export type ListFriend = Amigo[]; 
+
+export type ListRecomen = Array <{
+    id: number; 
+    title: string; 
+    owner: any; 
+    actividades: any[]; 
+    score : number; 
+    
+}>
+
+export type SearchFriend = Usuario[]; 
+
+export interface Block {
+    message: string; 
 }
 
+
+export interface UnBlock {
+    message: string;  
+}
 export interface FriendSuggestion {
     username: string;
     nombre_completo: string;
@@ -201,11 +225,18 @@ export interface ApiRoutes {
     deleteUser: () => Promise<{ message: string }>;
 
     // Amigo 
-    sendFriendRequest: (correo: string) => Promise<SendFriend>;
+    sendFriendRequest: (receiving: string) => Promise<SendFriend>;
     respondFriendRequest: (id: number, state: number) => Promise<RespondFriend>;
     getRequests: () => Promise<ListRequest>;
     getFriends: () => Promise<ListFriend>; 
-
+    searchFriend :  (query: string) => Promise<SearchFriend>;
+    deleteFriend: (correo: string) => Promise<{ message: string }>;
+    block : (user: string) => Promise<Block>;
+    unblock : (user: string) => Promise<UnBlock>;
+                       
+    //Recomendacion de new user
+    getRecomen: () => Promise<ListRecomen>;
+    
     // Sugerencias de amigos
     getFriendSuggestions: () => Promise<FriendSuggestionResponse>;
 }
