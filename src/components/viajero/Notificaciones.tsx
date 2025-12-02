@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useNotificationsC } from '@/context/NotificationContext';
-
 import { 
   Star, 
   Map, 
@@ -177,7 +176,6 @@ export default function Notificaciones() {
       <div className="space-y-4">
         {notifications.length === 0 && <p className="text-gray-400 text-center">Sin notificaciones.</p>}
         {notifications.map((notif: any) => (
-
           <NotificationCard key={notif.id} notification={notif} />
         ))}
       </div>
