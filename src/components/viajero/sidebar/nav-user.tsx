@@ -1,4 +1,5 @@
 "use client";
+//ESTE ARCHIVO YA NO SE UTILIZA
 import { useRouter } from "next/navigation"; 
 import Cookies from "js-cookie";             
 import { useEffect, useState } from "react";
@@ -12,7 +13,7 @@ import {
   Edit,
   Bell,
 } from "lucide-react";
-
+import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -195,8 +196,10 @@ export function NavUser() {
                 Perfil
               </DropdownMenuItem>
               <DropdownMenuItem>
+                <Link href="/viajero/configuracion/cuenta">
                 <Edit />
                 Cuenta
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <Bell />
@@ -212,7 +215,7 @@ export function NavUser() {
               className="cursor-pointer text-red-600 focus:text-red-600"
             >
               <LogOut />
-              Cerrar Sesión
+              Cerrar sesión
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

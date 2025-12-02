@@ -44,6 +44,10 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import {
+  getCategoryStyle,
+  getDefaultImageForCategory,
+} from "@/lib/category-utils";
 import type { DayInfo } from "./CinematicMap";
 
 // --- TIPOS Y DATOS ---
@@ -144,8 +148,8 @@ export function PlaceSearchDialog({
   // --- STATE ---
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<PlaceFilters>({
-    state: "__all__",
-    category: "__all__",
+    state: defaultState || "__all__",
+    category: "tourist_attraction",
     minRating: undefined,
   });
   const [loading, setLoading] = useState(false);
@@ -176,7 +180,7 @@ export function PlaceSearchDialog({
 
     if (open && defaultState && !initialLoaded) {
       setFilters((prev) => ({ ...prev, state: defaultState }));
-      void loadInitialByState(defaultState);
+      void handleSearch();
     }
   }, [open, defaultState, initialLoaded]);
 
@@ -200,34 +204,6 @@ export function PlaceSearchDialog({
     void handleSearch();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.state, filters.category]);
-
-  // --- API CALLS ---
-  async function loadInitialByState(state: string) {
-    setLoading(true);
-    try {
-      const api = ItinerariosAPI.getInstance();
-      const resp = await api.getLugares(
-        1,
-        60,
-        state,
-        undefined,
-        undefined as any
-      );
-      let lugares: LugarData[] = [];
-      if (Array.isArray(resp)) {
-        lugares = resp as any;
-      } else if (resp && Array.isArray((resp as any).lugares)) {
-        lugares = (resp as any).lugares;
-      }
-      setResults(lugares);
-      setInitialLoaded(true);
-    } catch (error: any) {
-      console.error(error);
-      toast.error("Error cargando lugares sugeridos.");
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function handleSearch() {
     setLoading(true);
@@ -263,6 +239,7 @@ export function PlaceSearchDialog({
       } else if (resp && Array.isArray((resp as any).lugares)) {
         lugares = (resp as any).lugares;
       }
+      setInitialLoaded(true);
 
       setResults(lugares);
 
@@ -567,20 +544,19 @@ export function PlaceSearchDialog({
                           : "border-transparent bg-background hover:border-primary/20 hover:bg-white hover:shadow-sm dark:bg-card/50 dark:hover:bg-accent/50 dark:hover:border-primary/30"
                       )}
                     >
+                      
                       <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted shadow-inner dark:bg-muted/20">
-                        {lugar.foto_url ? (
-                          <Image
-                            src={lugar.foto_url}
-                            alt={lugar.nombre}
-                            fill
-                            className="object-cover transition-transform duration-500 group-hover:scale-110"
-                            sizes="64px"
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center">
-                            <MapPin className="h-6 w-6 text-muted-foreground/30" />
-                          </div>
-                        )}
+                        
+                        <Image
+                          src={
+                            lugar.foto_url ||
+                            getDefaultImageForCategory(lugar.category)
+                          }
+                          alt={lugar.nombre}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-110"
+                          sizes="64px"
+                        />
                       </div>
 
                       <div className="flex flex-1 min-w-0 flex-col justify-center gap-0.5">
@@ -589,7 +565,7 @@ export function PlaceSearchDialog({
                         </h4>
                         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                           <span className="truncate max-w-[80px] font-medium">
-                            {lugar.category}
+                            {getCategoryStyle(lugar.category).name}
                           </span>
                           <span className="text-muted-foreground/40">•</span>
                           <span className="truncate">
@@ -642,9 +618,13 @@ export function PlaceSearchDialog({
                   <div className="flex flex-col p-6 lg:p-8 pb-32 max-w-5xl mx-auto w-full">
                     {/* Hero Image */}
                     <div className="group relative mb-8 aspect-video w-full shrink-0 overflow-hidden rounded-2xl bg-muted shadow-sm ring-1 ring-border/50 sm:aspect-[21/9] dark:bg-muted/20">
-                      {selectedPlace.foto_url ? (
-                        <Image
-                          src={selectedPlace.foto_url}
+                      {selectedPlace.foto_url ||
+                      getDefaultImageForCategory(selectedPlace.category) ? (
+                          <Image
+                          src={
+                            selectedPlace.foto_url ||
+                            getDefaultImageForCategory(selectedPlace.category)
+                          }
                           alt={selectedPlace.nombre}
                           fill
                           className="object-cover transition-transform duration-700 group-hover:scale-105"
@@ -663,8 +643,10 @@ export function PlaceSearchDialog({
 
                       <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
                         <div className="flex items-center gap-3 mb-2">
-                          <Badge className="bg-white/20 text-white hover:bg-white/30 backdrop-blur-md border-0 uppercase tracking-widest text-[10px]">
-                            {selectedPlace.category}
+                          <Badge
+                            className={cn("border-0 backdrop-blur-md uppercase tracking-widest text-[10px]", getCategoryStyle(selectedPlace.category).bg, getCategoryStyle(selectedPlace.category).color)}
+                          >
+                            {getCategoryStyle(selectedPlace.category).name}
                           </Badge>
                           {selectedPlace.mexican_state && (
                             <div className="flex items-center gap-1 text-xs font-medium text-white/90 drop-shadow-sm">
@@ -729,21 +711,24 @@ export function PlaceSearchDialog({
                             Acerca de este lugar
                           </h4>
                         </div>
-                        <p className="text-sm leading-relaxed text-muted-foreground text-pretty">
-                          Este destino en{" "}
-                          <span className="font-medium text-foreground">
-                            {selectedPlace.mexican_state}
-                          </span>{" "}
-                          es perfecto para viajeros interesados en experiencias
-                          de tipo{" "}
-                          <span className="font-medium text-foreground">
-                            {selectedPlace.category}
-                          </span>
-                          .<br />
-                          <br />
-                          Asegúrate de revisar el clima y los horarios locales
-                          antes de tu visita.
-                        </p>
+                        {selectedPlace.descripcion ? (
+                          <p className="text-sm leading-relaxed text-muted-foreground text-pretty">
+                            {selectedPlace.descripcion}
+                          </p>
+                        ) : (
+                          <p className="text-sm leading-relaxed text-muted-foreground text-pretty">
+                            Este destino en{" "}
+                            <span className="font-medium text-foreground">
+                              {selectedPlace.mexican_state}
+                            </span>{" "}
+                            es perfecto para viajeros interesados en
+                            experiencias de tipo{" "}
+                            <span className="font-medium text-foreground">
+                              {getCategoryStyle(selectedPlace.category).name}
+                            </span>
+                            .
+                          </p>
+                        )}
                       </div>
 
                       <div className="rounded-2xl border bg-card p-5 shadow-sm transition-shadow hover:shadow-md dark:border-border/60">

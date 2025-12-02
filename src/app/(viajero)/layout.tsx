@@ -26,14 +26,13 @@ import {
 import { AccountSwitcher } from "@/components/viajero/sidebar/account-switcher";
 import { LayoutControls } from "@/components/viajero/sidebar/layout-controls";
 import { SearchDialog } from "@/components/viajero/sidebar/search-dialog";
+import { NotificationBell } from "@/components/viajero/sidebar/notification-bell";
 import { ThemeSwitcher } from "@/components/viajero/sidebar/theme-switcher";
-
 export default async function Layout({
   children,
 }: Readonly<{ children: ReactNode }>) {
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
-
   const [sidebarVariant, sidebarCollapsible, contentLayout, navbarStyle] =
     await Promise.all([
       getPreference<SidebarVariant>(
@@ -91,8 +90,9 @@ export default async function Layout({
               <SearchDialog />
             </div>
             <div className="flex items-center gap-2">
-              <LayoutControls {...layoutPreferences} />
+              {/* <LayoutControls {...layoutPreferences} /> */}
               <ThemeSwitcher />
+              <NotificationBell />
               <AccountSwitcher />
             </div>
           </div>

@@ -83,6 +83,7 @@ export interface LugarData {
     nombre:        string;
     latitud:       number;
     longitud:      number;
+    descripcion:   string;
     foto_url:      string;
     google_score:  number;
     total_reviews: number;

@@ -1,5 +1,5 @@
 "use client"
-
+//ESTE ARCHIVO YA NO SE USA
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";

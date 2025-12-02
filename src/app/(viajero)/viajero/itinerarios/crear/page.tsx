@@ -91,6 +91,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import {
+  getCategoryStyle,
+  getDefaultImageForCategory,
+} from "@/lib/category-utils";
 
 // Sub-components
 import { PlaceSearchDialog } from "./components/PlacesSearchDialog";
@@ -102,7 +106,7 @@ export interface Actividad {
   nombre: string;
   lat: number;
   lng: number;
-  description?: string; // <-- Campo para el backend
+  descripcion?: string; // <-- Campo para el backend
   foto_url?: string; // <-- NUEVO: Para la imagen
   start_time?: string; // <-- Campo para el backend
   end_time?: string; // <-- Campo para el backend
@@ -135,7 +139,7 @@ function sameDayKey(date: Date, key: string) {
 }
 
 function createActivityFromLugar(
-  lugar: LugarData | BuilderPlace,
+  lugar: LugarData,
   fecha: Date
 ): BuilderActivity {
   const id =
@@ -150,6 +154,7 @@ function createActivityFromLugar(
     longitud: lugar.longitud,
     foto_url: "foto_url" in lugar ? lugar.foto_url ?? null : null,
     category: "category" in lugar ? lugar.category : undefined,
+    descripcion: "descripcion" in lugar ? lugar.descripcion : undefined,
     mexican_state: "mexican_state" in lugar ? lugar.mexican_state : undefined,
     google_score: "google_score" in lugar ? lugar.google_score : undefined,
     total_reviews: "total_reviews" in lugar ? lugar.total_reviews : undefined,
@@ -158,7 +163,7 @@ function createActivityFromLugar(
   return {
     id,
     fecha,
-    description: "",
+    descripcion: lugar.descripcion || "", // Usamos la descripción del lugar como valor inicial
     lugar: place,
     start_time: "10:00",
     end_time: "11:00",
@@ -227,7 +232,12 @@ function SortableActivityCard({
     opacity: isDragging ? 0.8 : 1,
   };
 
-  const foto = activity.lugar.foto_url;
+  const foto =
+    activity.lugar.foto_url ||
+    getDefaultImageForCategory(activity.lugar.category);
+
+  const descriptionToShow = activity.lugar.descripcion;
+  const hasDescription = !!activity.lugar.descripcion;
 
   // >>>>>>> 9a2fa75a111f9b75ef6b07230ff32bd5a01f1637
   return (
@@ -259,12 +269,22 @@ function SortableActivityCard({
           {/* Contenido */}
           <div className="flex-1 flex flex-col gap-3 min-w-0">
             <div className="flex items-start justify-between gap-2">
-              <h4
-                onClick={() => onViewDetails(activity.id)}
-                className="text-base font-semibold truncate cursor-pointer hover:text-primary transition-colors"
-              >
-                {activity.lugar.nombre}
-              </h4>
+              <div className="flex-1 min-w-0">
+                <h4
+                  onClick={() => onViewDetails(activity.id)}
+                  className="text-base font-semibold truncate cursor-pointer hover:text-primary transition-colors"
+                >
+                  {activity.lugar.nombre}
+                </h4>
+                <p
+                  className={cn(
+                    "text-xs font-medium mt-1 truncate",
+                    getCategoryStyle(activity.lugar.category).color
+                  )}
+                >
+                  {getCategoryStyle(activity.lugar.category).name}
+                </p>
+              </div>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -320,21 +340,22 @@ function SortableActivityCard({
               </div>
             </div>
 
-            <div className="flex gap-3 mt-1">
-              <div className="flex-1 relative">
-                <Pencil className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground/50" />
-                <Textarea
-                  value={activity.description || ""}
-                  onChange={(e) =>
-                    onChange(activity.id, { description: e.target.value })
-                  }
-                  className="min-h-[80px] pl-7 text-sm bg-muted/20 border-muted-foreground/10 resize-none focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:bg-background transition-colors shadow-none rounded-md py-2"
-                  placeholder="Añadir notas..."
-                />
-              </div>
+            <div
+              className={cn("flex gap-3 mt-1", !hasDescription && "items-end")}
+            >
+              {hasDescription && (
+                <div className="flex-1 relative">
+                  <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
+                    {activity.lugar.descripcion}
+                  </p>
+                </div>
+              )}
 
               <div
-                className="relative h-24 w-32 shrink-0 overflow-hidden rounded-lg bg-muted cursor-pointer hover:opacity-90 transition-opacity shadow-sm border border-border/10"
+                className={cn(
+                  "relative shrink-0 overflow-hidden rounded-lg bg-muted cursor-pointer hover:opacity-90 transition-opacity shadow-sm border border-border/10",
+                  hasDescription ? "h-24 w-32" : "h-32 w-full" // Se expande si no hay descripción
+                )}
                 onClick={() => onViewDetails(activity.id)}
               >
                 {foto ? (
@@ -382,15 +403,21 @@ function PlaceInfoDialog({
     [allActivities, activityId]
   );
 
+  const categoryStyle = getCategoryStyle(liveActivity?.lugar.category);
+
   if (!liveActivity) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-2xl overflow-hidden p-0 gap-0 border-none shadow-2xl">
         <div className="relative h-56 w-full bg-muted">
-          {liveActivity.lugar.foto_url ? (
+          {liveActivity.lugar.foto_url ||
+          getDefaultImageForCategory(liveActivity.lugar.category) ? (
             <Image
-              src={liveActivity.lugar.foto_url}
+              src={
+                liveActivity.lugar.foto_url ||
+                getDefaultImageForCategory(liveActivity.lugar.category)
+              }
               alt={liveActivity.lugar.nombre}
               fill
               className="object-cover"
@@ -404,9 +431,16 @@ function PlaceInfoDialog({
 
           <div className="absolute bottom-5 left-6 right-6 text-white">
             <div className="flex items-center gap-2 mb-2">
-              <Badge className="bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-md px-2 py-0.5 text-[10px] uppercase tracking-wider">
-                {liveActivity.lugar.category || "Atracción"}
+              <Badge
+                className={cn(
+                  "border-0 backdrop-blur-md px-2 py-0.5 text-[10px] uppercase tracking-wider",
+                  categoryStyle.bg,
+                  categoryStyle.color
+                )}
+              >
+                {categoryStyle.name}
               </Badge>
+
               {liveActivity.lugar.google_score && (
                 <div className="flex items-center gap-1 text-amber-400 font-bold text-xs bg-black/30 backdrop-blur-md px-2 py-0.5 rounded-full">
                   ★ {liveActivity.lugar.google_score.toFixed(1)}
@@ -442,6 +476,16 @@ function PlaceInfoDialog({
         </div>
 
         <div className="p-6 bg-background max-h-[60vh] overflow-y-auto">
+          {liveActivity.lugar.descripcion && (
+            <>
+              <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground leading-relaxed">
+                <p>{liveActivity.lugar.descripcion}</p>
+              </div>
+
+              <Separator className="my-6 bg-border/50" />
+            </>
+          )}
+
           <div className="mb-6">
             <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 block flex items-center gap-2">
               <Clock className="h-3.5 w-3.5" /> Planificación del Tiempo
@@ -474,21 +518,6 @@ function PlaceInfoDialog({
                 />
               </div>
             </div>
-          </div>
-
-          <div className="mb-6">
-            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-              <Pencil className="h-3.5 w-3.5" /> Tus Notas Personales
-            </Label>
-            <Textarea
-              placeholder="Escribe aquí detalles importantes..."
-              className="min-h-[120px] text-sm resize-none bg-muted/20 border-muted-foreground/10 focus:bg-background focus-visible:ring-primary/30 transition-colors rounded-lg p-3"
-              // FIX: Usamos el valor directo de liveActivity, así que se actualiza al escribir
-              value={liveActivity.description || ""}
-              onChange={(e) =>
-                onUpdate(liveActivity.id, { description: e.target.value })
-              }
-            />
           </div>
 
           <Separator className="my-6 bg-border/50" />
@@ -559,6 +588,7 @@ export default function CrearItinerarioPage() {
   const [optimizing, setOptimizing] = useState(false);
   const [mobileView, setMobileView] = useState<"list" | "map">("list");
 
+  const [isRedirecting, setIsRedirecting] = useState(false);
   // <<<<<<< HEAD
   //   const Mapa = useMemo(
   //     () =>
@@ -587,11 +617,12 @@ export default function CrearItinerarioPage() {
   );
 
   useEffect(() => {
-    if (!meta) {
+    // FIX: Añadir condición para no ejecutar durante la redirección del guardado.
+    if (!meta && !isRedirecting) {
       toast.info("Configura tu viaje para comenzar.");
       router.push("/viajero/itinerarios/nuevo");
     }
-  }, [meta, router]);
+  }, [meta, router, isRedirecting]);
 
   const days: DayInfo[] = useMemo(() => {
     if (meta?.start && meta?.end) {
@@ -677,7 +708,6 @@ export default function CrearItinerarioPage() {
 
     const act = createActivityFromLugar(lugar, currentDay.date);
     addActivity(act);
-    toast.success("Lugar añadido");
   }
 
   function handleViewDetails(id: string) {
@@ -725,9 +755,11 @@ export default function CrearItinerarioPage() {
     try {
       const payload = buildItineraryPayload(meta, actividades);
       await ItinerariosAPI.getInstance().createItinerario(payload);
+
+      setIsRedirecting(true); // 1. Avisamos que vamos a redirigir
       toast.success("¡Itinerario creado!");
-      useItineraryBuilderStore.getState().clear?.();
-      router.push("/viajero/itinerarios");
+      router.push("/viajero/itinerarios"); // 2. Iniciamos la redirección
+      useItineraryBuilderStore.getState().clear?.(); // 3. Limpiamos el estado
     } catch (error: any) {
       toast.error("Error al guardar", { description: error.message });
     } finally {

@@ -12,6 +12,7 @@ export type BuilderPlace = {
   longitud: number;
   foto_url: string | null;
   category?: string;
+  descripcion?: string;
   mexican_state?: string;
   google_score?: number;
   total_reviews?: number;
@@ -20,7 +21,7 @@ export type BuilderPlace = {
 export type BuilderActivity = {
   id: string;
   fecha: Date; // Se guarda como string ISO, se hidrata a Date
-  description: string;
+  descripcion: string;
   lugar: BuilderPlace;
   start_time: string | null; // "10:00"
   end_time: string | null; // "11:00"
@@ -159,7 +160,7 @@ export function buildItineraryPayload(
     // Mapeo hacia la interfaz 'Actividad' del backend
     actividades: actividades.map((a) => ({
       fecha: a.fecha.toISOString().slice(0, 10),
-      description: a.description || "", // Aseguramos string vacío, no null
+      description: a.descripcion || "", // CORRECCIÓN: El campo esperado por la API es "description"
       lugarId: a.lugar.id_api_place,
 
       // Datos extra que agregamos a la interfaz en el paso anterior

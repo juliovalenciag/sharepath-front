@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -75,7 +74,10 @@ const createCustomIcon = (index: number, type: "start" | "end" | "mid") => {
     className: "custom-pin-icon",
     html: `
       <div class="relative flex items-center justify-center group">
-        <div class="absolute -bottom-1 h-3 w-3 rotate-45 bg-current ${colorClass.replace("bg-", "text-")} transition-transform group-hover:scale-110"></div>
+        <div class="absolute -bottom-1 h-3 w-3 rotate-45 bg-current ${colorClass.replace(
+          "bg-",
+          "text-"
+        )} transition-transform group-hover:scale-110"></div>
         <div class="relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-white shadow-lg ${colorClass} transition-transform group-hover:scale-110">
           <span class="text-xs font-bold">${index + 1}</span>
         </div>
@@ -93,7 +95,10 @@ function RoutingLayer({
   onSummaryFound,
 }: {
   activities: MapActivity[];
-  onSummaryFound: (summary: { totalDistance: number; totalTime: number }) => void;
+  onSummaryFound: (summary: {
+    totalDistance: number;
+    totalTime: number;
+  }) => void;
 }) {
   const map = useMap();
   const routingControlRef = useRef<any>(null); // Usamos 'any' para evitar conflictos de tipos estrictos con la librería externa
@@ -104,7 +109,6 @@ function RoutingLayer({
     // Importamos la librería aquí dentro para asegurar que 'window' y 'L' existen
     // Esto evita errores de SSR y problemas de inicialización
     const initializeRouting = async () => {
-      // @ts-ignore
       if (!L.Routing) {
         await import("leaflet-routing-machine");
       }
@@ -126,10 +130,8 @@ function RoutingLayer({
       const waypoints = activities.map((a) => L.latLng(a.lat, a.lng));
 
       try {
-        // @ts-ignore
         const control = L.Routing.control({
           waypoints,
-          // @ts-ignore
           router: L.Routing.osrmv1({
             serviceUrl: "https://router.project-osrm.org/route/v1",
             profile: "foot", // Modo caminata
@@ -169,7 +171,10 @@ function RoutingLayer({
     return () => {
       if (routingControlRef.current && map) {
         try {
-          map.removeControl(routingControlRef.current);
+          // FIX: Asegurarse de que el mapa aún existe en el momento de la limpieza.
+          if (map && map.hasLayer(routingControlRef.current)) {
+            map.removeControl(routingControlRef.current);
+          }
         } catch (e) {}
         routingControlRef.current = null;
       }
@@ -217,7 +222,7 @@ export function CinematicMap({
 }: CinematicMapProps) {
   // Key única para forzar remontaje limpio si es necesario
   const [mapKey] = useState(() => `map-${Math.random().toString(36).slice(2)}`);
-  
+
   const [mapStyle, setMapStyle] = useState<"streets" | "satellite">("streets");
   const [stats, setStats] = useState({ totalDistance: 0, totalTime: 0 });
   const [shouldFly, setShouldFly] = useState(true);
@@ -233,7 +238,7 @@ export function CinematicMap({
 
   // Coordenadas para la línea de respaldo (Polyline)
   const polylinePositions = useMemo(() => {
-    return visibleActivities.map(a => [a.lat, a.lng] as LatLngExpression);
+    return visibleActivities.map((a) => [a.lat, a.lng] as LatLngExpression);
   }, [visibleActivities]);
 
   useEffect(() => {
@@ -246,8 +251,10 @@ export function CinematicMap({
       : [19.4326, -99.1332];
 
   const tiles = {
-    streets: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
-    satellite: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    streets:
+      "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+    satellite:
+      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
   };
 
   const attributions = {
@@ -259,11 +266,11 @@ export function CinematicMap({
   const distanceKm = (stats.totalDistance / 1000).toFixed(1);
   const timeHours = Math.floor(stats.totalTime / 3600);
   const timeMinutes = Math.floor((stats.totalTime % 3600) / 60);
-  const timeString = timeHours > 0 ? `${timeHours}h ${timeMinutes}m` : `${timeMinutes} min`;
+  const timeString =
+    timeHours > 0 ? `${timeHours}h ${timeMinutes}m` : `${timeMinutes} min`;
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-muted/20">
-      
       {/* BARRA DE DÍAS */}
       <div className="absolute left-0 right-0 top-4 z-[500] flex justify-center px-4 pointer-events-none">
         {days.length > 0 && (
@@ -282,7 +289,12 @@ export function CinematicMap({
                   )}
                 >
                   {d.label}
-                  <span className={cn("hidden sm:inline opacity-70 font-normal", active && "opacity-90")}>
+                  <span
+                    className={cn(
+                      "hidden sm:inline opacity-70 font-normal",
+                      active && "opacity-90"
+                    )}
+                  >
                     {d.subtitle}
                   </span>
                 </button>
@@ -301,18 +313,26 @@ export function CinematicMap({
                 <Footprints className="h-4 w-4" />
               </div>
               <div className="flex flex-col">
-                <span className="text-[9px] text-white/50 font-bold uppercase tracking-wider">Distancia</span>
-                <span className="text-sm font-bold leading-none">{distanceKm} km</span>
+                <span className="text-[9px] text-white/50 font-bold uppercase tracking-wider">
+                  Distancia
+                </span>
+                <span className="text-sm font-bold leading-none">
+                  {distanceKm} km
+                </span>
               </div>
             </div>
             <div className="h-8 w-px bg-white/10"></div>
             <div className="flex items-center gap-2">
               <div className="p-1.5 rounded-full bg-emerald-500/20 text-emerald-400">
-                 <Clock className="h-4 w-4" />
+                <Clock className="h-4 w-4" />
               </div>
               <div className="flex flex-col">
-                <span className="text-[9px] text-white/50 font-bold uppercase tracking-wider">Tiempo</span>
-                <span className="text-sm font-bold leading-none">{timeString}</span>
+                <span className="text-[9px] text-white/50 font-bold uppercase tracking-wider">
+                  Tiempo
+                </span>
+                <span className="text-sm font-bold leading-none">
+                  {timeString}
+                </span>
               </div>
             </div>
           </div>
@@ -323,32 +343,46 @@ export function CinematicMap({
       <div className="absolute right-4 top-20 z-[500] flex flex-col gap-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="icon" variant="secondary" className="h-10 w-10 rounded-xl shadow-lg bg-background/90 backdrop-blur-md hover:bg-background">
+            <Button
+              size="icon"
+              variant="secondary"
+              className="h-10 w-10 rounded-xl shadow-lg bg-background/90 backdrop-blur-md hover:bg-background"
+            >
               <Layers className="h-5 w-5 text-foreground/80" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-40">
-            <DropdownMenuItem onClick={() => setMapStyle("streets")} className="gap-2 cursor-pointer">
+            <DropdownMenuItem
+              onClick={() => setMapStyle("streets")}
+              className="gap-2 cursor-pointer"
+            >
               <MapIcon className="h-4 w-4" />
               <span>Callejero</span>
-              {mapStyle === "streets" && <div className="ml-auto h-2 w-2 rounded-full bg-primary" />}
+              {mapStyle === "streets" && (
+                <div className="ml-auto h-2 w-2 rounded-full bg-primary" />
+              )}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setMapStyle("satellite")} className="gap-2 cursor-pointer">
+            <DropdownMenuItem
+              onClick={() => setMapStyle("satellite")}
+              className="gap-2 cursor-pointer"
+            >
               <Navigation className="h-4 w-4" />
               <span>Satélite</span>
-              {mapStyle === "satellite" && <div className="ml-auto h-2 w-2 rounded-full bg-primary" />}
+              {mapStyle === "satellite" && (
+                <div className="ml-auto h-2 w-2 rounded-full bg-primary" />
+              )}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button 
-            size="icon" 
-            variant="secondary" 
-            className="h-10 w-10 rounded-xl shadow-lg bg-background/90 backdrop-blur-md hover:bg-background"
-            onClick={() => setShouldFly(true)}
-            title="Centrar ruta"
+        <Button
+          size="icon"
+          variant="secondary"
+          className="h-10 w-10 rounded-xl shadow-lg bg-background/90 backdrop-blur-md hover:bg-background"
+          onClick={() => setShouldFly(true)}
+          title="Centrar ruta"
         >
-            <LocateFixed className="h-5 w-5 text-foreground/80" />
+          <LocateFixed className="h-5 w-5 text-foreground/80" />
         </Button>
       </div>
 
@@ -361,90 +395,95 @@ export function CinematicMap({
         zoomControl={false}
       >
         <ZoomControl position="bottomright" />
-        
-        <TileLayer
-          attribution={attributions[mapStyle]}
-          url={tiles[mapStyle]}
-        />
+
+        <TileLayer attribution={attributions[mapStyle]} url={tiles[mapStyle]} />
 
         {/* 1. LÍNEA DE RESPALDO (Siempre visible como guía directa) */}
         {visibleActivities.length > 1 && (
-            <Polyline 
-                positions={polylinePositions}
-                pathOptions={{ 
-                    color: '#94a3b8', // Gris slate
-                    weight: 4, 
-                    dashArray: '10, 10', // Punteada
-                    opacity: 0.6 
-                }} 
-            />
+          <Polyline
+            positions={polylinePositions}
+            pathOptions={{
+              color: "#94a3b8", // Gris slate
+              weight: 4,
+              dashArray: "10, 10", // Punteada
+              opacity: 0.6,
+            }}
+          />
         )}
 
-        <MapController 
-            activities={visibleActivities} 
-            shouldFly={shouldFly} 
-            setShouldFly={setShouldFly} 
+        <MapController
+          activities={visibleActivities}
+          shouldFly={shouldFly}
+          setShouldFly={setShouldFly}
         />
-        
+
         {/* 2. RUTA REAL (Se dibuja encima de la línea de respaldo si el servicio funciona) */}
-        <RoutingLayer 
-            activities={visibleActivities} 
-            onSummaryFound={setStats}
+        <RoutingLayer
+          activities={visibleActivities}
+          onSummaryFound={setStats}
         />
 
         {/* MARCADORES */}
         {visibleActivities.map((a, index) => {
-            const isStart = index === 0;
-            const isEnd = index === visibleActivities.length - 1;
-            const type = isStart ? "start" : isEnd ? "end" : "mid";
-            
-            const icon = createCustomIcon(index, type);
-            if (!icon) return null;
+          const isStart = index === 0;
+          const isEnd = index === visibleActivities.length - 1;
+          const type = isStart ? "start" : isEnd ? "end" : "mid";
 
-            return (
-                <Marker
-                    key={a.id}
-                    position={[a.lat, a.lng]}
-                    icon={icon}
-                >
-                    <Tooltip direction="top" offset={[0, -36]} opacity={1} className="custom-tooltip border-none shadow-xl rounded-lg overflow-hidden p-0">
-                        <div className="bg-background text-foreground px-3 py-2 border-b border-border min-w-[120px]">
-                            <p className="font-bold text-xs leading-tight">{a.nombre}</p>
-                        </div>
-                        {a.start_time && (
-                            <div className="bg-muted px-3 py-1.5 flex items-center gap-1.5">
-                                <Clock className="h-3 w-3 text-muted-foreground" />
-                                <p className="text-[10px] text-muted-foreground font-medium">{a.start_time}</p>
-                            </div>
-                        )}
-                    </Tooltip>
-                </Marker>
-            );
+          const icon = createCustomIcon(index, type);
+          if (!icon) return null;
+
+          return (
+            <Marker key={a.id} position={[a.lat, a.lng]} icon={icon}>
+              <Tooltip
+                direction="top"
+                offset={[0, -36]}
+                opacity={1}
+                className="custom-tooltip border-none shadow-xl rounded-lg overflow-hidden p-0"
+              >
+                <div className="bg-background text-foreground px-3 py-2 border-b border-border min-w-[120px]">
+                  <p className="font-bold text-xs leading-tight">{a.nombre}</p>
+                </div>
+                {a.start_time && (
+                  <div className="bg-muted px-3 py-1.5 flex items-center gap-1.5">
+                    <Clock className="h-3 w-3 text-muted-foreground" />
+                    <p className="text-[10px] text-muted-foreground font-medium">
+                      {a.start_time}
+                    </p>
+                  </div>
+                )}
+              </Tooltip>
+            </Marker>
+          );
         })}
       </MapContainer>
 
       {/* CSS GLOBAL PARA LIMPIEZA */}
       <style jsx global>{`
         /* Ocultar panel de instrucciones de routing machine */
-        .leaflet-routing-container { display: none !important; }
-        
+        .leaflet-routing-container {
+          display: none !important;
+        }
+
         /* Limpiar estilos del tooltip */
         .leaflet-tooltip.custom-tooltip {
-            background: transparent;
-            border: none;
-            box-shadow: none;
+          background: transparent;
+          border: none;
+          box-shadow: none;
         }
-        .leaflet-tooltip-left:before, .leaflet-tooltip-right:before, .leaflet-tooltip-bottom:before, .leaflet-tooltip-top:before {
-            display: none; 
+        .leaflet-tooltip-left:before,
+        .leaflet-tooltip-right:before,
+        .leaflet-tooltip-bottom:before,
+        .leaflet-tooltip-top:before {
+          display: none;
         }
 
         /* Animación para los pines */
         .custom-pin-icon {
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         .custom-pin-icon:hover {
-            transform: scale(1.15) translateY(-8px);
-            z-index: 1000 !important;
+          transform: scale(1.15) translateY(-8px);
+          z-index: 1000 !important;
         }
       `}</style>
     </div>

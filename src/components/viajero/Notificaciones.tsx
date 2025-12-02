@@ -1,178 +1,181 @@
 'use client';
 
+import Link from 'next/link';
 import Image from 'next/image';
+import { useNotificationsC } from '@/context/NotificationContext';
 import { 
   Star, 
   Map, 
   MessageCircle, 
-  UserPlus, 
-  Users 
+  Users, 
+  UserPlus
 } from 'lucide-react';
+import { useState } from 'react';
 
-// 1. Definimos los tipos de datos
-type NotificationType = 'rating' | 'post' | 'comment' | 'friend_request' | 'friend_accepted';
+const mapDbTypeToUiType = (dbType: string) => {
+    const normalized = dbType ? dbType.toString().trim().toUpperCase() : 'POST';
+    
 
-interface User {
-  name: string;
-  avatarUrl: string;
-  username?: string; // Opcional, para la tarjeta de solicitud de amistad
-  mutualContacts?: number; // Opcional
-}
-
-interface NotificationItem {
-  id: string;
-  type: NotificationType;
-  user: User;
-  message: string; // "ha calificado tu publicación", etc.
-  timestamp: string;
-  isRead: boolean; // Controla el color de fondo
-}
-
-// Datos de prueba (MOCK DATA) basados en tu imagen
-const mockNotifications: NotificationItem[] = [
-  {
-    id: '1',
-    type: 'rating',
-    user: { name: 'Fátima', avatarUrl: "/img/angel.jpg" },
-    message: 'ha calificado tu publicación',
-    timestamp: '1 min',
-    isRead: true, // Visto -> Blanco
-  },
-  {
-    id: '2',
-    type: 'post',
-    user: { name: 'Fátima', avatarUrl: "/img/angel.jpg" },
-    message: 'ha hecho una publicación',
-    timestamp: '1 min',
-    isRead: true, // Visto -> Blanco
-  },
-  {
-    id: '3',
-    type: 'friend_request',
-    user: { 
-      name: 'Pedro Gonzales Pérez', 
-      username: 'pedrongon',
-      avatarUrl: "./img/angel.jpg",
-      mutualContacts: 50
-    },
-    message: '', // En friend request el layout cambia un poco
-    timestamp: '',
-    isRead: true, // Visto -> Blanco
-  },
-  {
-    id: '4',
-    type: 'comment',
-    user: { name: 'Fátima', avatarUrl: "/img/angel.jpg" },
-    message: 'ha comentado tu publicación',
-    timestamp: '1 min',
-    isRead: false, // No visto -> Gris
-  },
-  {
-    id: '5',
-    type: 'friend_accepted',
-    user: { name: 'Fátima', avatarUrl: "/img/angel.jpg" },
-    message: 'ha aceptado tu solicitud de amistad',
-    timestamp: '',
-    isRead: false, // No visto -> Gris
-  },
-];
-
-// 2. Componente auxiliar para obtener el ícono según el tipo
-const getIconByType = (type: NotificationType) => {
-  const iconProps = { size: 16, className: "text-white" };
-  const wrapperClass = "absolute -bottom-1 -right-1 p-1.5 rounded-full border-2 border-white";
-  
-  switch (type) {
-    case 'rating':
-      return <div className={`${wrapperClass} bg-blue-500`}><Star {...iconProps} fill="white" /></div>;
-    case 'post':
-      return <div className={`${wrapperClass} bg-sky-500`}><Map {...iconProps} /></div>;
-    case 'comment':
-      return <div className={`${wrapperClass} bg-blue-500`}><MessageCircle {...iconProps} /></div>;
-    case 'friend_request':
-      return null; // La solicitud de amistad tiene un diseño diferente sin ícono superpuesto en tu imagen, o se puede agregar
-    case 'friend_accepted':
-      return <div className={`${wrapperClass} bg-blue-500`}><Users {...iconProps} /></div>;
-    default:
-      return null;
-  }
+    switch (normalized) {
+        case 'SOLICITUD': 
+        case 'FRIEND_REQUEST': 
+            return 'friend_request';
+            
+        case 'ACEPTACION': 
+        case 'FRIEND_ACCEPTED':
+            return 'friend_accepted';
+            
+        case 'COMENTARIO': 
+        case 'COMMENT':
+            return 'comment';
+            
+        case 'RATING': 
+        case 'RESEÑA':
+        case 'RESENA': 
+            return 'rating';
+            
+        case 'NUEVO_POST': 
+        case 'POST':
+            return 'post';
+            
+        default: 
+            return 'post'; 
+    }
 };
 
-// 3. Componente de Tarjeta Individual
-const NotificationCard = ({ notification }: { notification: NotificationItem }) => {
-  const { type, user, message, timestamp, isRead } = notification;
+const getIconByType = (type: string) => {
+    const iconProps = { size: 16, className: "text-white" };
+    const wrapperClass = "absolute -bottom-1 -right-1 p-1.5 rounded-full border-2 border-white";
+    
+    switch (type) {
+        case 'rating': 
+            return <div className={`${wrapperClass} bg-yellow-400`}><Star {...iconProps} /></div>;
+        case 'post': 
+            return <div className={`${wrapperClass} bg-sky-500`}><Map {...iconProps} /></div>;
+        case 'comment': 
+            return <div className={`${wrapperClass} bg-blue-500`}><MessageCircle {...iconProps} /></div>;
+        case 'friend_accepted': 
+            return <div className={`${wrapperClass} bg-green-500`}><Users {...iconProps} /></div>;
+        case 'friend_request': 
+            return <div className={`${wrapperClass} bg-indigo-600`}><UserPlus {...iconProps} /></div>;
+        default: 
+            return null;
+    }
+};
 
-  // Lógica de fondo: Si NO está vista (gris), si está vista (blanco)
-  // Nota: Ajusté los colores para que coincidan con la lógica visual estándar, pero siguiendo tu regla.
-  const bgClass = !isRead ? 'bg-gray-100' : 'bg-white';
+const NotificationCard = ({ notification }: { notification: any }) => {
+  const [isReadState, setIsReadState] = useState(notification.leido);
+
+  const type = mapDbTypeToUiType(notification.tipo || notification.type || notification.tipo_evento);
+  const preview = notification.preview || notification.datos_preview || {};
+  
+  const user = {
+      name: preview.nombre || notification.origen || "Usuario",
+      username: notification.origen || "user",
+      avatarUrl: preview.avatar || "/img/angel.jpg",
+      mutualContacts: preview.mutualContacts
+  };
+  
+  const linkId = notification.linkId || notification.referencia_id;
+
+  // Lógica de URL
+  const getDestinationUrl = () => {
+      switch (type) {
+          case 'friend_request': return `/perfil/${user.username}`;
+          case 'friend_accepted': return `/viajero/amigos`;
+          case 'post':
+          case 'comment':
+          case 'rating': return `/itinerario/${linkId}`; 
+          default: return '#';
+      }
+  };
+
+  const handleCardClick = async () => {
+      if (isReadState) return;
+      setIsReadState(true);
+      try {
+          await fetch(`http://localhost:3001/notificaciones/${notification.id}/leido`, { method: 'PATCH' });
+      } catch (error) { console.error(error); }
+  };
+
+  const handleAction = async (e: React.MouseEvent, action: 'accept' | 'decline') => {
+      e.preventDefault(); 
+      e.stopPropagation();
+      console.log(`Acción: ${action}`);
+      // Aquí iría tu fetch para aceptar/rechazar
+  };
+
+  const bgClass = !isReadState ? 'bg-gray-100 hover:bg-gray-200' : 'bg-white hover:bg-gray-50';
 
   return (
-    <div className={`w-full p-4 rounded-2xl shadow-sm border border-gray-100 flex gap-4 items-center transition-colors ${bgClass}`}>
-      
-      {/* Columna Izquierda: Avatar e Ícono */}
-      <div className="relative shrink-0">
-        <Image 
-          src="/img/angel.jpg" 
-          alt={user.name} 
-          width={56} 
-          height={56} 
-          className="rounded-full object-cover w-14 h-14"
-        />
-        {getIconByType(type)}
-      </div>
+    <Link 
+      href={getDestinationUrl()} 
+      onClick={handleCardClick}
+      className={`block w-full p-4 rounded-2xl shadow-sm border border-gray-100 transition-colors cursor-pointer ${bgClass}`}
+    >
+      <div className="flex gap-4 items-center">
+        
+        <div className="relative shrink-0">
+          <Image 
+            src={user.avatarUrl} 
+            alt={user.name} 
+            width={56} 
+            height={56} 
+            className="rounded-full object-cover w-14 h-14"
+          />
+          {getIconByType(type)}
+        </div>
 
-      {/* Columna Derecha: Contenido */}
-      <div className="flex-1">
-        {type === 'friend_request' ? (
-          // --- Layout Especial: Solicitud de Amistad ---
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div className="flex-1">
+          {type === 'friend_request' ? (
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              <div>
+                <h4 className="font-bold text-gray-900 text-lg leading-tight hover:underline">
+                    {user.name}
+                </h4>
+                <p className="text-gray-500 text-sm">@{user.username}</p>
+              </div>
+              
+              <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0 relative z-10">
+                <button 
+                    onClick={(e) => handleAction(e, 'decline')}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-300 transition"
+                >
+                    Eliminar
+                </button>
+                <button 
+                    onClick={(e) => handleAction(e, 'accept')}
+                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition"
+                >
+                    Aceptar
+                </button>
+              </div>
+            </div>
+          ) : (
             <div>
-              <h4 className="font-bold text-gray-900 text-lg leading-tight">{user.name}</h4>
-              <p className="text-gray-500 text-sm">@{user.username}</p>
-              {user.mutualContacts && (
-                <div className="flex items-center gap-2 mt-1">
-                  {/* Pequeños avatares simulados */}
-                  <div className="flex -space-x-2">
-                     {[1,2,3].map(i => (
-                       <div key={i} className="w-5 h-5 rounded-full bg-gray-300 border border-white"></div>
-                     ))}
-                  </div>
-                  <span className="text-xs text-gray-500">{user.mutualContacts} shared contacts</span>
-                </div>
-              )}
+              <p className="text-gray-800 text-base">
+                <span className="font-bold">{user.name}</span> {preview.mensaje || notification.mensaje}
+              </p>
+              <span className="text-gray-400 text-sm mt-1 block">
+                  {notification.fecha ? new Date(notification.fecha).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Ahora'}
+              </span>
             </div>
-            
-            <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
-              <button className="flex-1 sm:flex-none px-6 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition">
-                Decline
-              </button>
-              <button className="flex-1 sm:flex-none px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition">
-                Accept
-              </button>
-            </div>
-          </div>
-        ) : (
-          // --- Layout Estándar: Notificación normal ---
-          <div>
-            <p className="text-gray-800 text-base">
-              <span className="font-bold">{user.name}</span> {message}
-            </p>
-            {timestamp && <span className="text-gray-400 text-sm mt-1 block">{timestamp}</span>}
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
+    </Link>
   );
 };
 
-// 4. Componente Principal de Lista
-export default function NotificationsPage() {
+export default function Notificaciones() {
+  const { notifications } = useNotificationsC();
+
   return (
     <div className="max-w-3xl mx-auto p-6 min-h-screen">
       <h1 className="text-3xl font-bold mb-6">Notificaciones</h1>
-      
       <div className="space-y-4">
-        {mockNotifications.map((notif) => (
+        {notifications.length === 0 && <p className="text-gray-400 text-center">Sin notificaciones.</p>}
+        {notifications.map((notif: any) => (
           <NotificationCard key={notif.id} notification={notif} />
         ))}
       </div>

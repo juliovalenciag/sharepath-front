@@ -3,7 +3,7 @@
 import DiasCarousel from "./DiaCarousel";
 import Link from "next/link";
 import { useState } from "react";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Ghost } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
@@ -111,7 +111,8 @@ const ItinerarioFrame: React.FC<ItinerarioFrameProps> = ({
       )}
       <div className="p-2 flex rounded-lg min-h-[300px] w-full">
         <div className="w-1/3 p-4 flex flex-col justify-center">
-          <Estrellas value={itinerario.calificacion} />
+        {/* Las estrellas solo se van a ver cuando sea un itinerario publicado */}
+          {/* <Estrellas value={itinerario.calificacion} /> */}
 
           <h2 className="text-3xl font-bold text-shadow-primary mb-2">
             {itinerario.tituloPrincipal}
@@ -147,15 +148,17 @@ const ItinerarioFrame: React.FC<ItinerarioFrameProps> = ({
                     </p> */}
             <div className="flex gap-5 justify-center">
               <Button
+                variant="ghost"
                 size="sm"
-                className="mt-4 bg-gray-600 hover:bg-gray-800 text-white px-3 py-2 rounded-lg w-auto h-auto text-base"
+                className="mt-4 hover:text-blue-600 px-3 py-2 rounded-lg w-auto h-auto text-base"
                 onClick={() => handleVerDetalles(Number(itinerario.id))} // Pasa el id dinámicamente
               >
                 Ver detalles
               </Button>
               <Button
+              variant="ghost"
                 size="sm"
-                className="mt-4 bg-primary hover:bg-secondary text-white px-3 py-2 rounded-lg w-auto h-auto text-base"
+                className="mt-4 hover:text-blue-600 px-3 py-2 rounded-lg w-auto h-auto text-base border-1"
                 onClick={() => handlePublicar(Number(itinerario.id))} // Pasa el id dinámicamente
               >
                 Publicar
