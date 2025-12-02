@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import {
   getCategoryName,
   getDefaultImageForCategory,
-} from "@/components/dashboard-components/category-utils";
+} from "@/lib/category-utils";
 
 
 // Carga dinámica en cliente para evitar SSR

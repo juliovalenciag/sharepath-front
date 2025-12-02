@@ -26,7 +26,11 @@ import {
     FriendSuggestionResponse,
     ShareItineraryRequest,
     Publicacion,
-    AverageRatingResponse
+    AverageRatingResponse,
+    SearchFriend,
+    ListRecomen,
+    Block,
+    UnBlock,
 } from "./interfaces/ApiRoutes";
 
 
@@ -257,8 +261,8 @@ export class ItinerariosAPI implements ApiRoutes {
     }
 
     // ===== AMIGOS =====
-    async sendFriendRequest(correo: string): Promise<SendFriend> {
-        return await this.post<SendFriend>("/amigo/solicitud", true, {receiving: correo });
+    async sendFriendRequest(receiving: string): Promise<SendFriend> {
+        return await this.post<SendFriend>("/amigo/solicitud", true, {receiving});
     }
     
     async respondFriendRequest(id: number, state: number): Promise<RespondFriend> {
@@ -273,6 +277,26 @@ export class ItinerariosAPI implements ApiRoutes {
         return await this.get<ListFriend>("/amigo", true);
     }
 
+    async searchFriend(query: string): Promise<SearchFriend> { 
+        return await this.get<SearchFriend>(`/amigo/search?q=${encodeURIComponent(query)}`, true);
+    } 
+
+    async deleteFriend(correo: string): Promise<{ message: string }> {
+        return await this.delete<{ message: string }>(`/amigo/${correo}`);
+    } 
+
+    async block(user: string): Promise<Block> {
+        return await this.post<Block>("/amigo/block", true, { user } );
+    }
+
+    async unblock(user: string): Promise<UnBlock> {
+        return await this.post<UnBlock>("/amigo/unblock", true, { user } );
+    }
+    
+    // ===== RECOMENDACIONES =====
+    async getRecomen(): Promise<ListRecomen> {
+        return await this.get<ListRecomen>("/recomendacion", true);
+    }    
     // ===== SUGERENCIAS DE AMIGOS =====
     async getFriendSuggestions(): Promise<FriendSuggestionResponse> {
         return await this.get<FriendSuggestionResponse>("/amigo/sugerencias", true);
@@ -290,5 +314,5 @@ export class ItinerariosAPI implements ApiRoutes {
 
     async getMyPublications(): Promise<Publicacion[]> {
         return await this.get<Publicacion[]>("/publicacion/", true);
-    }
+    } 
 }
