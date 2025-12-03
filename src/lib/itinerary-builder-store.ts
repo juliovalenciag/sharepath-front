@@ -3,6 +3,19 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { format } from "date-fns"; // Importante para el payload
 import { RegionKey } from "./constants/regions";
 
+// ========== HELPERS ==========
+
+/**
+ * Mueve un elemento de la posición `from` a la posición `to`
+ * en un nuevo arreglo (no muta el original).
+ */
+function reinsert<T>(arr: T[], from: number, to: number): T[] {
+  const copy = [...arr];
+  const [item] = copy.splice(from, 1);
+  copy.splice(to, 0, item);
+  return copy;
+}
+
 // ========== TIPOS ==========
 
 export type BuilderPlace = {
@@ -45,15 +58,30 @@ type ItineraryBuilderState = {
 
   // Acciones
   setMeta: (meta: BuilderMeta | null) => void;
+
   setActivities: (
     input: BuilderActivity[] | ((prev: BuilderActivity[]) => BuilderActivity[])
   ) => void;
+
+  // 👇 Nuevo: reemplazar todas las actividades (útil para hidratar al editar)
+  setAllActivities: (activities: BuilderActivity[]) => void;
+
   addActivity: (activity: BuilderActivity) => void;
   updateActivity: (id: string, patch: Partial<BuilderActivity>) => void;
   removeActivity: (id: string) => void;
 
+  // 👇 Nuevo: reordenar actividades dentro de un día específico
+  reorderActivities: (
+    dayKey: string, // "yyyy-MM-dd"
+    activeId: string,
+    overId: string
+  ) => void;
+
   // Acción crítica para "Borrar todo"
   reset: () => void;
+  // 👇 Alias para flows nuevos (editor) sin romper lo existente
+  resetAll: () => void;
+
   setHasHydrated: (val: boolean) => void;
 };
 
@@ -76,6 +104,9 @@ export const useItineraryBuilderStore = create<ItineraryBuilderState>()(
         });
       },
 
+      // Reemplaza todas las actividades (para hidratar desde la API al editar)
+      setAllActivities: (activities) => set({ actividades: activities }),
+
       addActivity: (activity) => {
         set((state) => ({ actividades: [...state.actividades, activity] }));
       },
@@ -94,8 +125,32 @@ export const useItineraryBuilderStore = create<ItineraryBuilderState>()(
         }));
       },
 
-      // Limpia todo el estado y el localStorage
+      // Reordena actividades SOLO dentro del día indicado
+      reorderActivities: (dayKey, activeId, overId) =>
+        set((state) => {
+          const dayActivities = state.actividades.filter(
+            (a) => format(a.fecha, "yyyy-MM-dd") === dayKey
+          );
+          const others = state.actividades.filter(
+            (a) => format(a.fecha, "yyyy-MM-dd") !== dayKey
+          );
+
+          const oldIndex = dayActivities.findIndex((a) => a.id === activeId);
+          const newIndex = dayActivities.findIndex((a) => a.id === overId);
+
+          if (oldIndex === -1 || newIndex === -1) {
+            return {};
+          }
+
+          const reordered = reinsert(dayActivities, oldIndex, newIndex);
+          return { actividades: [...others, ...reordered] };
+        }),
+
+      // Limpia todo el estado y el localStorage (para crear)
       reset: () => set({ meta: null, actividades: [] }),
+
+      // Alias para flows nuevos (editar) sin tocar los usos actuales de reset()
+      resetAll: () => set({ meta: null, actividades: [] }),
 
       setHasHydrated: (val) => set({ hasHydrated: val }),
     }),
@@ -125,6 +180,7 @@ export const useItineraryBuilderStore = create<ItineraryBuilderState>()(
 
 // ========== PAYLOAD HELPER ==========
 // Prepara los datos para la API asegurando que las fechas sean correctas
+// Lo puedes usar tanto para CREAR como para ACTUALIZAR itinerarios.
 export function buildItineraryPayload(
   meta: BuilderMeta,
   actividades: BuilderActivity[]
