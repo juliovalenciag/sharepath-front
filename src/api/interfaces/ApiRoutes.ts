@@ -240,11 +240,16 @@ export interface ApiRoutes {
     
     // Sugerencias de amigos
     getFriendSuggestions: () => Promise<FriendSuggestionResponse>;
+
+    getAverageRating: (publicationId: number) => Promise<AverageRatingResponse>;
+    shareItinerary: (itinerarioId: number, body: ShareItineraryRequest) => Promise<Publicacion>;
+    getMyPublications: () => Promise<Publicacion[]>;
 }
 
 export interface ShareItineraryRequest {
     descripcion: string;
     privacity_mode: boolean;
+    fotos: File[]
 }
 
 export interface Publicacion {
@@ -259,12 +264,6 @@ export interface AverageRatingResponse {
     publicationId: number;
     averageRating: number;
     reviewCount: number;
-}
-
-export interface ApiRoutes {
-    getAverageRating: (publicationId: number) => Promise<AverageRatingResponse>;
-    shareItinerary: (itinerarioId: number, body: ShareItineraryRequest) => Promise<Publicacion>;
-    getMyPublications: () => Promise<Publicacion[]>;
 }
 
 export interface Actividad {
