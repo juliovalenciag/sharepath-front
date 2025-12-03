@@ -29,6 +29,10 @@ export function ChatThread({
   const [text, setText] = React.useState("");
   const [typing, setTyping] = React.useState(false);
 
+  /*Para que los mensajes se muestren hasta abajo*/
+  // const messagesRef = React.useRef<HTMLDivElement | null>(null);
+  /**/
+
   function handleKey(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -47,6 +51,14 @@ export function ChatThread({
   }, [text]);
 
   const msgs = conversation.messages;
+
+  /* Para que los mensajes se muestren hasta abajo */
+  // React.useEffect(() => {
+  //   if(messagesRef.current){
+  //     messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
+  //   }
+  // }, [msgs]);
+  /**/
 
   //Amigos menos yo
   const otherMember = conversation.members.find((m) => m.id !== selfUserId);
@@ -92,8 +104,8 @@ export function ChatThread({
         </div>
       </header>
 
-      {/* Messages */}
-      <div className="overflow-y-auto h-120 px-3 py-4">
+      {/* Messages ref messagesRef*/}
+      <div className="overflow-y-auto h-120 px-3 py-4"> 
         {msgs.map((m, i) => {
           const prev = msgs[i - 1];
           const showDay = !prev || !sameDay(prev.createdAt, m.createdAt);
