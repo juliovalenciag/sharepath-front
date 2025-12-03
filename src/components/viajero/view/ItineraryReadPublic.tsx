@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { Camera, MapPin, Calendar, Tag, Plus, X, ArrowLeft, Lock, Globe, Info } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,11 +29,11 @@ interface Itinerario {
   };
 }
 
-// Tipos para la API
+// Tipos para la API - IMPORTANTE: fotos es File[]
 export interface ShareItineraryRequest {
   descripcion: string;
-  privacity_mode: boolean;
-  fotos: string[];
+  privacity_mode: string;
+  fotos: File[];
 }
 
 export interface Publicacion {
@@ -70,18 +69,26 @@ export default function ItineraryPublishView({ id }: { id: string }) {
     const fetchData = async () => {
       try {
         setError("");
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+          throw new Error("No hay token de autenticación");
+        }
+
         const res = await fetch(
           `https://harol-lovers.up.railway.app/itinerario/${id}`,
           {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
-              token: localStorage.getItem("authToken") || "",
+              "token": token,
             },
           }
         );
 
-        if (!res.ok) throw new Error("Error al cargar el itinerario");
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || "Error al cargar el itinerario");
+        }
 
         const data = await res.json();
         const actividadesOrdenadas = data.actividades?.sort(
@@ -126,7 +133,7 @@ export default function ItineraryPublishView({ id }: { id: string }) {
         setDescripcion(data.descripcion || "");
       } catch (err) {
         console.error("Error cargando itinerario:", err);
-        setError("No se pudo cargar el itinerario. Por favor, intenta nuevamente.");
+        setError(err instanceof Error ? err.message : "No se pudo cargar el itinerario. Por favor, intenta nuevamente.");
       } finally {
         setLoading(false);
       }
@@ -134,16 +141,6 @@ export default function ItineraryPublishView({ id }: { id: string }) {
 
     fetchData();
   }, [id]);
-
-  // Convertir archivo a base64
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = error => reject(error);
-    });
-  };
 
   // Manejar subida de fotos
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -159,7 +156,12 @@ export default function ItineraryPublishView({ id }: { id: string }) {
     }
 
     // Verificar tipos de archivo
-    const tiposValidos = archivos.every(file => file.type.startsWith('image/'));
+    const tiposValidos = archivos.every(file => 
+      file.type.startsWith('image/jpeg') || 
+      file.type.startsWith('image/png') || 
+      file.type.startsWith('image/jpg') ||
+      file.type.startsWith('image/gif')
+    );
     if (!tiposValidos) {
       setError("Solo se permiten archivos de imagen (JPG, PNG, GIF).");
       return;
@@ -175,6 +177,11 @@ export default function ItineraryPublishView({ id }: { id: string }) {
     setFotos(prev => [...prev, ...archivos]);
     setError("");
     setSuccess(`Se agregaron ${archivos.length} foto(s) correctamente.`);
+    
+    // Resetear el input para permitir seleccionar las mismas fotos otra vez
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   // Eliminar foto
@@ -215,64 +222,97 @@ export default function ItineraryPublishView({ id }: { id: string }) {
     return true;
   };
 
-  // Función principal para publicar
+  // Función principal para publicar - MODIFICADA para enviar FormData con archivos File
   const publicarItinerario = async () => {
     if (!validarFormulario()) return;
 
     setPublishing(true);
+    setError("");
+    setSuccess("");
+
     try {
-      // Convertir fotos a base64
-      const fotosBase64 = await Promise.all(
-        fotos.map(async (foto) => {
-          return await fileToBase64(foto);
-        })
-      );
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        throw new Error("No estás autenticado. Por favor, inicia sesión nuevamente.");
+      }
 
-      // Crear el objeto de solicitud
-      const requestBody: ShareItineraryRequest = {
-        descripcion: descripcion.trim(),
-        privacity_mode: privacityMode!,
-        fotos: fotosBase64
-      };
-
-      console.log("Enviando publicación:", {
-        descripcion: requestBody.descripcion,
-        privacity_mode: requestBody.privacity_mode,
-        numero_fotos: requestBody.fotos.length
+      // Crear FormData para enviar archivos
+      const formData = new FormData();
+      
+      // Agregar campos de texto
+      formData.append('descripcion', descripcion.trim());
+      formData.append('privacity_mode', privacityMode ? 'true' : 'false');
+      
+      // Agregar fotos como archivos File
+      fotos.forEach((foto, index) => {
+        formData.append('fotos', foto); // Enviar el archivo File directamente
       });
 
-      // Llamar a la API de publicación
+      // Mostrar contenido del FormData en consola para debug
+      console.log("FormData contenido:");
+      for (let pair of (formData as any).entries()) {
+        console.log(pair[0], pair[1] instanceof File ? `File: ${pair[1].name}, ${pair[1].type}` : pair[1]);
+      }
+
+      // Llamar a la API de publicación con FormData
       const response = await fetch(
         `https://harol-lovers.up.railway.app/publicacion/share/${id}`,
         {
           method: "POST",
+          body: formData, // Enviar FormData en lugar de JSON
           headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem("authToken")}`,
+            // NO incluir 'Content-Type': el navegador lo establecerá automáticamente
+            // con el boundary correcto para FormData
+            "token": token,
           },
-          body: JSON.stringify(requestBody)
         }
       );
 
+      console.log('Response status:', response.status);
+
+      const responseData = await response.json();
+      console.log('Response data:', responseData);
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Error en la publicación");
+        throw new Error(responseData.message || `Error ${response.status}: No se pudo crear la publicación`);
       }
 
-      const publicacion: Publicacion = await response.json();
+      // Verificar que la respuesta tenga la estructura esperada
+      if (!responseData.id) {
+        throw new Error("La respuesta del servidor no tiene la estructura esperada");
+      }
+
+      setSuccess(`¡Publicación ${privacityMode ? 'pública' : 'privada'} creada exitosamente! Redirigiendo...`);
       
-      setSuccess(`¡Publicación ${privacityMode ? 'pública' : 'privada'} creada exitosamente!`);
+      // Redirigir después de 2 segundos
       setTimeout(() => {
         router.push('/viajero/itinerarios');
       }, 2000);
 
     } catch (error) {
-      console.error("Error publicando itinerario:", error);
-      setError(error instanceof Error ? error.message : "Error al publicar el itinerario. Intenta nuevamente.");
+      console.error("Error detallado al publicar:", error);
+      
+      // Manejar diferentes tipos de errores
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        setError("Error de conexión. Verifica tu internet e intenta nuevamente.");
+      } else if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError("Error inesperado al publicar el itinerario. Intenta nuevamente.");
+      }
     } finally {
       setPublishing(false);
     }
   };
+
+  // Limpiar URLs de vista previa al desmontar
+  useEffect(() => {
+    return () => {
+      fotos.forEach(file => {
+        URL.revokeObjectURL(getImagePreview(file));
+      });
+    };
+  }, [fotos]);
 
   // Componente de carga
   if (loading) {
@@ -304,9 +344,9 @@ export default function ItineraryPublishView({ id }: { id: string }) {
   }
 
   return (
-    <div className="min-h-screen ">
+    <div className="min-h-screen">
       {/* Header */}
-      <header className=" sticky dark:bg-gray-500 bg-gray-50 top-0 left-0 right-0 z-50 shadow-sm">
+      <header className="sticky dark:bg-gray-500 bg-gray-50 top-0 left-0 right-0 z-50 shadow-sm">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button 
@@ -327,7 +367,12 @@ export default function ItineraryPublishView({ id }: { id: string }) {
             disabled={publishing || fotos.length === 0 || privacityMode === null}
             className="px-6 font-medium"
           >
-            {publishing ? "Publicando..." : "Publicar"}
+            {publishing ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Publicando...
+              </>
+            ) : "Publicar"}
           </Button>
         </div>
       </header>
