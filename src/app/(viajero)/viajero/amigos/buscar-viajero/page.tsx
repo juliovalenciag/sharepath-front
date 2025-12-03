@@ -78,13 +78,6 @@ function ViajeroCard({ data, onSent }: { data: ViajeroData; onSent?: (username: 
       setIsSending(false);
     }
   };
-  // const handleAdd = (e: React.MouseEvent) => {
-  //   // IMPORTANTE: Detenemos la propagación para que el click NO active el Link al perfil
-  //   e.preventDefault();
-  //   e.stopPropagation();
-  //   // Aquí iría tu lógica de API para agregar
-  //   setIsAdded(true);
-  // };
 
   return (
     <Link href={`/viajero/perfil/${data.username}`} className="block group">
