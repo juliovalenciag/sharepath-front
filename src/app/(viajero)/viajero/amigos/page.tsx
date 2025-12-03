@@ -20,15 +20,10 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Link from "next/link";
 import { getInitials } from "@/lib/utils";
-
-
 
 const API_URL = "https://harol-lovers.up.railway.app";
 
@@ -60,9 +55,6 @@ async function respondToRequest(requestId: string | number, state: number) {
 
   return await response.json();
 }
-
-
-
 
 // ===== Tipos esperados desde el backend =====
 interface ApiFriend {
@@ -138,8 +130,25 @@ export default function FriendsPage() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // --- DATOS ESTÁTICOS PARA PRUEBA VISUAL ---
+  const mockRequest: FriendRequest = {
+    id: "99999", // ID alto para diferenciar
+    username: "test_design",
+    name: "Diseño Estático",
+    avatar: "https://github.com/shadcn.png", // Avatar de ejemplo
+
+    dateLabel: "Hace un momento",
+  };
+
   const handleRespond = async (id: number, state: number) => { 
     try {
+      // Si es la solicitud falsa, solo la borramos visualmente (sin llamar al back)
+      if (id === 99999) {
+         setRequests((prev) => prev.filter((req) => Number(req.id) !== id));
+         console.log("Solicitud falsa respondida localmente");
+         return;
+      }
+
       await respondToRequest(id, state);
       setRequests((prev) => prev.filter((req) => Number(req.id) !== id));
 
@@ -150,7 +159,7 @@ export default function FriendsPage() {
       console.error(error);
       alert("Hubo un error al procesar la solicitud");
     }
-};
+  };
 
   useEffect(() => {
     const fetchFriendsData = async () => {
@@ -165,8 +174,6 @@ export default function FriendsPage() {
           token: token || "",
         };
 
-        // NOTA:
-        // Ajusta estas rutas a como las tengas en tu backend.
         const [friendsRes, requestsRes, suggestionsRes] = await Promise.all([
           fetch("https://harol-lovers.up.railway.app/friends", {
             method: "GET",
@@ -182,15 +189,10 @@ export default function FriendsPage() {
           }),
         ]);
 
-        if (!friendsRes.ok && friendsRes.status !== 404) {
-          throw new Error("Error al obtener amigos");
-        }
-        if (!requestsRes.ok && requestsRes.status !== 404) {
-          throw new Error("Error al obtener solicitudes");
-        }
-        if (!suggestionsRes.ok && suggestionsRes.status !== 404) {
-          throw new Error("Error al obtener sugerencias");
-        }
+        // Manejo de errores silencioso para cargar lo que se pueda
+        if (!friendsRes.ok && friendsRes.status !== 404) console.warn("Error friends");
+        if (!requestsRes.ok && requestsRes.status !== 404) console.warn("Error requests");
+        if (!suggestionsRes.ok && suggestionsRes.status !== 404) console.warn("Error suggestions");
 
         // Amigos
         if (friendsRes.ok) {
@@ -214,23 +216,25 @@ export default function FriendsPage() {
         // Solicitudes
         if (requestsRes.ok) {
           const reqData: ApiFriendRequest[] = await requestsRes.json();
-          setRequests(
-            reqData.map((r) => ({
-              id: r.id,
-              username: r.username,
-              name: r.nombre ?? r.username,
-              avatar: r.foto_url ?? "",
-              message: r.mensaje,
-              dateLabel: r.fecha
-                ? new Date(r.fecha).toLocaleDateString("es-MX", {
-                    day: "2-digit",
-                    month: "short",
-                  })
-                : undefined,
-            }))
-          );
+          const mappedRequests = reqData.map((r) => ({
+            id: r.id,
+            username: r.username,
+            name: r.nombre ?? r.username,
+            avatar: r.foto_url ?? "",
+            message: r.mensaje,
+            dateLabel: r.fecha
+              ? new Date(r.fecha).toLocaleDateString("es-MX", {
+                  day: "2-digit",
+                  month: "short",
+                })
+              : undefined,
+          }));
+
+          // AQUÍ AGREGAMOS LA SOLICITUD ESTÁTICA JUNTO CON LAS REALES
+          setRequests([mockRequest, ...mappedRequests]);
         } else {
-          setRequests([]);
+          // Si falla la API, mostramos al menos la estática
+          setRequests([mockRequest]);
         }
 
         // Sugerencias
@@ -255,14 +259,15 @@ export default function FriendsPage() {
         setErrorMsg(null);
       } catch (error) {
         console.error("Error cargando datos de amigos:", error);
-        setErrorMsg("No se pudo cargar la información de amigos.");
+        // Incluso si hay error global, mostramos la estática para que veas el diseño
+        setRequests([mockRequest]);
       } finally {
         setLoading(false);
       }
     };
 
     fetchFriendsData();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const totalFriends = friends.length;
   const totalRequests = requests.length;
@@ -277,7 +282,7 @@ export default function FriendsPage() {
     );
   }
 
-  if (errorMsg) {
+  if (errorMsg && requests.length === 0) {
     return (
       <div className="mx-auto flex h-full w-full max-w-xl flex-col items-center justify-center gap-6 px-4 py-12">
         <div className="flex flex-col items-center gap-2 text-center">
