@@ -309,7 +309,37 @@ export class ItinerariosAPI implements ApiRoutes {
     }
 
     async shareItinerary(itinerarioId: number, body: ShareItineraryRequest): Promise<Publicacion> {
-        return await this.post<Publicacion>(`/publicacion/share/${itinerarioId}`, true, body);
+        const token = localStorage.getItem('authToken') || "";
+        
+        // Crear FormData para enviar archivos
+        const formData = new FormData();
+    
+        formData.append('descripcion', body.descripcion);
+        formData.append('privacity_mode', String(body.privacity_mode));
+    
+        // Añadir todas las fotos al FormData
+        if (body.fotos && body.fotos.length > 0) {
+            body.fotos.forEach((foto, index) => {
+                formData.append('fotos', foto);
+            });
+        }
+
+        const request = await fetch(`${this.HOST}/publicacion/share/${itinerarioId}`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                ...(token && { token })
+            }
+        });
+
+        const data = await request.json();
+
+        if (!request.ok) {
+            const { message } = data as ErrorResponse;
+            throw new Error(message);
+        }
+
+        return data as Publicacion;
     }
 
     async getMyPublications(): Promise<Publicacion[]> {
