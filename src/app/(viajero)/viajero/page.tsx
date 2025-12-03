@@ -173,7 +173,7 @@ const publicaciones = [
   },
   {
     id: 7,
-    titulo: "Taxco: Ciudad de la Plata",
+    titulo: "Escapada Romántica a Tepoztlán",
     calificacion: 4.8,
     usuario: {
       nombre: "Diego Herrera",
@@ -182,7 +182,7 @@ const publicaciones = [
     },
     descripcion:
       "Calles empedradas, plata y vistas increíbles desde el Cristo Monumental.",
-    ubicacion: "Guerrero",
+    ubicacion: "Morelos",
     dias: 2,
     lugares: 5,
     itinerario: [
@@ -398,7 +398,7 @@ function FilterBar({
                 <SelectItem value="EDOMEX">Estado de México</SelectItem>
                 <SelectItem value="Hidalgo">Hidalgo</SelectItem>
                 <SelectItem value="Querétaro">Querétaro</SelectItem>
-                <SelectItem value="Guerrero">Guerrero</SelectItem>
+                <SelectItem value="Morelos"> Morelos</SelectItem>
               </SelectContent>
             </Select>
 
@@ -487,8 +487,8 @@ export default function ViajeroLanding() {
             Descubre tu próxima <span className="text-primary">aventura</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto text-balance leading-relaxed">
-            Inspírate con planes de viaje reales creados por viajeros como tú.
-            Copia, adapta y vive experiencias únicas.
+            Inspírate con itinerarios creados por viajeros como tú y planifica
+            el viaje perfecto.
           </p>
         </div>
 

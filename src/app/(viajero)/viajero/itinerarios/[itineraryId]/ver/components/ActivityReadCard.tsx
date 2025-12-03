@@ -50,7 +50,7 @@ export function ActivityReadCard({ activity, index }: ActivityReadCardProps) {
         <div className="flex flex-col justify-center flex-1 min-w-0 gap-2">
           {/* Header: Título y Rating */}
           <div className="flex flex-col-reverse sm:flex-row sm:justify-between sm:items-start gap-2">
-            <h4 className="font-bold text-base sm:text-lg text-foreground leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+            <h4 className="font-bold text-base sm:text-lg text-foreground leading-tight group-hover:text-primary transition-colors">
               {activity.titulo}
             </h4>
 
@@ -91,13 +91,13 @@ export function ActivityReadCard({ activity, index }: ActivityReadCardProps) {
           {activity.descripcion ? (
             <div className="mt-1 flex gap-2 items-start text-muted-foreground/80 group/desc">
               <Quote className="h-3 w-3 shrink-0 mt-0.5 opacity-40 scale-x-[-1]" />
-              <p className="text-sm leading-relaxed line-clamp-2 group-hover:text-foreground transition-colors">
+              <p className="text-sm leading-relaxed  group-hover:text-foreground transition-colors">
                 {activity.descripcion}
               </p>
             </div>
           ) : (
             <p className="text-xs text-muted-foreground/40 italic mt-1 pl-1">
-              Sin notas adicionales.
+             
             </p>
           )}
         </div>
