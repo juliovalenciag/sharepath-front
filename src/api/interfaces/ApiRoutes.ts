@@ -87,6 +87,7 @@ export interface LugarData {
     foto_url:      string;
     google_score:  number;
     total_reviews: number;
+    publicaciones?: Publicacion[];
 }
 
 export interface LugaresListResponse {
@@ -223,6 +224,7 @@ export interface ApiRoutes {
     updatePassword: (body: UpdatePasswordRequest) => Promise<{ message: string }>;
     verifyPassword: (body: VerifyPasswordRequest) => Promise<{ message: boolean }>;
     searchUsers: (query: string) => Promise<SearchUserResponse>;
+    getUserProfile: (query: string) => Promise<Usuario>;
     deleteUser: () => Promise<{ message: string }>;
 
     // Amigo 
@@ -252,12 +254,18 @@ export interface ShareItineraryRequest {
     fotos: File[]
 }
 
+export interface Foto {
+    id: number;
+    foto_url: string;
+}
+
 export interface Publicacion {
     id: number;
     descripcion: string;
     privacity_mode: boolean;
-    itinerario: any; 
-    user_shared: Usuario;
+    itinerario: { id: number; nombre: string } | null; 
+    fotos: Foto[]; // <-- AGREGADO: Array de fotos
+    user_shared?: Usuario; // Lo dejamos opcional para evitar ciclos
 }
 
 export interface AverageRatingResponse {
