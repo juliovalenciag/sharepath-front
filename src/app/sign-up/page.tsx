@@ -43,11 +43,10 @@ const formSchema = z.object({
       message: "El correo es requerido.",
     })
     .refine((email) => {
-      // Valida: @gmail.com, @hotmail.com, @alumno.ipn.mx
-      const emailRegex = /^[^\s@]+@(gmail\.com|hotmail\.com|alumno\.ipn\.mx|[^\s@]+\.com)$/i;
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
       return emailRegex.test(email);
     }, {
-      message: "El correo debe terminar con @gmail.com, @hotmail.com, @alumno.ipn.mx.",
+      message: "Ingresa un correo válido",
     }),
   
   password: z.string()
@@ -190,7 +189,7 @@ export default function SignUpPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormControl>
-                        <Input type="email" placeholder="Correo (@gmail.com, @hotmail.com, @alumno.ipn.mx)" {...field} className="py-6" disabled={isLoading} />
+                        <Input type="email" placeholder="Correo (ejemplo: usuario@dominio.com)" {...field} className="py-6" disabled={isLoading} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

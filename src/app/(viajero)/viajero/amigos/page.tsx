@@ -28,8 +28,43 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Link from "next/link";
 import { getInitials } from "@/lib/utils";
 
-// ===== Tipos esperados desde el backend =====
 
+
+const API_URL = "https://harol-lovers.up.railway.app";
+
+// Estados posibles para responder a una solicitud de amistad
+enum FriendRequestState {
+  PENDING = 0,
+  FRIEND = 1,   // ACEPTAR
+  REJECTED = 2, // RECHAZAR
+}
+
+// Función para llamar al endpoint 
+async function respondToRequest(requestId: string | number, state: number) {
+  const token = localStorage.getItem("authToken");
+  if (!token) throw new Error("No hay sesión");
+
+  const response = await fetch(`${API_URL}/amigo/respond`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      token: token,
+    },
+    
+    body: JSON.stringify({ Id: Number(requestId), state: state }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Error al responder la solicitud");
+  }
+
+  return await response.json();
+}
+
+
+
+
+// ===== Tipos esperados desde el backend =====
 interface ApiFriend {
   id: string;
   username: string;
@@ -102,6 +137,20 @@ export default function FriendsPage() {
   const [suggestions, setSuggestions] = useState<FriendSuggestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const handleRespond = async (id: number, state: number) => { 
+    try {
+      await respondToRequest(id, state);
+      setRequests((prev) => prev.filter((req) => Number(req.id) !== id));
+
+      if (state === FriendRequestState.FRIEND) {
+        console.log("¡Amigo agregado!");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Hubo un error al procesar la solicitud");
+    }
+};
 
   useEffect(() => {
     const fetchFriendsData = async () => {
@@ -367,7 +416,7 @@ export default function FriendsPage() {
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {requests.map((req) => (
-                <FriendRequestCard key={req.id} request={req} />
+                <FriendRequestCard key={req.id} request={req} onRespond={handleRespond} />
               ))}
             </div>
           )}
@@ -508,15 +557,34 @@ function FriendCard({ friend }: { friend: Friend }) {
   );
 }
 
-function FriendRequestCard({ request }: { request: FriendRequest }) {
+function FriendRequestCard({
+  request,
+  onRespond,
+}: {
+  request: FriendRequest;
+  onRespond: (id: number, state: number) => Promise<void>;
+}) {
+  const [loading, setLoading] = useState(false);
+
+  const handleAction = async (state: number) => {
+    setLoading(true);
+    
+    await onRespond(Number(request.id), state);
+    
+    setLoading(false);
+  };
+
   return (
     <Card className="overflow-hidden transition-all hover:shadow-md">
       <CardContent className="p-4">
         <div className="flex gap-3">
+          {/* Avatar */}
           <Avatar className="h-10 w-10">
             <AvatarImage src={request.avatar} alt={request.name} />
             <AvatarFallback>{getInitials(request.name)}</AvatarFallback>
           </Avatar>
+
+          {/* Información del usuario */}
           <div className="flex-1 space-y-1">
             <div className="flex justify-between">
               <h4 className="font-medium text-sm">{request.name}</h4>
@@ -535,18 +603,35 @@ function FriendRequestCard({ request }: { request: FriendRequest }) {
           </div>
         </div>
       </CardContent>
+
+      {/* Botones de Acción (Aceptar / Rechazar) */}
       <div className="grid grid-cols-2 gap-px bg-border border-t">
         <Button
           variant="ghost"
-          className="rounded-none bg-card hover:bg-primary/5 hover:text-primary h-10 text-xs font-medium"
+          className="rounded-none bg-card hover:bg-primary/5 hover:text-primary h-10 text-xs font-medium disabled:opacity-50"
+          onClick={() => handleAction(FriendRequestState.FRIEND)} // Envía 1 (Aceptar)
+          disabled={loading}
         >
-          <UserCheck className="mr-2 h-3.5 w-3.5" /> Aceptar
+          {loading ? (
+            <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <UserCheck className="mr-2 h-3.5 w-3.5" />
+          )}
+          Aceptar
         </Button>
+
         <Button
           variant="ghost"
-          className="rounded-none bg-card hover:bg-destructive/5 hover:text-destructive h-10 text-xs font-medium"
+          className="rounded-none bg-card hover:bg-destructive/5 hover:text-destructive h-10 text-xs font-medium disabled:opacity-50"
+          onClick={() => handleAction(FriendRequestState.REJECTED)} // Envía 2 (Rechazar)
+          disabled={loading}
         >
-          <UserX className="mr-2 h-3.5 w-3.5" /> Rechazar
+          {loading ? (
+            <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <UserX className="mr-2 h-3.5 w-3.5" />
+          )}
+          Rechazar
         </Button>
       </div>
     </Card>
