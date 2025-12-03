@@ -1,48 +1,33 @@
 "use client";
 
-import DiaCard2 from "./DiaCard";
+import React, { useMemo } from "react";
+import Image from "next/image";
 import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import {
+  MapPin,
+  Star,
   MoreHorizontal,
-  CheckCircle2,
-  XCircle,
-  Trash2,
-  Pencil,
-  Share2,
+  Calendar,
+  ImageOff,
+  Clock,
+  ArrowRight,
 } from "lucide-react";
-import { useState } from "react";
-import { ItinerariosAPI } from "@/api/ItinerariosAPI";
-import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
-
+// Tipos
 interface DiaDetalle {
   id: string | number;
   dia: string;
   categoria: string;
   titulo: string;
-  urlImagen: string;
+  urlImagen: string | null;
   calificacion: number;
 }
 
@@ -52,202 +37,164 @@ interface DiasCarouselProps {
   onItinerarioDeleted: (id: string | number) => void;
 }
 
-const CarouselDias: React.FC<DiasCarouselProps> = ({
-  dias,
-  idItinerario,
-  onItinerarioDeleted,
-}: DiasCarouselProps) => {
-  const [openConfirm, setOpenConfirm] = useState(false);
-
-  const router = useRouter();
-  const [alerta, setAlerta] = useState<{
-    mensaje: string;
-    error: boolean;
-  } | null>(null);
-
-  // Mostrar alerta flotante (parte superior derecha)
-  const mostrarAlerta = (texto: string, esError = false) => {
-    setAlerta({ mensaje: texto, error: esError });
-    setTimeout(() => setAlerta(null), 2000);
-  };
-
-  const handleEliminar = () => {
-    setOpenConfirm(true);
-  };
-
-  const confirmarEliminacion = () => {
-    setOpenConfirm(false);
-    eliminarItinerario();
-  };
-
-  const cancelarEliminacion = () => {
-    setOpenConfirm(false);
-    mostrarAlerta("Operación cancelada", true);
-  };
-  const api = ItinerariosAPI.getInstance();
-  const eliminarItinerario = () => {
-    if (!idItinerario) {
-      toast.error("No se pudo encontrar el ID del itinerario para eliminar.");
-      return;
-    }
-
-    const promise = api.deleteItinerario(idItinerario);
-    console.log("Se esta tomando como referencia el", idItinerario);
-    toast.promise(promise, {
-      loading: "Eliminando itinerario...",
-      success: (data) => {
-        onItinerarioDeleted(idItinerario);
-        return data.message || "Itinerario eliminado con éxito";
-      },
-      error: (err) => {
-        return err.message || "Error al eliminar el itinerario";
-      },
+export default function DiasCarousel({ dias }: DiasCarouselProps) {
+  // Agrupar actividades por día
+  const groupedDays = useMemo(() => {
+    const groups: Record<string, DiaDetalle[]> = {};
+    dias.forEach((act) => {
+      if (!groups[act.dia]) groups[act.dia] = [];
+      groups[act.dia].push(act);
     });
-  };
+    return Object.entries(groups);
+  }, [dias]);
+
+  if (dias.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[240px] w-full text-muted-foreground/60 bg-muted/10 rounded-2xl border-2 border-dashed border-muted">
+        <Calendar className="h-10 w-10 mb-3 opacity-30" />
+        <p className="text-sm font-medium">
+          Tu itinerario está esperando aventuras
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <>
-      <div className="w-full relative">
-        {/* ALERTA PEQUEÑA FLOTANTE */}
-        {alerta && (
-          <div
-            className={`fixed top-6 right-6 z-50 px-4 py-2 rounded-md shadow-md text-sm flex items-center gap-2 border transition-all duration-300 ${
-              alerta.error
-                ? "bg-gray-100 text-gray-700 border-gray-300"
-                : "bg-green-100 text-green-800 border-green-300"
-            }`}
-          >
-            {alerta.error ? (
-              <XCircle className="h-4 w-4 text-gray-600" />
-            ) : (
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-            )}
-            <span>{alerta.mensaje}</span>
+    <div className="w-full h-[320px] relative group/carousel">
+      {" "}
+      {/* Altura fija para consistencia */}
+      {/* Máscaras de desvanecimiento laterales */}
+      <div className="absolute left-0 top-0 bottom-0 w-12 from-background to-transparent z-10 pointer-events-none" />
+      <div className="absolute right-0 top-0 bottom-0 w-12 from-background to-transparent z-10 pointer-events-none" />
+      <ScrollArea className="w-full h-full whitespace-nowrap rounded-lg">
+        <div className="flex gap-5 p-1 pl-4 items-stretch h-full">
+          {groupedDays.map(([diaLabel, activities], index) => (
+            <DayCard
+              key={diaLabel}
+              dayLabel={diaLabel}
+              activities={activities}
+              index={index}
+            />
+          ))}
+
+          {/* Espaciador final para scroll cómodo */}
+          <div className="w-8 shrink-0" />
+        </div>
+        <ScrollBar
+          orientation="horizontal"
+          className="invisible group-hover/carousel:visible transition-opacity"
+        />
+      </ScrollArea>
+    </div>
+  );
+}
+
+// --- TARJETA DE DÍA PREMIUM ---
+function DayCard({
+  dayLabel,
+  activities,
+  index,
+}: {
+  dayLabel: string;
+  activities: DiaDetalle[];
+  index: number;
+}) {
+  const mainActivity = activities[0];
+  const otherActivities = activities.slice(1);
+  const hasMore = otherActivities.length > 2;
+  const visibleOthers = otherActivities.slice(0, 2);
+
+  return (
+    <div className="relative w-[280px] shrink-0 h-[300px] rounded-2xl overflow-hidden group select-none transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl border border-border/40 bg-card">
+      {/* --- FONDO: IMAGEN PRINCIPAL (FULL CARD) --- */}
+      <div className="absolute inset-0 z-0">
+        {mainActivity.urlImagen ? (
+          <Image
+            src={mainActivity.urlImagen}
+            alt={mainActivity.titulo}
+            fill
+            className="object-cover transition-transform duration-700 "
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-muted to-muted/80 flex items-center justify-center">
+            <ImageOff className="h-10 w-10 text-muted-foreground/20" />
           </div>
         )}
+        {/* Overlay degradado oscuro para legibilidad */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-black/10" />
+      </div>
 
-        {/* DIÁLOGO DE CONFIRMACIÓN */}
-        <Dialog open={openConfirm} onOpenChange={setOpenConfirm}>
-          <DialogContent className="text-center">
-            <DialogHeader>
-              <DialogTitle>Confirmar eliminación</DialogTitle>
-              <DialogDescription>
-                ¿Seguro que deseas eliminar este itinerario?
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter className="flex justify-center gap-4">
-              <Button
-                variant="outline"
-                onClick={cancelarEliminacion}
-                className="w-24"
-              >
-                Cancelar
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={confirmarEliminacion}
-                className="w-24"
-              >
-                <Trash2 className="w-4 h-4" />
-                Eliminar
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+      {/* --- CONTENIDO SUPERIOR (HEADER) --- */}
+      <div className="absolute top-4 left-4 right-4 z-10 flex justify-between items-start">
+        <Badge
+          variant="outline"
+          className="bg-black/30 backdrop-blur-md text-white border-white/20 text-xs font-bold px-3 py-1 shadow-sm"
+        >
+          {dayLabel}
+        </Badge>
+        <div className="bg-black/30 backdrop-blur-md h-6 w-6 rounded-full flex items-center justify-center border border-white/20 text-white/80">
+          <span className="text-[10px] font-bold">{index + 1}</span>
+        </div>
+      </div>
 
-        {/* Botón de los tres puntitos (Posicionado absoluto o flex según prefieras, aquí lo dejo como en tu diseño original) */}
-        <div className="flex justify-end pr-6 pt-2 mb-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="p-2 rounded-full hover:bg-gray-100 transition">
-                <MoreHorizontal className="h-6 w-6 text-gray-600 hover:text-black" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuItem  onClick={() =>
-                router.push(`/viajero/itinerarios/${idItinerario}/editar`)
-              }>
-                <Pencil className="mr-2 h-4 w-4" />
-                Editar
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {}}>
-                <Share2 className="mr-2 h-4 w-4" />
-                Compartir
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-red-600 focus:text-red-700"
-                onClick={handleEliminar}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Eliminar
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+      {/* --- CONTENIDO INFERIOR (DETALLES) --- */}
+      <div className="absolute bottom-0 left-0 right-0 p-5 z-10 flex flex-col gap-4">
+        {/* Actividad Principal (Hero Text) */}
+        <div>
+          <div className="flex items-center gap-2 mb-1.5 opacity-90">
+            <span className="text-[9px] font-bold uppercase tracking-widest text-amber-400">
+              {mainActivity.categoria || "Destacado"}
+            </span>
+            {mainActivity.calificacion > 0 && (
+              <span className="flex items-center gap-0.5 text-[9px] font-bold text-white/80">
+                <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />
+                {mainActivity.calificacion.toFixed(1)}
+              </span>
+            )}
+          </div>
+          <h3 className="text-lg font-bold text-white leading-tight line-clamp-2 drop-shadow-md group-hover:text-amber-50 transition-colors">
+            {mainActivity.titulo}
+          </h3>
         </div>
 
-        {/* --- LÓGICA DE RENDERIZADO --- */}
-        
-        {/* CASO 1: Solo 1 día (Siempre se ve igual) */}
-        {dias.length === 1 ? (
-          <div className="grid grid-cols-1 gap-4 px-4 max-w-md mx-auto">
-            <DiaCard2 diaDetalle={dias[0]} />
-          </div>
-        ) : (
-          <>
-            {/* CASO 2: VISTA GRID (Solo Desktop y pocos elementos)
-               - hidden por defecto (móvil)
-               - lg:grid SOLO SI hay menos de 4 días
-               - lg:hidden SI hay 4 o más días (para dejar paso al carousel)
-            */}
-            <div
-              className={`
-                hidden 
-                ${dias.length < 4 ? "lg:grid" : "lg:hidden"} 
-                ${dias.length === 2 ? "grid-cols-2" : "grid-cols-3"}
-                gap-4 px-4
-              `}
-            >
-              {dias.map((dia) => (
-                <DiaCard2 key={dia.id} diaDetalle={dia} />
-              ))}
-            </div>
-
-            {/* CASO 3: VISTA CAROUSEL
-               - Visible siempre en Móvil/Tablet (< lg)
-               - Visible en Desktop (lg) SOLO SI hay 4 o más días
-            */}
-            <div
-              className={`
-                w-full px-8 
-                ${dias.length < 4 ? "lg:hidden" : "lg:block"}
-              `}
-            >
-              <Carousel
-                opts={{
-                  align: "start",
-                }}
-                className="w-full"
+        {/* Lista de Actividades Secundarias (Timeline) */}
+        {otherActivities.length > 0 && (
+          <div className="space-y-2 pt-2 border-t border-white/10">
+            {visibleOthers.map((act) => (
+              <div
+                key={act.id}
+                className="flex items-center gap-3 text-white/80 group/item"
               >
-                <CarouselContent className="-ml-1">
-                  {dias.map((dia) => (
-                    <CarouselItem
-                      key={dia.id}
-                      className="pl-1 basis-full sm:basis-1/2 md:basis-1/2 lg:basis-1/3"
-                    >
-                      <div className="p-1">
-                        <DiaCard2 diaDetalle={dia} />
-                      </div>
-                    </CarouselItem>
-                  ))}
-                </CarouselContent>
-                <CarouselPrevious  />
-                <CarouselNext />
-              </Carousel>
-            </div>
-          </>
+                {/* Dot de tiempo */}
+                <div className="w-1.5 h-1.5 rounded-full bg-white/40 group-hover/item:bg-amber-400 transition-colors shadow-[0_0_8px_rgba(255,255,255,0.3)]" />
+
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium truncate group-hover/item:text-white transition-colors">
+                    {act.titulo}
+                  </p>
+                </div>
+              </div>
+            ))}
+
+            {/* Footer "Ver más" */}
+            {hasMore && (
+              <div className="flex items-center gap-2 text-[10px] text-white/50 font-medium pl-4 pt-1">
+                <PlusCircleIcon count={otherActivities.length - 2} />
+              </div>
+            )}
+          </div>
         )}
       </div>
-    </>
+    </div>
   );
-};
+}
 
-export default CarouselDias;
+// Icono custom para "+X más"
+function PlusCircleIcon({ count }: { count: number }) {
+  return (
+    <span className="flex items-center gap-1 hover:text-white/80 transition-colors cursor-pointer">
+      <MoreHorizontal className="h-3 w-3" />
+      {count} lugares más
+    </span>
+  );
+}

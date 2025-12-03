@@ -100,15 +100,30 @@ type Friend = {
   mutualCount: number;
   isOnline: boolean;
 };
-
-type FriendRequest = {
-  id: string;
-  username: string;
-  name: string;
-  avatar: string;
-  message?: string;
+type PendingRequest = {
+  id: string | number;
   dateLabel?: string;
+  status: number;
 };
+type FriendRequest = {
+  id: string | number;
+  name: string;
+  username: string;
+  avatar: string;
+  message?:string; 
+  dateLabel?: string;
+  status: number;
+};
+
+
+// type FriendRequest = {
+//   id: string;
+//   username: string;
+//   name: string;
+//   avatar: string;
+//   message?: string;
+//   dateLabel?: string;
+// };
 
 type FriendSuggestion = {
   id: string;
@@ -131,143 +146,212 @@ export default function FriendsPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // --- DATOS ESTÁTICOS PARA PRUEBA VISUAL ---
-  const mockRequest: FriendRequest = {
-    id: "99999", // ID alto para diferenciar
-    username: "test_design",
-    name: "Diseño Estático",
-    avatar: "https://github.com/shadcn.png", // Avatar de ejemplo
+  const mockRequest: FriendRequest = { 
+  id: "99999",
+  username: "test_design",
+  name: "Diseño Estático",
+  avatar: "https://github.com/shadcn.png",
+  dateLabel: "Hace un momento",
+  status: 0, // PENDIENTE
+  message: undefined, // opcional
+};
+  async function respondToRequest(requestId: string | number, state: number) {
+    const token = localStorage.getItem("authToken");
+    if (!token) throw new Error("No hay sesión activa");
 
-    dateLabel: "Hace un momento",
-  };
+    
 
-  const handleRespond = async (id: number, state: number) => { 
+    
+    const response = await fetch(`${API_URL}/amigo/respond`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        token,
+      },
+      body: JSON.stringify({ Id: Number(requestId), state }),
+    });
+
+    if (!response.ok) throw new Error("Error al responder la solicitud");
+
+    return await response.json();
+  }
+
+
+     const handleRespond = async (id: number, state: number) => {
     try {
-      // Si es la solicitud falsa, solo la borramos visualmente (sin llamar al back)
-      if (id === 99999) {
-         setRequests((prev) => prev.filter((req) => Number(req.id) !== id));
-         console.log("Solicitud falsa respondida localmente");
-         return;
-      }
-
       await respondToRequest(id, state);
+
+      // Eliminar solicitud de la lista visual
       setRequests((prev) => prev.filter((req) => Number(req.id) !== id));
 
-      if (state === FriendRequestState.FRIEND) {
-        console.log("¡Amigo agregado!");
-      }
+      console.log(
+        state === FriendRequestState.FRIEND
+          ? "Solicitud aceptada"
+          : "Solicitud rechazada"
+      );
     } catch (error) {
       console.error(error);
       alert("Hubo un error al procesar la solicitud");
     }
   };
 
+  // Cargar solicitudes pendientes
   useEffect(() => {
-    const fetchFriendsData = async () => {
+    const fetchRequests = async () => {
       try {
-        const token =
-          typeof window !== "undefined"
-            ? localStorage.getItem("authToken")
-            : null;
+        const token = localStorage.getItem("authToken");
+        if (!token) throw new Error("No hay sesión activa");
 
-        const commonHeaders: HeadersInit = {
-          "Content-Type": "application/json",
-          token: token || "",
-        };
+        const res = await fetch(`${API_URL}/amigo/pendiente`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            token,
+          },
+        });
 
-        const [friendsRes, requestsRes, suggestionsRes] = await Promise.all([
-          fetch("https://harol-lovers.up.railway.app/friends", {
-            method: "GET",
-            headers: commonHeaders,
-          }),
-          fetch("https://harol-lovers.up.railway.app/friends/requests", {
-            method: "GET",
-            headers: commonHeaders,
-          }),
-          fetch("https://harol-lovers.up.railway.app/friends/suggestions", {
-            method: "GET",
-            headers: commonHeaders,
-          }),
-        ]);
+        if (!res.ok) throw new Error("Error al obtener solicitudes pendientes");
 
-        // Manejo de errores silencioso para cargar lo que se pueda
-        if (!friendsRes.ok && friendsRes.status !== 404) console.warn("Error friends");
-        if (!requestsRes.ok && requestsRes.status !== 404) console.warn("Error requests");
-        if (!suggestionsRes.ok && suggestionsRes.status !== 404) console.warn("Error suggestions");
+        const json = await res.json(); // { message, data }
+        const rawRequests: { id: number; fecha_amistad: string; status: number }[] =
+          json.data;
 
-        // Amigos
-        if (friendsRes.ok) {
-          const friendsData: ApiFriend[] = await friendsRes.json();
-          setFriends(
-            friendsData.map((f) => ({
-              id: f.id,
-              username: f.username,
-              name: f.nombre ?? f.username,
-              avatar: f.foto_url ?? "",
-              city: f.ciudad,
-              country: f.pais,
-              mutualCount: f.mutuos ?? 0,
-              isOnline: Boolean(f.conectado),
-            }))
-          );
-        } else {
-          setFriends([]);
-        }
+        const mappedRequests: FriendRequest[] = rawRequests.map((r) => ({
+          id: r.id,
+          name: "Usuario desconocido",
+          username: "desconocido",
+          avatar: "", // placeholder
+          dateLabel: r.fecha_amistad
+            ? new Date(r.fecha_amistad).toLocaleDateString("es-MX", {
+                day: "2-digit",
+                month: "short",
+              })
+            : undefined,
+          status: r.status,
+          message: undefined,
+        }));
 
-        // Solicitudes
-        if (requestsRes.ok) {
-          const reqData: ApiFriendRequest[] = await requestsRes.json();
-          const mappedRequests = reqData.map((r) => ({
-            id: r.id,
-            username: r.username,
-            name: r.nombre ?? r.username,
-            avatar: r.foto_url ?? "",
-            message: r.mensaje,
-            dateLabel: r.fecha
-              ? new Date(r.fecha).toLocaleDateString("es-MX", {
-                  day: "2-digit",
-                  month: "short",
-                })
-              : undefined,
-          }));
-
-          // AQUÍ AGREGAMOS LA SOLICITUD ESTÁTICA JUNTO CON LAS REALES
-          setRequests([mockRequest, ...mappedRequests]);
-        } else {
-          // Si falla la API, mostramos al menos la estática
-          setRequests([mockRequest]);
-        }
-
-        // Sugerencias
-        if (suggestionsRes.ok) {
-          const sugData: ApiFriendSuggestion[] = await suggestionsRes.json();
-          setSuggestions(
-            sugData.map((s) => ({
-              id: s.id,
-              username: s.username,
-              name: s.nombre ?? s.username,
-              avatar: s.foto_url ?? "",
-              city: s.ciudad,
-              country: s.pais,
-              mutualCount: s.mutuos ?? 0,
-              interests: s.intereses ?? [],
-            }))
-          );
-        } else {
-          setSuggestions([]);
-        }
-
-        setErrorMsg(null);
+        setRequests(mappedRequests);
       } catch (error) {
-        console.error("Error cargando datos de amigos:", error);
-        // Incluso si hay error global, mostramos la estática para que veas el diseño
-        setRequests([mockRequest]);
+        console.error("Error cargando solicitudes pendientes:", error);
+        setRequests([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchFriendsData();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    fetchRequests();
+  }, []);
+
+  
+
+  // useEffect(() => {
+  //   const fetchFriendsData = async () => {
+  //     try {
+  //       const token =
+  //         typeof window !== "undefined"
+  //           ? localStorage.getItem("authToken")
+  //           : null;
+
+  //       const commonHeaders: HeadersInit = {
+  //         "Content-Type": "application/json",
+  //         token: token || "",
+  //       };
+
+  //       const [friendsRes, requestsRes, suggestionsRes] = await Promise.all([
+  //         fetch("https://harol-lovers.up.railway.app/friends", {
+  //           method: "GET",
+  //           headers: commonHeaders,
+  //         }),
+  //         fetch("https://harol-lovers.up.railway.app/friends/requests", {
+  //           method: "GET",
+  //           headers: commonHeaders,
+  //         }),
+  //         fetch("https://harol-lovers.up.railway.app/friends/suggestions", {
+  //           method: "GET",
+  //           headers: commonHeaders,
+  //         }),
+  //       ]);
+
+  //       // Manejo de errores silencioso para cargar lo que se pueda
+  //       if (!friendsRes.ok && friendsRes.status !== 404) console.warn("Error friends");
+  //       if (!requestsRes.ok && requestsRes.status !== 404) console.warn("Error requests");
+  //       if (!suggestionsRes.ok && suggestionsRes.status !== 404) console.warn("Error suggestions");
+
+  //       // Amigos
+  //       if (friendsRes.ok) {
+  //         const friendsData: ApiFriend[] = await friendsRes.json();
+  //         setFriends(
+  //           friendsData.map((f) => ({
+  //             id: f.id,
+  //             username: f.username,
+  //             name: f.nombre ?? f.username,
+  //             avatar: f.foto_url ?? "",
+  //             city: f.ciudad,
+  //             country: f.pais,
+  //             mutualCount: f.mutuos ?? 0,
+  //             isOnline: Boolean(f.conectado),
+  //           }))
+  //         );
+  //       } else {
+  //         setFriends([]);
+  //       }
+
+  //       // Solicitudes
+  //       if (requestsRes.ok) {
+  //         const reqData: ApiFriendRequest[] = await requestsRes.json();
+  //         const mappedRequests = reqData.map((r) => ({
+  //           id: r.id,
+  //           username: r.username,
+  //           name: r.nombre ?? r.username,
+  //           avatar: r.foto_url ?? "",
+  //           message: r.mensaje,
+  //           dateLabel: r.fecha
+  //             ? new Date(r.fecha).toLocaleDateString("es-MX", {
+  //                 day: "2-digit",
+  //                 month: "short",
+  //               })
+  //             : undefined,
+  //         }));
+
+  //         // AQUÍ AGREGAMOS LA SOLICITUD ESTÁTICA JUNTO CON LAS REALES
+  //         setRequests([mockRequest, ...mappedRequests]);
+  //       } else {
+  //         // Si falla la API, mostramos al menos la estática
+  //         setRequests([mockRequest]);
+  //       }
+
+  //       // Sugerencias
+  //       if (suggestionsRes.ok) {
+  //         const sugData: ApiFriendSuggestion[] = await suggestionsRes.json();
+  //         setSuggestions(
+  //           sugData.map((s) => ({
+  //             id: s.id,
+  //             username: s.username,
+  //             name: s.nombre ?? s.username,
+  //             avatar: s.foto_url ?? "",
+  //             city: s.ciudad,
+  //             country: s.pais,
+  //             mutualCount: s.mutuos ?? 0,
+  //             interests: s.intereses ?? [],
+  //           }))
+  //         );
+  //       } else {
+  //         setSuggestions([]);
+  //       }
+
+  //       setErrorMsg(null);
+  //     } catch (error) {
+  //       console.error("Error cargando datos de amigos:", error);
+  //       // Incluso si hay error global, mostramos la estática para que veas el diseño
+  //       setRequests([mockRequest]);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   fetchFriendsData();
+  // }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const totalFriends = friends.length;
   const totalRequests = requests.length;

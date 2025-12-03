@@ -9,6 +9,7 @@ import {
   IconUsers,
   IconFileText,
   IconSettings,
+  IconBell,
 } from "@tabler/icons-react";
 
 import { NavDocuments } from "@/components/viajero-components/nav-documents";
@@ -35,35 +36,33 @@ const data = {
   },
   // Sección General
   navMain: [
-    { title: "Inicio", url: "/dashboard", icon: IconHomeFilled },
-    { title: "CRUD", url: "/dashboard/CRUD", icon: IconTable },
+    { title: "Inicio", url: "/admin", icon: IconHomeFilled },
+    { title: "CRUD", url: "/admin/CRUD", icon: IconTable },
   ],
   // Sección Gestión
   navGestion: [
-    { title: "Lugares", url: "/dashboard/lugares", icon: IconMapPin },
-    { title: "Usuarios", url: "/dashboard/usuarios", icon: IconUsers },
-    { title: "Reportes", url: "/dashboard/reportes", icon: IconFileText },
+    { title: "Lugares", url: "/admin/lugares", icon: IconMapPin },
+    { title: "Usuarios", url: "/admin/usuarios", icon: IconUsers },
+    { title: "Reportes", url: "/admin/reportes", icon: IconFileText },
   ],
-  // Sección Otros
-  navSecondary: [
-    { title: "Configuración", url: "/dashboard/configuracion", icon: IconSettings },
-  ],
+  // Sección Otros (eliminada)
+  navSecondary: [],
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
-  const [user, setUser] = React.useState<null | { name: string; email: string; avatar: string }>(null)
+  const [user, setUser] = React.useState<null | { username: string; correo: string; foto_url: string }>(null)
 
   React.useEffect(() => {
     const storedUser = localStorage.getItem("usuario");
     const user = {
-      name: storedUser
+      username: storedUser
         ? JSON.parse(storedUser).username
         : "Harol Hater",
-      email: storedUser
+      correo: storedUser
         ? JSON.parse(storedUser).correo
         : "harol@hater.com",
-      avatar: storedUser
+      foto_url: storedUser
         ? JSON.parse(storedUser).foto_url
         : "./profile.png"
     };
@@ -80,7 +79,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
               {/* Usa Link de Next para navegación cliente */}
-              <Link href="/dashboard" className="flex items-center gap-2">
+              <Link href="/admin" className="flex items-center gap-2">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="24"
@@ -110,14 +109,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         
         {/* Sección Gestión */}
         <NavDocuments items={data.navGestion} label="Gestión" />
-        
-        {/* Sección Otros */}
-        <NavSecondary items={data.navSecondary} label="Otros" className="mt-auto" />
       </SidebarContent>
 
-      <SidebarFooter>
-        {user && <NavUser user={user} />}
-      </SidebarFooter>
+      {/* Sidebar sin footer de cuenta/notifications */}
+      <SidebarFooter></SidebarFooter>
     </Sidebar>
   );
 }

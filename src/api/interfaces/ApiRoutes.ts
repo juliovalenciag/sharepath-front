@@ -1,257 +1,287 @@
 export interface RegisterRequest {
-    nombre_completo: string;
-    correo:          string;
-    password:        string;
-    role:            string;
-    username:        string;
-    privacity_mode:  boolean;
+  nombre_completo: string;
+  correo: string;
+  password: string;
+  role: string;
+  username: string;
+  privacity_mode: boolean;
 }
 
 export interface RegisterResponse {
-    message: string;
+  message: string;
 }
 
 export interface LoginResponse {
-    token:   string;
-    usuario: Usuario;
+  token: string;
+  usuario: Usuario;
 }
 
 export interface Usuario {
-    username:        string;
-    nombre_completo: string;
-    foto_url:        null | string;
-    account_status:  boolean;
-    privacity_mode:  boolean;
-    role:            string;
-    correo:          string;
-    itineraryCount: number | null;
-    friendsCount: number | null;
+  username: string;
+  nombre_completo: string;
+  foto_url: null | string;
+  account_status: boolean;
+  privacity_mode: boolean;
+  role: string;
+  correo: string;
+  itineraryCount: number | null;
+  friendsCount: number | null;
 }
 
 export interface ErrorResponse {
-    message: string;
+  message: string;
 }
 
 export interface Actividad {
-    fecha:       string;        
-    description: string;
-    lugarId:     string;        
+  fecha: string;
+  description: string;
+  lugarId: string;
 }
 
 export interface CreateItinerarioRequest {
-    title:       string;
-    actividades: Actividad[];
+  title: string;
+  actividades: Actividad[];
+
+  start_date?: string;
+  end_date?: string;
+  regions?: string[];
 }
 
 export interface CreateItinerarioResponse {
-    id:          number | string;
-    title:       string;
-    actividades: Actividad[];
-    createdAt:   string;
-    message?:    string;
+  id: number | string;
+  title: string;
+  actividades: Actividad[];
+  createdAt: string;
+  message?: string;
 }
 
 export interface ItinerarioData {
-    id:          number | string;
-    title:       string;
-    actividades: Actividad[];
-    createdAt:   string;
-    updatedAt?:  string;
+  id: number | string;
+  title: string;
+  actividades: Actividad[];
+  createdAt: string;
+  updatedAt?: string;
+
+  start_date?: string;
+  end_date?: string;
+  regions?: string[];
 }
 
 export interface ItinerarioListResponse {
-    itinerarios: ItinerarioData[];
-    total:       number;
+  itinerarios: ItinerarioData[];
+  total: number;
 }
 
 export interface CreateLugarRequest {
-    id_api_place:  string;      
-    category:      string;
-    mexican_state: string;
-    nombre:        string;
-    latitud:       number;
-    longitud:      number;
-    foto_url:      string;
-    google_score:  number;
-    total_reviews: number;
+  id_api_place: string;
+  category: string;
+  mexican_state: string;
+  nombre: string;
+  latitud: number;
+  longitud: number;
+  foto_url: string;
+  google_score: number;
+  total_reviews: number;
 }
 
 export interface LugarData {
-    id_api_place:  string;
-    category:      string;
-    mexican_state: string;
-    nombre:        string;
-    latitud:       number;
-    longitud:      number;
-    descripcion:   string;
-    foto_url:      string;
-    google_score:  number;
-    total_reviews: number;
-    publicaciones?: Publicacion[];
+  id_api_place: string;
+  category: string;
+  mexican_state: string;
+  nombre: string;
+  latitud: number;
+  longitud: number;
+  descripcion: string;
+  foto_url: string;
+  google_score: number;
+  total_reviews: number;
 }
 
 export interface LugaresListResponse {
-    lugares: LugarData[];
-    total:   number;
+  lugares: LugarData[];
+  total: number;
 }
 
 export interface RecommendationRequest {
-    lugarIds?: string[];
-    query?: string;
-    limit?: number;
+  lugarIds?: string[];
+  query?: string;
+  limit?: number;
 }
 
 export interface RecommendedLugar extends LugarData {
-    hybridScore: number;
-    proximityScore: number;
-    preferenceScore: number;
-    ratingScore: number;
+  hybridScore: number;
+  proximityScore: number;
+  preferenceScore: number;
+  ratingScore: number;
 }
 
 export interface OptimizationRequest {
-    lugarIds: string[];
+  lugarIds: string[];
 }
 
 export interface UpdateUserRequest {
-    username?:       string;
-    nombre_completo?: string;
-    privacity_mode?: boolean;
-    foto?:           File;
+  username?: string;
+  nombre_completo?: string;
+  privacity_mode?: boolean;
+  foto?: File;
 }
 
 export interface UpdatePasswordRequest {
-    newPassword: string;
+  newPassword: string;
 }
 
 export interface VerifyPasswordRequest {
-    password: string;
+  password: string;
 }
 
 export interface SearchUserResponse {
-    users: Usuario[];
+  users: Usuario[];
 }
 
 export interface Preferencias {
-    id: number, 
-    usuario: Usuario, 
-    correo: string, 
-    lugares_preferidos : string [], 
-    estados_visitados : string [], 
-    actividades_preferidas : string []
+  id: number;
+  usuario: Usuario;
+  correo: string;
+  lugares_preferidos: string[];
+  estados_visitados: string[];
+  actividades_preferidas: string[];
 }
 export interface Amigo {
-    id: number, 
-    status: number, 
-    receiving_user: Usuario, 
-    requesting_user: Usuario, 
-    fecha_amistad: string | null
+  id: number;
+  status: number;
+  receiving_user: Usuario;
+  requesting_user: Usuario;
+  fecha_amistad: string | null;
 }
 
 export interface SendFriend {
-    message : string; 
-    data: Amigo; 
+  message: string;
+  data: Amigo;
 }
 
 export interface RespondFriend {
-    message: string; 
-    data: Amigo; 
+  message: string;
+  data: Amigo;
 }
 export interface ListRequest {
-    message: string; 
-    data: Amigo[]; 
+  message: string;
+  data: Amigo[];
 }
 
-export type ListFriend = Amigo[]; 
+export type ListFriend = Amigo[];
 
-export type ListRecomen = Array <{
-    id: number; 
-    title: string; 
-    owner: any; 
-    actividades: any[]; 
-    score : number; 
-    
-}>
+export type ListRecomen = Array<{
+  id: number;
+  title: string;
+  owner: any;
+  actividades: any[];
+  score: number;
+}>;
 
-export type SearchFriend = Usuario[]; 
+export type SearchFriend = Usuario[];
 
 export interface Block {
-    message: string; 
+  message: string;
 }
-
 
 export interface UnBlock {
-    message: string;  
+  message: string;
 }
 export interface FriendSuggestion {
-    username: string;
-    nombre_completo: string;
-    correo: string;
-    foto_url: string | null;
+  username: string;
+  nombre_completo: string;
+  correo: string;
+  foto_url: string | null;
 }
 
 export interface FriendSuggestionResponse {
-    message: string;
-    data: FriendSuggestion[];
+  message: string;
+  data: FriendSuggestion[];
 }
 
 export interface ApiRoutes {
-    // Auth
-    doLogin: (correo: string, password: string) => Promise<Usuario>;
-    doRegister: (body: RegisterRequest) => Promise<RegisterResponse>;
+  // Auth
+  doLogin: (correo: string, password: string) => Promise<Usuario>;
+  doRegister: (body: RegisterRequest) => Promise<RegisterResponse>;
 
-    // Itinerarios
-    createItinerario: (body: CreateItinerarioRequest) => Promise<CreateItinerarioResponse>;
-    getMyItinerarios: () => Promise<ItinerarioListResponse>;
-    deleteItinerario: (id: number | string) => Promise<{ message: string }>;
+  // Itinerarios
+  createItinerario: (
+    body: CreateItinerarioRequest
+  ) => Promise<CreateItinerarioResponse>;
+  getMyItinerarios: () => Promise<ItinerarioListResponse>;
+  deleteItinerario: (id: number | string) => Promise<{ message: string }>;
+  
+  // Agregados por el equipo (main):
+  getItinerarioById: (id: number | string) => Promise<ItinerarioData>;
+  updateItinerario: (
+    id: number | string,
+    body: CreateItinerarioRequest
+  ) => Promise<CreateItinerarioResponse>;
 
-    // Lugares
-    createLugar: (body: CreateLugarRequest) => Promise<LugarData>;
+  // Lugares
+  createLugar: (body: CreateLugarRequest) => Promise<LugarData>;
 
-    getLugares: (page: number, limit: number, state?: string, category?: string, nombre?:string) => Promise<LugaresListResponse>;
+  getLugares: (
+    page: number,
+    limit: number,
+    state?: string,
+    category?: string,
+    nombre?: string
+  ) => Promise<LugaresListResponse>;
 
-    getLugarById: (id: string) => Promise<LugarData>;
-    deleteLugar: (id: string) => Promise<{ message: string }>;
+  getLugarById: (id: string) => Promise<LugarData>;
+  deleteLugar: (id: string) => Promise<{ message: string }>;
 
-    // Recomendación de lugares
-    getRecommendations: (body: RecommendationRequest) => Promise<RecommendedLugar[]>;
-    
-    // Optimización de ruta
-    optimizeRoute: (body: OptimizationRequest) => Promise<LugarData[]>;
+  // Recomendación de lugares
+  getRecommendations: (
+    body: RecommendationRequest
+  ) => Promise<RecommendedLugar[]>;
 
-    // Usuario
-    getUser: () => Promise<Usuario>;
-    updateUser: (body: UpdateUserRequest) => Promise<Usuario>;
-    updatePassword: (body: UpdatePasswordRequest) => Promise<{ message: string }>;
-    verifyPassword: (body: VerifyPasswordRequest) => Promise<{ message: boolean }>;
-    searchUsers: (query: string) => Promise<SearchUserResponse>;
-    getUserProfile: (query: string) => Promise<Usuario>;
-    deleteUser: () => Promise<{ message: string }>;
+  // Optimización de ruta
+  optimizeRoute: (body: OptimizationRequest) => Promise<LugarData[]>;
 
-    // Amigo 
-    sendFriendRequest: (receiving: string) => Promise<SendFriend>;
-    respondFriendRequest: (id: number, state: number) => Promise<RespondFriend>;
-    getRequests: () => Promise<ListRequest>;
-    getFriends: () => Promise<ListFriend>; 
-    searchFriend :  (query: string) => Promise<SearchFriend>;
-    deleteFriend: (correo: string) => Promise<{ message: string }>;
-    block : (user: string) => Promise<Block>;
-    unblock : (user: string) => Promise<UnBlock>;
-                       
-    //Recomendacion de new user
-    getRecomen: () => Promise<ListRecomen>;
-    
-    // Sugerencias de amigos
-    getFriendSuggestions: () => Promise<FriendSuggestionResponse>;
+  // Usuario
+  getUser: () => Promise<Usuario>;
+  updateUser: (body: UpdateUserRequest) => Promise<Usuario>;
+  updatePassword: (body: UpdatePasswordRequest) => Promise<{ message: string }>;
+  verifyPassword: (
+    body: VerifyPasswordRequest
+  ) => Promise<{ message: boolean }>;
+  searchUsers: (query: string) => Promise<SearchUserResponse>;
+  
+  // TU AGREGADO (Vital para el perfil):
+  getUserProfile: (query: string) => Promise<Usuario>;
+  
+  deleteUser: () => Promise<{ message: string }>;
 
-    getAverageRating: (publicationId: number) => Promise<AverageRatingResponse>;
-    shareItinerary: (itinerarioId: number, body: ShareItineraryRequest) => Promise<Publicacion>;
-    getMyPublications: () => Promise<Publicacion[]>;
+  // Amigo
+  sendFriendRequest: (receiving: string) => Promise<SendFriend>;
+  respondFriendRequest: (id: number, state: number) => Promise<RespondFriend>;
+  getRequests: () => Promise<ListRequest>;
+  getFriends: () => Promise<ListFriend>;
+  searchFriend: (query: string) => Promise<SearchFriend>;
+  deleteFriend: (correo: string) => Promise<{ message: string }>;
+  block: (user: string) => Promise<Block>;
+  unblock: (user: string) => Promise<UnBlock>;
+
+  //Recomendacion de new user
+  getRecomen: () => Promise<ListRecomen>;
+
+  // Sugerencias de amigos
+  getFriendSuggestions: () => Promise<FriendSuggestionResponse>;
+
+  getAverageRating: (publicationId: number) => Promise<AverageRatingResponse>;
+  shareItinerary: (
+    itinerarioId: number,
+    body: ShareItineraryRequest
+  ) => Promise<Publicacion>;
+  getMyPublications: () => Promise<Publicacion[]>;
 }
 
 export interface ShareItineraryRequest {
-    descripcion: string;
-    privacity_mode: boolean;
-    fotos: File[]
+  descripcion: string;
+  privacity_mode: boolean;
+  fotos: File[];
 }
 
 export interface Foto {
@@ -269,26 +299,26 @@ export interface Publicacion {
 }
 
 export interface AverageRatingResponse {
-    publicationId: number;
-    averageRating: number;
-    reviewCount: number;
+  publicationId: number;
+  averageRating: number;
+  reviewCount: number;
 }
 
 export interface Actividad {
-    fecha:       string;        
-    description: string;
-    lugarId:     string;
-    // Campos extendidos para tu UI moderna
-    start_time?: string | null; 
-    end_time?:   string | null;
+  fecha: string;
+  description: string;
+  lugarId: string;
+  // Campos extendidos para tu UI moderna
+  start_time?: string | null;
+  end_time?: string | null;
 }
 
 export interface CreateItinerarioRequest {
-    title:       string;
-    actividades: Actividad[];
-    // Campos extendidos del BuilderMeta
-    start_date?: string;
-    end_date?:   string;
-    regions?:    string[];
-    visibility?: "private" | "friends" | "public"; 
+  title: string;
+  actividades: Actividad[];
+  // Campos extendidos del BuilderMeta
+  start_date?: string;
+  end_date?: string;
+  regions?: string[];
+  visibility?: "private" | "friends" | "public";
 }

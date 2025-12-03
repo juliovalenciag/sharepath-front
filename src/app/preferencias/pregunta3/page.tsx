@@ -59,7 +59,7 @@ export default function Pregunta3Page() {
     // 3. Simular el envío al servidor
     // await new Promise(resolve => setTimeout(resolve, 1000)); 
     //implementacion del back 
-    const token = localStorage.getItem("token"); 
+    const token = localStorage.getItem("authToken"); 
     console.log("token del new user: ", token); 
     const res = await fetch("https://harol-lovers.up.railway.app/preferencias/register", {
       method: "POST",

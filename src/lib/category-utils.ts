@@ -1,4 +1,4 @@
-// src/lib/utils/category-utils.ts
+// src/lib/category-utils.ts
 import {
   FerrisWheel,
   MapPin,
@@ -20,12 +20,12 @@ import {
   User,
 } from "lucide-react";
 
-type CategoryDetail = {
+export type CategoryDetail = {
   name: string;
   defaultImage: string;
-  icon: any; // Icono Lucide
-  color: string; // Clase Tailwind texto
-  bg: string; // Clase Tailwind fondo
+  icon: any;
+  color: string;
+  bg: string;
 };
 
 const DEFAULT_STYLE: CategoryDetail = {
@@ -36,9 +36,8 @@ const DEFAULT_STYLE: CategoryDetail = {
   bg: "bg-slate-100",
 };
 
-// Mapeo completo combinando tus datos + estilos UI
-const CATEGORY_MAP: Record<string, CategoryDetail> = {
-  // --- Entretenimiento ---
+// EXPORTAMOS ESTO PARA USARLO EN EL FILTRO
+export const CATEGORY_MAP: Record<string, CategoryDetail> = {
   amusement_park: {
     name: "Parque de diversiones",
     defaultImage: "/img/categories/amusement_park.jpg",
@@ -51,7 +50,7 @@ const CATEGORY_MAP: Record<string, CategoryDetail> = {
     defaultImage: "/img/categories/bowling_alley.jpg",
     icon: Dumbbell,
     color: "text-indigo-600",
-    bg: "bg-indigo-100", // Icono genérico deporte/juego
+    bg: "bg-indigo-100",
   },
   casino: {
     name: "Casino",
@@ -81,8 +80,6 @@ const CATEGORY_MAP: Record<string, CategoryDetail> = {
     color: "text-blue-700",
     bg: "bg-blue-100",
   },
-
-  // --- Naturaleza ---
   aquarium: {
     name: "Acuario",
     defaultImage: "/img/categories/aquarium.jpg",
@@ -111,8 +108,6 @@ const CATEGORY_MAP: Record<string, CategoryDetail> = {
     color: "text-green-600",
     bg: "bg-green-50",
   },
-
-  // --- Cultura y Educación ---
   art_gallery: {
     name: "Galería de Arte",
     defaultImage: "/img/categories/art_gallery.jpg",
@@ -141,8 +136,6 @@ const CATEGORY_MAP: Record<string, CategoryDetail> = {
     color: "text-sky-600",
     bg: "bg-sky-100",
   },
-
-  // --- Gastronomía ---
   bar: {
     name: "Bar",
     defaultImage: "/img/categories/bar.jpg",
@@ -164,8 +157,6 @@ const CATEGORY_MAP: Record<string, CategoryDetail> = {
     color: "text-orange-600",
     bg: "bg-orange-100",
   },
-
-  // --- Bienestar ---
   beauty_salon: {
     name: "Salón de Belleza",
     defaultImage: "/img/categories/beauty_salon.jpg",
@@ -182,14 +173,10 @@ const CATEGORY_MAP: Record<string, CategoryDetail> = {
   },
 };
 
-/**
- * Obtiene todos los detalles de estilo y datos para una categoría.
- * Normaliza la entrada a minúsculas para evitar errores.
- */
 export function getCategoryStyle(categoryKey?: string): CategoryDetail {
   if (!categoryKey) return DEFAULT_STYLE;
   const key = categoryKey.toLowerCase().trim();
-  return CATEGORY_MAP[key] || { ...DEFAULT_STYLE, name: categoryKey }; // Fallback con nombre original si no existe
+  return CATEGORY_MAP[key] || { ...DEFAULT_STYLE, name: categoryKey };
 }
 
 export function getCategoryName(categoryKey: string | undefined): string {

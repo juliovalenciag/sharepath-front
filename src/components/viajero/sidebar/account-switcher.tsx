@@ -192,10 +192,10 @@ export function AccountSwitcher() {
             No tienen lógica de navegación/acción aún.
           */}
 
-          {/* <DropdownMenuItem>
+           <DropdownMenuItem>
             <User />
             Perfil
-          </DropdownMenuItem> */}
+          </DropdownMenuItem> 
           <DropdownMenuItem>
             <Link
               href="/viajero/configuracion/cuenta"
