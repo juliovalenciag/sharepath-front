@@ -137,7 +137,7 @@ export function PlaceInfoDialog({
         <ScrollArea className="flex-1">
           <div className="p-6 space-y-8">
             {/* 1. NOTAS PERSONALES (Editable) */}
-            <div className="space-y-3">
+            {/* <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label
                   htmlFor="notes"
@@ -159,7 +159,7 @@ export function PlaceInfoDialog({
                   onUpdate(activity.id, { descripcion: e.target.value })
                 }
               />
-            </div>
+            </div> */}
 
             <Separator />
 

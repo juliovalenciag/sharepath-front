@@ -5,13 +5,13 @@ import { CSS } from "@dnd-kit/utilities";
 import {
   GripVertical,
   MapPin,
-  MoreHorizontal,
+  MoreVertical,
   Trash2,
   Info,
+  Star
 } from "lucide-react";
 import Image from "next/image";
 
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -29,7 +29,6 @@ import type { BuilderActivity } from "@/lib/itinerary-builder-store";
 interface SortableActivityCardProps {
   activity: BuilderActivity;
   index: number;
-  // Ya no necesitamos onChange para tiempos
   onDelete: (id: string) => void;
   onViewDetails: (activityId: string) => void;
 }
@@ -49,14 +48,17 @@ export function SortableActivityCard({
     isDragging,
   } = useSortable({ id: activity.id });
 
+  // Estilos para la animación del Drag
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 50 : "auto",
-    opacity: isDragging ? 0.6 : 1,
+    opacity: isDragging ? 0.9 : 1,
+    scale: isDragging ? 1.02 : 1,
   };
 
   const categoryStyle = getCategoryStyle(activity.lugar.category);
+  const CategoryIcon = categoryStyle.icon;
   const foto =
     activity.lugar.foto_url ||
     getDefaultImageForCategory(activity.lugar.category);
@@ -65,39 +67,51 @@ export function SortableActivityCard({
     <div
       ref={setNodeRef}
       style={style}
-      className="relative flex gap-3 touch-none group"
+      className={cn(
+        "relative flex gap-4 group touch-none mb-1",
+        isDragging && "cursor-grabbing"
+      )}
     >
-      {/* Indicador Numérico (Timeline) */}
-      <div className="flex flex-col items-center pt-2">
+      {/* --- LÍNEA DE TIEMPO (Izquierda) --- */}
+      <div className="flex flex-col items-center relative">
+        {/* Línea conectora (Invisible en el último ítem) */}
+        <div className="absolute top-8 bottom-[-16px] w-[2px] bg-border/50 group-last:hidden" />
+        
+        {/* Badge Numérico */}
         <div
           className={cn(
-            "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold shadow-sm z-10 transition-colors",
-            "bg-primary text-primary-foreground"
+            "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold shadow-sm z-10 transition-colors mt-1",
+            "bg-primary text-primary-foreground border-2 border-background ring-2 ring-muted"
           )}
         >
           {index + 1}
         </div>
-        {/* Línea conectora */}
-        <div className="flex-1 w-0.5 bg-border/50 my-1 group-last:hidden" />
       </div>
 
-      {/* Tarjeta */}
-      <Card className="flex-1 overflow-hidden border-muted-foreground/10 bg-card hover:border-primary/20 transition-all shadow-sm mb-2">
-        <div className="flex">
-          {/* Drag Handle */}
-          <div
-            className="flex w-8 flex-col items-center justify-center bg-muted/20 cursor-grab active:cursor-grabbing hover:bg-muted/40 transition-colors"
-            {...attributes}
-            {...listeners}
-          >
-            <GripVertical className="h-4 w-4 text-muted-foreground/50" />
-          </div>
+      {/* --- TARJETA PRINCIPAL --- */}
+      <div 
+        className={cn(
+            "flex-1 flex bg-card border border-border/60 rounded-xl shadow-sm overflow-hidden transition-all duration-200",
+            "hover:shadow-md hover:border-primary/20",
+            isDragging ? "shadow-xl ring-2 ring-primary/20" : ""
+        )}
+      >
+        
+        {/* DRAG HANDLE (Integrado sutilmente) */}
+        <div
+          className="w-6 flex items-center justify-center cursor-grab active:cursor-grabbing hover:bg-muted/50 transition-colors border-r border-transparent hover:border-border/40"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
+        </div>
 
-          {/* Contenido */}
-          <div className="flex flex-1 p-3 gap-3 min-w-0">
-            {/* Imagen Thumbnail */}
+        {/* CONTENIDO CLICKABLE */}
+        <div className="flex flex-1 p-3 gap-3 min-w-0 items-center">
+            
+            {/* IMAGEN THUMBNAIL */}
             <div
-              className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-muted cursor-pointer hover:opacity-90 transition-opacity"
+              className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-muted border border-border/50 cursor-pointer hover:opacity-90 transition-opacity"
               onClick={() => onViewDetails(activity.id)}
             >
               {foto ? (
@@ -115,69 +129,76 @@ export function SortableActivityCard({
               )}
             </div>
 
-            {/* Textos */}
-            <div className="flex flex-col justify-center flex-1 min-w-0 gap-1">
-              <div className="flex justify-between items-start gap-2">
-                <h4
-                  className="font-semibold text-sm truncate cursor-pointer hover:text-primary transition-colors"
-                  onClick={() => onViewDetails(activity.id)}
-                >
-                  {activity.lugar.nombre}
-                </h4>
+            {/* INFO TEXTUAL */}
+            <div className="flex flex-col justify-center flex-1 min-w-0">
+                <div className="flex justify-between items-start gap-2">
+                    <h4
+                        className="font-semibold text-sm text-foreground truncate cursor-pointer hover:text-primary transition-colors leading-tight"
+                        onClick={() => onViewDetails(activity.id)}
+                    >
+                        {activity.lugar.nombre}
+                    </h4>
+                </div>
 
-                {/* Menú de acciones */}
+                {/* Categoría y Rating */}
+                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                    <span
+                        className={cn(
+                            "flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md uppercase tracking-wide truncate max-w-[140px]",
+                            categoryStyle.bg,
+                            categoryStyle.color
+                        )}
+                    >
+                        {CategoryIcon && <CategoryIcon className="h-3 w-3" />}
+                        {categoryStyle.name}
+                    </span>
+                    
+                    {activity.lugar.google_score && (
+                        <span className="flex items-center gap-0.5 text-[10px] font-medium text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-md">
+                            <Star className="h-3 w-3 text-amber-400 fill-amber-400" /> 
+                            {activity.lugar.google_score.toFixed(1)}
+                        </span>
+                    )}
+                </div>
+
+                {/* Descripción (Si existe) */}
+                {activity.descripcion && (
+                    <p className="text-[11px] text-muted-foreground  mt-1.5 italic">
+                        "{activity.descripcion}"
+                    </p>
+                )}
+            </div>
+
+            {/* MENÚ DE ACCIONES */}
+            <div className="self-start -mt-1 -mr-1">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-6 w-6 -mr-2 -mt-1 text-muted-foreground hover:text-foreground"
+                      className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-full"
                     >
-                      <MoreHorizontal className="h-3.5 w-3.5" />
+                      <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="end" className="w-40">
                     <DropdownMenuItem
                       onClick={() => onViewDetails(activity.id)}
+                      className="cursor-pointer"
                     >
-                      <Info className="mr-2 h-3.5 w-3.5" /> Ver detalles
+                      <Info className="mr-2 h-4 w-4" /> Detalles
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      className="text-red-600"
+                      className="text-red-600 cursor-pointer focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20"
                       onClick={() => onDelete(activity.id)}
                     >
-                      <Trash2 className="mr-2 h-3.5 w-3.5" /> Eliminar
+                      <Trash2 className="mr-2 h-4 w-4" /> Eliminar
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              </div>
-
-              <div className="flex items-center gap-2 text-xs">
-                <span
-                  className={cn(
-                    "font-medium px-1.5 py-0.5 rounded-full bg-opacity-10 truncate max-w-[120px]",
-                    categoryStyle.bg,
-                    categoryStyle.color
-                  )}
-                >
-                  {categoryStyle.name}
-                </span>
-                {activity.lugar.google_score && (
-                  <span className="text-amber-500 font-medium flex items-center gap-0.5">
-                    ★ {activity.lugar.google_score.toFixed(1)}
-                  </span>
-                )}
-              </div>
-
-              {activity.descripcion && (
-                <p className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5">
-                  {activity.descripcion}
-                </p>
-              )}
             </div>
-          </div>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }

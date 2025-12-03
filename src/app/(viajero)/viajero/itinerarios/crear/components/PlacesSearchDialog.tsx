@@ -1,4 +1,3 @@
-// src/app/(viajero)/viajero/itinerarios/crear/components/PlacesSearchDialog.tsx
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -10,28 +9,38 @@ import {
   Loader2,
   MapPin,
   Search,
-  Sparkles,
   Star,
   Navigation,
   Info,
-  Map,
   ArrowLeft,
   Filter,
   CheckCircle2,
+  Plus,
+  ListTodo,
+  ChevronUp,
+  ChevronDown,
+  X,
+  Map as MapIcon,
+  Trash2,
+  AlertCircle,
+  Sparkles, // Importado correctamente ahora
 } from "lucide-react";
 import { toast } from "sonner";
 
+// API & Store
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 import type { LugarData } from "@/api/interfaces/ApiRoutes";
+import { useItineraryBuilderStore } from "@/lib/itinerary-builder-store";
+import { REGIONS_DATA } from "@/lib/constants/regions";
 
+// UI Imports
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogHeader,
   DialogTitle,
+  DialogClose,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -44,48 +53,27 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+
+// Utilities de Categoría
 import {
   getCategoryStyle,
   getDefaultImageForCategory,
+  CATEGORY_MAP, // Asegúrate de haber exportado esto en category-utils.ts
 } from "@/lib/category-utils";
+
 import type { DayInfo } from "./CinematicMap";
 
-// --- TIPOS Y DATOS ---
-type PlaceFilters = {
-  state: string;
-  category: string;
-  minRating?: number;
-};
+// --- CONSTANTES ---
+const MAX_PLACES_PER_DAY = 5;
 
-const BASE_STATES = [
-  "Ciudad de Mexico",
-  "Estado de Mexico",
-  "Hidalgo",
-  "Morelos",
-  "Querétaro",
-];
-
-const CATEGORY_OPTIONS: { value: string; label: string }[] = [
-  { value: "amusement_park", label: "Parques de diversiones" },
-  { value: "bowling_alley", label: "Boliche" },
-  { value: "casino", label: "Casinos" },
-  { value: "movie_theater", label: "Cines" },
-  { value: "night_club", label: "Antros / Clubes nocturnos" },
-  { value: "stadium", label: "Estadios" },
-  { value: "aquarium", label: "Acuarios" },
-  { value: "campground", label: "Zonas de camping" },
-  { value: "park", label: "Parques" },
-  { value: "zoo", label: "Zoológicos" },
-  { value: "art_gallery", label: "Galerías de arte" },
-  { value: "library", label: "Bibliotecas" },
-  { value: "museum", label: "Museos" },
-  { value: "tourist_attraction", label: "Atracciones turísticas" },
-  { value: "bar", label: "Bares" },
-  { value: "cafe", label: "Cafeterías" },
-  { value: "restaurant", label: "Restaurantes" },
-  { value: "beauty_salon", label: "Salones de belleza" },
-  { value: "spa", label: "Spas" },
-];
+// Generar opciones dinámicamente desde tu mapa de categorías
+const DYNAMIC_CATEGORY_OPTIONS = Object.entries(CATEGORY_MAP)
+  .map(([key, val]) => ({
+    value: key,
+    label: val.name,
+    icon: val.icon,
+  }))
+  .sort((a, b) => a.label.localeCompare(b.label));
 
 // --- UTILIDADES ---
 function distanceKm(
@@ -104,31 +92,30 @@ function distanceKm(
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
-// Componente visual para estrellas
+// Componente de Estrellas
 const StarRating = ({
   score,
-  size = 4,
+  size = 3,
+  className,
 }: {
   score: number;
   size?: number;
-}) => {
-  const roundedScore = Math.round(score);
-  return (
-    <div className="flex items-center gap-0.5">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <Star
-          key={star}
-          className={cn(
-            `h-${size} w-${size}`,
-            star <= roundedScore
-              ? "fill-amber-400 text-amber-400"
-              : "fill-muted text-muted-foreground/20 dark:text-muted-foreground/10"
-          )}
-        />
-      ))}
-    </div>
-  );
-};
+  className?: string;
+}) => (
+  <div className={cn("flex items-center gap-0.5", className)}>
+    {[1, 2, 3, 4, 5].map((star) => (
+      <Star
+        key={star}
+        className={cn(
+          `h-${size} w-${size}`,
+          star <= Math.round(score)
+            ? "fill-amber-400 text-amber-400"
+            : "fill-muted text-muted-foreground/20"
+        )}
+      />
+    ))}
+  </div>
+);
 
 type PlaceSearchDialogProps = {
   open: boolean;
@@ -143,737 +130,701 @@ export function PlaceSearchDialog({
   onOpenChange,
   currentDay,
   onAddLugarToDay,
-  defaultState,
 }: PlaceSearchDialogProps) {
-  // --- STATE ---
+  const { meta, actividades, removeActivity } = useItineraryBuilderStore();
+
+  const currentDayActivities = useMemo(() => {
+    if (!currentDay) return [];
+    return actividades.filter(
+      (a) => format(a.fecha, "yyyy-MM-dd") === currentDay.key
+    );
+  }, [actividades, currentDay]);
+
+  const placesCount = currentDayActivities.length;
+  const isFull = placesCount >= MAX_PLACES_PER_DAY;
+
+  // Estados UI
   const [query, setQuery] = useState("");
-  const [filters, setFilters] = useState<PlaceFilters>({
-    state: defaultState || "__all__",
-    category: "tourist_attraction",
-    minRating: undefined,
-  });
+  const [activeState, setActiveState] = useState<string>("__all__");
+  const [activeCategory, setActiveCategory] = useState<string>("__all__");
+  const [minRating, setMinRating] = useState<number>(0);
+
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<LugarData[]>([]);
   const [selectedPlace, setSelectedPlace] = useState<LugarData | null>(null);
-  const [showFilters, setShowFilters] = useState(false);
-  const [initialLoaded, setInitialLoaded] = useState(false);
+  const [showDailyPreview, setShowDailyPreview] = useState(true);
+  const [justAddedId, setJustAddedId] = useState<string | null>(null);
 
-  // --- MEMOS ---
-  const stateOptions = useMemo(() => {
-    const set = new Set(BASE_STATES);
-    if (defaultState && !set.has(defaultState)) {
-      set.add(defaultState);
-    }
-    return Array.from(set);
-  }, [defaultState]);
+  // Regiones disponibles (Solo las del itinerario)
+  const availableRegions = useMemo(() => {
+    if (!meta?.regions) return [];
+    return meta.regions.map((r) => ({
+      value: r,
+      label: REGIONS_DATA[r]?.label || r,
+      short: REGIONS_DATA[r]?.short || r,
+    }));
+  }, [meta]);
 
-  // --- EFFECTS ---
-
-  // Carga inicial basada en defaultState (ej. CDMX) para mostrar recomendados
+  // Efecto: Setear región inicial
   useEffect(() => {
+    if (open && meta?.regions.length && activeState === "__all__") {
+      setActiveState(meta.regions[0]);
+    }
     if (!open) {
       setQuery("");
       setSelectedPlace(null);
-      setInitialLoaded(false);
-      return;
     }
+  }, [open, meta, activeState]);
 
-    if (open && defaultState && !initialLoaded) {
-      setFilters((prev) => ({ ...prev, state: defaultState }));
-      void handleSearch();
-    }
-  }, [open, defaultState, initialLoaded]);
-
-  // Búsqueda automática cuando cambian estado / categoría
+  // Efecto: Búsqueda (Debounce)
   useEffect(() => {
     if (!open) return;
-
-    // Si hay defaultState y aún no terminó la carga inicial, no disparamos todavía
-    if (defaultState && !initialLoaded) return;
-
-    // Evita buscar con todo México + todas las categorías + sin texto,
-    // para no pegarle a la API hasta que el usuario elija algo.
-    if (
-      filters.state === "__all__" &&
-      filters.category === "__all__" &&
-      !query.trim()
-    ) {
-      return;
-    }
-
-    void handleSearch();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.state, filters.category]);
+    const timer = setTimeout(() => {
+      void handleSearch();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [query, activeState, activeCategory, minRating, open]);
 
   async function handleSearch() {
     setLoading(true);
-    setSelectedPlace(null);
-
     try {
       const api = ItinerariosAPI.getInstance();
 
-      const apiState =
-        filters.state && filters.state !== "__all__"
-          ? filters.state
-          : undefined;
-
-      const apiCategory =
-        filters.category && filters.category !== "__all__"
-          ? filters.category
-          : undefined;
-
-      const searchQuery = query.trim();
-      const apiQuery = searchQuery || undefined;
+      const stateFilter = activeState !== "__all__" ? activeState : undefined;
+      const categoryFilter =
+        activeCategory !== "__all__" ? activeCategory : undefined;
 
       const resp = await api.getLugares(
         1,
-        60,
-        apiState,
-        apiCategory,
-        apiQuery as any
+        100,
+        stateFilter,
+        categoryFilter,
+        query || undefined
       );
 
-      let lugares: LugarData[] = [];
-      if (Array.isArray(resp)) {
-        lugares = resp as any;
-      } else if (resp && Array.isArray((resp as any).lugares)) {
-        lugares = (resp as any).lugares;
-      }
-      setInitialLoaded(true);
+      let rawData = Array.isArray(resp) ? resp : (resp as any).lugares || [];
 
-      setResults(lugares);
-
-      if (
-        !lugares.length &&
-        (apiState || apiCategory || searchQuery.length > 0)
-      ) {
-        toast.message("No se encontraron coincidencias.");
+      // Filtrado Cliente
+      if (query.trim()) {
+        const q = query.toLowerCase();
+        rawData = rawData.filter(
+          (l: LugarData) =>
+            l.nombre?.toLowerCase().includes(q) ||
+            l.category?.toLowerCase().includes(q)
+        );
       }
-    } catch (error: any) {
-      console.error(error);
-      toast.error("Error en la búsqueda.");
+
+      if (meta?.regions) {
+        rawData = rawData.filter((l: LugarData) =>
+          meta.regions.includes(l.mexican_state as any)
+        );
+      }
+
+      if (minRating > 0) {
+        rawData = rawData.filter(
+          (l: LugarData) => (l.google_score || 0) >= minRating
+        );
+      }
+
+      rawData.sort((a: LugarData, b: LugarData) => {
+        const scoreA = (a.google_score || 0) + (a.total_reviews || 0) / 5000;
+        const scoreB = (b.google_score || 0) + (b.total_reviews || 0) / 5000;
+        return scoreB - scoreA;
+      });
+
+      setResults(rawData);
+    } catch (e) {
+      console.error(e);
     } finally {
       setLoading(false);
     }
   }
 
-  // --- FILTERING + ORDEN POR RECOMENDADOS ---
-  const filteredResults = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
+  // Sugerencias Locales
+  const nearbySuggestions = useMemo(() => {
+    if (!selectedPlace || results.length === 0) return [];
 
-    const filtered = results.filter((lugar) => {
-      // Filtro por estado
-      if (
-        filters.state !== "__all__" &&
-        filters.state &&
-        lugar.mexican_state &&
-        lugar.mexican_state !== filters.state
-      ) {
-        return false;
-      }
-
-      // Filtro por categoría
-      if (
-        filters.category !== "__all__" &&
-        filters.category &&
-        `${lugar.category ?? ""}`.toLowerCase() !==
-          filters.category.toLowerCase()
-      ) {
-        return false;
-      }
-
-      // Filtro por rating mínimo
-      if (filters.minRating && (lugar.google_score ?? 0) < filters.minRating) {
-        return false;
-      }
-
-      // Filtro por texto (búsqueda libre) aplicado en front
-      if (normalizedQuery) {
-        const name = (lugar.nombre ?? "").toLowerCase();
-        const cat = (lugar.category ?? "").toLowerCase();
-        const state = (lugar.mexican_state ?? "").toLowerCase();
-
-        const matches =
-          name.includes(normalizedQuery) ||
-          cat.includes(normalizedQuery) ||
-          state.includes(normalizedQuery);
-
-        if (!matches) return false;
-      }
-
-      return true;
-    });
-
-    // Ordenar por "más recomendados": rating DESC, reseñas DESC, nombre
-    return filtered.sort((a, b) => {
-      const scoreA = a.google_score ?? 0;
-      const scoreB = b.google_score ?? 0;
-      if (scoreA !== scoreB) return scoreB - scoreA;
-
-      const reviewsA = a.total_reviews ?? 0;
-      const reviewsB = b.total_reviews ?? 0;
-      if (reviewsA !== reviewsB) return reviewsB - reviewsA;
-
-      return (a.nombre ?? "").localeCompare(b.nombre ?? "");
-    });
-  }, [results, filters, query]);
-
-  // --- SUGERENCIAS CERCA DEL LUGAR SELECCIONADO ---
-  const suggested = useMemo(() => {
-    if (!selectedPlace) return [] as LugarData[];
-    return filteredResults
-      .filter(
-        (l) =>
-          l.id_api_place !== selectedPlace.id_api_place &&
-          l.category === selectedPlace.category &&
-          typeof l.latitud === "number" &&
-          typeof l.longitud === "number"
-      )
+    return results
+      .filter((l) => l.id_api_place !== selectedPlace.id_api_place)
       .map((l) => ({
-        lugar: l,
-        dist: distanceKm(
-          { latitud: selectedPlace.latitud, longitud: selectedPlace.longitud },
-          { latitud: l.latitud, longitud: l.longitud }
-        ),
+        ...l,
+        distance: distanceKm(selectedPlace, l),
       }))
-      .sort((a, b) => a.dist - b.dist)
-      .slice(0, 3)
-      .map((x) => x.lugar);
-  }, [filteredResults, selectedPlace]);
+      .filter((l) => l.distance < 10)
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 3);
+  }, [selectedPlace, results]);
 
-  const canAdd = !!currentDay && !!selectedPlace;
+  const handleAdd = (lugar: LugarData) => {
+    if (isFull) {
+      toast.error("Día Completo", {
+        description: `Límite de ${MAX_PLACES_PER_DAY} lugares alcanzado.`,
+      });
+      return;
+    }
+    onAddLugarToDay(lugar);
+    setJustAddedId(lugar.id_api_place);
+    setTimeout(() => setJustAddedId(null), 2500);
+  };
+
+  const handleRemove = (id: string) => {
+    const activityToRemove = currentDayActivities.find(
+      (a) => a.lugar.id_api_place === id
+    );
+    if (activityToRemove) {
+      removeActivity(activityToRemove.id);
+      toast.success("Lugar eliminado");
+    }
+  };
+
+  const isAdded = (id_place: string) =>
+    currentDayActivities.some((a) => a.lugar.id_api_place === id_place);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[90vh] w-[95vw] max-w-[95vw] flex-col gap-0 overflow-hidden rounded-xl border-border/50 p-0 shadow-2xl selection:bg-primary/20 selection:text-primary sm:max-w-[95vw] md:max-w-[90vw] lg:max-w-[1200px] xl:max-w-[1400px]">
+      <DialogContent className="flex h-[95vh] w-[98vw] max-w-[98vw] flex-col gap-0 overflow-hidden rounded-xl border-border/50 p-0 shadow-2xl sm:max-w-[95vw] md:max-w-[90vw] lg:max-w-[1300px] bg-background">
         {/* HEADER */}
-        <DialogHeader className="shrink-0 border-b border-border/60 bg-background/95 px-6 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-          <div className="flex flex-wrap items-center justify-between gap-y-2">
-            <div className="flex flex-col gap-0.5">
-              <DialogTitle className="text-xl font-bold tracking-tight text-foreground">
-                Explorar Destinos
-              </DialogTitle>
-              <DialogDescription className="text-sm text-muted-foreground">
-                Descubre y añade lugares increíbles a tu plan de viaje.
-              </DialogDescription>
+        <div className="flex shrink-0 items-center justify-between border-b border-border/60 bg-background/95 px-6 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 z-20 relative">
+          <div className="flex flex-col gap-1">
+            <DialogTitle className="text-lg font-bold tracking-tight flex items-center gap-2">
+              <Search className="h-5 w-5 text-primary" />
+              Explorar Lugares
+            </DialogTitle>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>{results.length} resultados</span>
+              <span>•</span>
+              <span>{currentDay?.label || "Sin día seleccionado"}</span>
             </div>
+          </div>
+
+          <div className="flex items-center gap-4">
             {currentDay && (
               <Badge
-                variant="outline"
-                className="flex items-center gap-2 border-primary/20 bg-primary/5 px-3 py-1.5 text-sm font-medium text-primary shadow-sm dark:bg-primary/10 dark:text-primary-foreground"
+                variant={isFull ? "destructive" : "secondary"}
+                className="h-8 px-3 gap-2 text-xs font-medium border hidden sm:flex"
               >
-                <CheckCircle2 className="h-3.5 w-3.5" />
-                <span>
-                  Editando:{" "}
-                  {format(currentDay.date, "EEEE d 'de' MMMM", { locale: es })}
-                </span>
+                <ListTodo className="h-3.5 w-3.5" />
+                {placesCount}/{MAX_PLACES_PER_DAY}
               </Badge>
             )}
+            <DialogClose className="rounded-full p-2 hover:bg-muted transition-colors">
+              <X className="h-5 w-5 text-muted-foreground" />
+            </DialogClose>
           </div>
-        </DialogHeader>
+        </div>
 
-        {/* CONTAINER PRINCIPAL */}
-        <div className="flex flex-1 flex-col overflow-hidden min-h-0 md:flex-row">
-          {/* --- SIDEBAR: BUSCADOR Y LISTA --- */}
+        {/* BODY (FLEX COLUMNAS) */}
+        <div className="flex flex-1 overflow-hidden relative">
+          {/* COLUMNA IZQUIERDA */}
           <div
             className={cn(
-              "flex flex-col border-r border-border/60 bg-muted/10 transition-all duration-300 dark:bg-card/30",
-              selectedPlace ? "hidden md:flex" : "flex",
-              "w-full shrink-0 md:w-[360px] lg:w-[400px] h-full min-h-0"
+              "flex w-full flex-col border-r bg-muted/10 transition-all duration-300 md:w-[450px] lg:w-[500px]",
+              selectedPlace ? "hidden md:flex" : "flex"
             )}
           >
-            {/* BUSCADOR + FILTROS */}
-            <div className="flex shrink-0 flex-col gap-3 border-b border-border/60 bg-background p-4 shadow-sm z-10 dark:bg-background/50">
-              <div className="relative group">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
+            {/* FILTROS */}
+            <div className="p-4 space-y-4 bg-background border-b z-10 shadow-sm shrink-0">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
+                  placeholder="Buscar..."
+                  className="pl-9 h-10 bg-muted/30 border-input focus-visible:bg-background transition-all"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Buscar museo, parque, restaurante..."
-                  className="h-11 rounded-xl border-muted bg-muted/20 pl-10 text-sm shadow-sm transition-all focus-visible:bg-background focus-visible:ring-primary/20 dark:border-border/40 dark:bg-secondary/50 dark:focus-visible:bg-background"
-                  onKeyDown={(e) => e.key === "Enter" && void handleSearch()}
                 />
               </div>
 
-              <div className="flex items-center gap-2">
-                <Button
-                  className="h-9 flex-1 rounded-lg text-xs font-semibold shadow-sm"
-                  onClick={() => void handleSearch()}
-                  disabled={loading}
+              <div className="flex gap-2">
+                <Select value={activeState} onValueChange={setActiveState}>
+                  <SelectTrigger className="h-8 text-xs flex-1 bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">Mis Destinos</SelectItem>
+                    {availableRegions.map((r) => (
+                      <SelectItem key={r.value} value={r.value}>
+                        {r.short}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select
+                  value={activeCategory}
+                  onValueChange={setActiveCategory}
                 >
-                  {loading ? (
-                    <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-                  ) : null}
-                  BUSCAR
-                </Button>
-                <Button
-                  variant={showFilters ? "secondary" : "outline"}
-                  size="icon"
-                  className={cn(
-                    "h-9 w-9 shrink-0 rounded-lg transition-colors border-input dark:border-border/40",
-                    showFilters &&
-                      "bg-secondary text-secondary-foreground dark:bg-primary/20 dark:text-primary"
-                  )}
-                  onClick={() => setShowFilters(!showFilters)}
-                >
-                  <Filter className="h-4 w-4" />
-                </Button>
+                  <SelectTrigger className="h-8 text-xs flex-1 bg-background">
+                    <div className="flex items-center gap-2 truncate">
+                      <Filter className="h-3 w-3 opacity-50" />
+                      <SelectValue placeholder="Categoría" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    <SelectItem value="__all__">Todas</SelectItem>
+                    {DYNAMIC_CATEGORY_OPTIONS.map((c) => {
+                      const Icon = c.icon;
+                      return (
+                        <SelectItem key={c.value} value={c.value}>
+                          <div className="flex items-center gap-2">
+                            {Icon && (
+                              <Icon className="h-3 w-3 text-muted-foreground" />
+                            )}
+                            {c.label}
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
               </div>
 
-              {/* FILTROS DESPLEGABLES */}
-              {showFilters && (
-                <div className="grid grid-cols-2 gap-3 pt-2 animate-in slide-in-from-top-2 fade-in duration-200">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                      Estado
-                    </label>
-                    <Select
-                      value={filters.state}
-                      onValueChange={(v) =>
-                        setFilters((prev) => ({ ...prev, state: v }))
-                      }
-                    >
-                      <SelectTrigger className="h-8 rounded-lg text-xs dark:bg-secondary/30">
-                        <SelectValue placeholder="Estado" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__all__">Todo México</SelectItem>
-                        {stateOptions.map((s) => (
-                          <SelectItem key={s} value={s}>
-                            {s}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                      Categoría
-                    </label>
-                    <Select
-                      value={filters.category}
-                      onValueChange={(v) =>
-                        setFilters((prev) => ({ ...prev, category: v }))
-                      }
-                    >
-                      <SelectTrigger className="h-8 rounded-lg text-xs dark:bg-secondary/30">
-                        <SelectValue placeholder="Categoría" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__all__">Todas</SelectItem>
-                        {CATEGORY_OPTIONS.map((c) => (
-                          <SelectItem key={c.value} value={c.value}>
-                            {c.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="col-span-2 space-y-1">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                        Rating Mínimo
-                      </label>
-                      <span className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400">
-                        {filters.minRating
-                          ? `${filters.minRating}+`
-                          : "Cualquiera"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 rounded-lg border bg-background px-3 py-1.5 focus-within:ring-1 focus-within:ring-primary/30 dark:border-border/40 dark:bg-secondary/30">
-                      <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
-                      <Input
-                        type="number"
-                        min="0"
-                        max="5"
-                        step="0.5"
-                        placeholder="0.0"
-                        className="h-5 flex-1 border-0 bg-transparent p-0 text-xs focus-visible:ring-0"
-                        value={filters.minRating ?? ""}
-                        onChange={(e) =>
-                          setFilters((prev) => ({
-                            ...prev,
-                            minRating: e.target.value
-                              ? Number(e.target.value)
-                              : undefined,
-                          }))
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* LISTA DE RESULTADOS */}
-            <div className="flex-1 overflow-hidden bg-muted/5 dark:bg-black/20">
-              <ScrollArea className="h-full pr-3">
-                <div className="flex flex-col gap-2 p-3 pb-20">
-                  <div className="flex items-center justify-between px-1 pb-1">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                      Resultados ({filteredResults.length})
-                    </p>
-                  </div>
-
-                  {filteredResults.length === 0 && !loading && (
-                    <div className="flex flex-col items-center justify-center gap-3 py-16 text-center opacity-60">
-                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted dark:bg-muted/20">
-                        <Search className="h-8 w-8 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-foreground">
-                          Sin resultados
-                        </p>
-                        <p className="text-xs max-w-[200px] mx-auto text-muted-foreground">
-                          Intenta ajustar los filtros o buscar con otro término.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {filteredResults.map((lugar) => (
+              <div className="flex items-center gap-3 px-1">
+                <span className="text-[10px] uppercase font-bold text-muted-foreground w-12">
+                  Rating
+                </span>
+                <div className="flex-1 flex items-center gap-2 bg-muted/30 p-1 rounded-lg border border-border/50">
+                  {[0, 3, 4, 4.5].map((r) => (
                     <button
-                      key={lugar.id_api_place}
-                      onClick={() => setSelectedPlace(lugar)}
+                      key={r}
+                      onClick={() => setMinRating(r)}
                       className={cn(
-                        "group relative flex w-full gap-3 rounded-xl border p-2.5 text-left transition-all duration-300",
-                        selectedPlace?.id_api_place === lugar.id_api_place
-                          ? "border-primary/50 bg-primary/5 shadow-md ring-1 ring-primary/20 dark:bg-primary/10"
-                          : "border-transparent bg-background hover:border-primary/20 hover:bg-white hover:shadow-sm dark:bg-card/50 dark:hover:bg-accent/50 dark:hover:border-primary/30"
+                        "flex-1 text-[10px] py-1 rounded-md transition-all font-medium",
+                        minRating === r
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "hover:bg-background/80 text-muted-foreground"
                       )}
                     >
-                      
-                      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted shadow-inner dark:bg-muted/20">
-                        
-                        <Image
-                          src={
-                            lugar.foto_url ||
-                            getDefaultImageForCategory(lugar.category)
-                          }
-                          alt={lugar.nombre}
-                          fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-110"
-                          sizes="64px"
-                        />
-                      </div>
-
-                      <div className="flex flex-1 min-w-0 flex-col justify-center gap-0.5">
-                        <h4 className="truncate text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
-                          {lugar.nombre}
-                        </h4>
-                        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                          <span className="truncate max-w-[80px] font-medium">
-                            {getCategoryStyle(lugar.category).name}
-                          </span>
-                          <span className="text-muted-foreground/40">•</span>
-                          <span className="truncate">
-                            {lugar.mexican_state}
-                          </span>
-                        </div>
-                        {typeof lugar.google_score === "number" && (
-                          <div className="mt-1 flex items-center gap-1.5">
-                            <StarRating score={lugar.google_score} size={3} />
-                            <span className="text-[10px] text-muted-foreground font-medium">
-                              ({lugar.total_reviews})
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {selectedPlace?.id_api_place === lugar.id_api_place && (
-                        <div className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary animate-pulse" />
-                      )}
+                      {r === 0 ? "Todos" : `${r}+`}
                     </button>
                   ))}
                 </div>
+              </div>
+            </div>
+
+            {/* LISTA DE RESULTADOS (Scroll Fix: flex-1 y overflow-hidden) */}
+            <div className="flex-1 overflow-hidden relative bg-muted/5">
+              <ScrollArea className="h-full">
+                <div className="p-3 space-y-2 pb-32">
+                  {loading && (
+                    <div className="py-20 flex flex-col items-center justify-center text-muted-foreground gap-3 animate-pulse">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary/50" />
+                      <p className="text-sm">Buscando...</p>
+                    </div>
+                  )}
+
+                  {!loading && results.length === 0 && (
+                    <div className="py-20 text-center text-muted-foreground space-y-3 px-6">
+                      <Search className="h-10 w-10 mx-auto opacity-20" />
+                      <p className="text-sm font-medium">Sin resultados</p>
+                      <Button
+                        variant="link"
+                        size="sm"
+                        onClick={() => {
+                          setQuery("");
+                          setActiveCategory("__all__");
+                          setMinRating(0);
+                        }}
+                      >
+                        Limpiar filtros
+                      </Button>
+                    </div>
+                  )}
+
+                  {results.map((place) => {
+                    const style = getCategoryStyle(place.category);
+                    const alreadyAdded = isAdded(place.id_api_place);
+                    const isSelected =
+                      selectedPlace?.id_api_place === place.id_api_place;
+
+                    return (
+                      <div
+                        key={place.id_api_place}
+                        onClick={() => setSelectedPlace(place)}
+                        className={cn(
+                          "group relative flex gap-3 p-2.5 rounded-xl border cursor-pointer transition-all duration-200",
+                          isSelected
+                            ? "bg-primary/5 border-primary/40 shadow-[0_0_0_1px_rgba(var(--primary),0.2)]"
+                            : "bg-card border-border/60 hover:border-primary/20 hover:shadow-sm"
+                        )}
+                      >
+                        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted border border-border/50">
+                          <Image
+                            src={
+                              place.foto_url ||
+                              getDefaultImageForCategory(place.category)
+                            }
+                            alt={place.nombre}
+                            fill
+                            className="object-cover transition-transform group-hover:scale-110"
+                            sizes="64px"
+                          />
+                          {alreadyAdded && (
+                            <div className="absolute inset-0 bg-background/60 backdrop-blur-[1px] flex items-center justify-center animate-in fade-in">
+                              <div className="bg-green-500 rounded-full p-1 shadow-sm">
+                                <CheckCircle2 className="h-4 w-4 text-white" />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+                          <div className="flex justify-between items-start gap-2">
+                            <h4
+                              className={cn(
+                                "font-semibold text-sm leading-tight truncate",
+                                isSelected ? "text-primary" : "text-foreground"
+                              )}
+                            >
+                              {place.nombre}
+                            </h4>
+                            {place.google_score &&
+                              place.google_score >= 4.6 && (
+                                <Badge
+                                  variant="secondary"
+                                  className="h-4 px-1 text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+                                >
+                                  TOP
+                                </Badge>
+                              )}
+                          </div>
+
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <span className={cn("font-medium", style.color)}>
+                              {style.name}
+                            </span>
+                            <span>•</span>
+                            <span className="truncate max-w-[80px]">
+                              {place.mexican_state}
+                            </span>
+                          </div>
+
+                          {place.google_score && (
+                            <div className="flex items-center gap-1 text-xs mt-0.5">
+                              <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                              <span className="font-medium text-foreground">
+                                {place.google_score.toFixed(1)}
+                              </span>
+                              <span className="text-muted-foreground text-[10px]">
+                                ({place.total_reviews})
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </ScrollArea>
+
+              {/* MINI PREVIEW (Bottom) */}
+              <div className="absolute bottom-0 left-0 right-0 z-30 bg-background border-t shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+                <button
+                  onClick={() => setShowDailyPreview(!showDailyPreview)}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-muted/10 hover:bg-muted/30 transition-colors"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className={cn(
+                        "flex items-center justify-center h-6 w-6 rounded-full text-[10px] font-bold border",
+                        isFull
+                          ? "bg-red-100 text-red-600 border-red-200"
+                          : "bg-primary/10 text-primary border-primary/20"
+                      )}
+                    >
+                      {placesCount}
+                    </div>
+                    <span className="text-xs font-semibold text-foreground">
+                      Plan: {currentDay?.label}
+                    </span>
+                  </div>
+                  {showDailyPreview ? (
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  ) : (
+                    <ChevronUp className="h-4 w-4 opacity-50" />
+                  )}
+                </button>
+
+                {showDailyPreview && (
+                  <div className="px-4 pb-4 pt-1 bg-background animate-in slide-in-from-bottom-5">
+                    <div className="max-h-[140px] overflow-y-auto pr-1 space-y-1.5 scrollbar-thin scrollbar-thumb-muted">
+                      {currentDayActivities.length === 0 ? (
+                        <p className="text-[11px] text-center py-4 text-muted-foreground/60 italic">
+                          Vacío.
+                        </p>
+                      ) : (
+                        currentDayActivities.map((act, i) => (
+                          <div
+                            key={act.id}
+                            className="flex items-center justify-between p-2 rounded-lg bg-muted/30 border border-transparent hover:border-border hover:bg-muted/50 transition-colors group"
+                          >
+                            <div className="flex items-center gap-2 overflow-hidden">
+                              <span className="text-[10px] font-mono text-muted-foreground w-3">
+                                {i + 1}
+                              </span>
+                              <span className="text-xs font-medium truncate">
+                                {act.lugar.nombre}
+                              </span>
+                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemove(act.lugar.id_api_place);
+                              }}
+                              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 hover:text-red-600 rounded transition-all"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* --- MAIN AREA: DETALLES --- */}
+          {/* COLUMNA DERECHA */}
           <div
             className={cn(
-              "relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-background md:flex dark:bg-background",
-              !selectedPlace ? "hidden" : "flex",
-              "w-full min-w-0"
+              "relative flex-1 flex-col bg-background transition-all duration-300 h-full overflow-hidden border-l",
+              selectedPlace
+                ? "flex z-40 md:z-auto fixed inset-0 md:static"
+                : "hidden md:flex"
             )}
           >
             {selectedPlace ? (
-              <>
-                <div className="flex shrink-0 items-center border-b border-border/60 p-2 md:hidden">
+              <div className="flex flex-col h-full bg-background animate-in fade-in zoom-in-95 duration-200">
+                {/* Botón Volver (Móvil) */}
+                <div className="md:hidden absolute top-4 left-4 z-50">
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    className="gap-2 pl-2 text-muted-foreground hover:text-foreground"
+                    size="icon"
+                    variant="secondary"
+                    className="rounded-full shadow-lg h-10 w-10 bg-background/80 backdrop-blur-md"
                     onClick={() => setSelectedPlace(null)}
                   >
-                    <ArrowLeft className="h-4 w-4" />
-                    <span className="text-xs font-medium">Volver a lista</span>
+                    <ArrowLeft className="h-5 w-5" />
                   </Button>
                 </div>
 
-                <ScrollArea className="h-full w-full">
-                  <div className="flex flex-col p-6 lg:p-8 pb-32 max-w-5xl mx-auto w-full">
-                    {/* Hero Image */}
-                    <div className="group relative mb-8 aspect-video w-full shrink-0 overflow-hidden rounded-2xl bg-muted shadow-sm ring-1 ring-border/50 sm:aspect-[21/9] dark:bg-muted/20">
-                      {selectedPlace.foto_url ||
-                      getDefaultImageForCategory(selectedPlace.category) ? (
-                          <Image
-                          src={
-                            selectedPlace.foto_url ||
-                            getDefaultImageForCategory(selectedPlace.category)
-                          }
-                          alt={selectedPlace.nombre}
-                          fill
-                          className="object-cover transition-transform duration-700 group-hover:scale-105"
-                          priority
-                          sizes="(max-width: 1280px) 100vw, 1000px"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-muted/50 text-muted-foreground dark:bg-muted/10">
-                          <MapPin className="h-16 w-16 opacity-10" />
-                          <p className="text-sm font-medium">
-                            Sin imagen disponible
-                          </p>
-                        </div>
+                {/* HERO */}
+                <div className="relative h-64 md:h-72 w-full bg-muted shrink-0 group">
+                  <Image
+                    src={
+                      selectedPlace.foto_url ||
+                      getDefaultImageForCategory(selectedPlace.category)
+                    }
+                    alt={selectedPlace.nombre}
+                    fill
+                    className="object-cover"
+                    priority
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
+
+                  <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
+                    <Badge
+                      className={cn(
+                        "mb-3 border-0 backdrop-blur-md px-3 py-1 text-[10px] uppercase tracking-widest shadow-sm",
+                        getCategoryStyle(selectedPlace.category).bg,
+                        getCategoryStyle(selectedPlace.category).color
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80" />
-
-                      <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                        <div className="flex items-center gap-3 mb-2">
-                          <Badge
-                            className={cn("border-0 backdrop-blur-md uppercase tracking-widest text-[10px]", getCategoryStyle(selectedPlace.category).bg, getCategoryStyle(selectedPlace.category).color)}
-                          >
-                            {getCategoryStyle(selectedPlace.category).name}
-                          </Badge>
-                          {selectedPlace.mexican_state && (
-                            <div className="flex items-center gap-1 text-xs font-medium text-white/90 drop-shadow-sm">
-                              <Map className="h-3.5 w-3.5" />
-                              {selectedPlace.mexican_state}
-                            </div>
-                          )}
-                        </div>
-                        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight drop-shadow-md text-balance text-white">
-                          {selectedPlace.nombre}
-                        </h1>
-                      </div>
+                    >
+                      {getCategoryStyle(selectedPlace.category).name}
+                    </Badge>
+                    <h2 className="text-3xl md:text-4xl font-extrabold text-foreground leading-tight tracking-tight shadow-sm text-balance">
+                      {selectedPlace.nombre}
+                    </h2>
+                    <div className="flex items-center gap-2 mt-2 text-sm font-medium text-muted-foreground">
+                      <MapPin className="h-4 w-4" />
+                      {selectedPlace.mexican_state}, México
                     </div>
+                  </div>
+                </div>
 
-                    {/* Info & Rating */}
-                    <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-lg font-semibold text-foreground">
+                {/* DETALLES */}
+                <div className="flex-1 overflow-hidden relative">
+                  <ScrollArea className="h-full">
+                    <div className="p-6 md:p-8 space-y-8 pb-32">
+                      {/* Stats */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-muted/30 p-4 rounded-2xl border border-border/50">
+                          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-1">
                             Calificación
-                          </h3>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-1">
-                            <span className="text-2xl font-bold text-foreground">
-                              {selectedPlace.google_score
-                                ? selectedPlace.google_score.toFixed(1)
-                                : "N/A"}
-                            </span>
-                            <span className="text-sm text-muted-foreground">
-                              / 5.0
-                            </span>
-                          </div>
-                          {typeof selectedPlace.google_score === "number" && (
-                            <>
-                              <div className="h-4 w-px bg-border" />
-                              <div className="flex flex-col">
-                                <StarRating
-                                  score={selectedPlace.google_score}
-                                  size={4}
-                                />
-                                <span className="text-xs text-muted-foreground mt-0.5">
-                                  Basado en {selectedPlace.total_reviews} reseñas
-                                </span>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <Separator className="mb-8" />
-
-                    {/* Detalles */}
-                    <div className="grid gap-6 lg:grid-cols-2 mb-10">
-                      <div className="rounded-2xl border bg-card p-5 shadow-sm transition-shadow hover:shadow-md dark:border-border/60">
-                        <div className="mb-4 flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary dark:bg-primary/20">
-                            <Info className="h-5 w-5" />
-                          </div>
-                          <h4 className="font-semibold text-foreground">
-                            Acerca de este lugar
-                          </h4>
-                        </div>
-                        {selectedPlace.descripcion ? (
-                          <p className="text-sm leading-relaxed text-muted-foreground text-pretty">
-                            {selectedPlace.descripcion}
                           </p>
-                        ) : (
-                          <p className="text-sm leading-relaxed text-muted-foreground text-pretty">
-                            Este destino en{" "}
-                            <span className="font-medium text-foreground">
-                              {selectedPlace.mexican_state}
-                            </span>{" "}
-                            es perfecto para viajeros interesados en
-                            experiencias de tipo{" "}
-                            <span className="font-medium text-foreground">
-                              {getCategoryStyle(selectedPlace.category).name}
+                          <div className="flex items-end gap-2">
+                            <span className="text-3xl font-bold">
+                              {selectedPlace.google_score?.toFixed(1) || "-"}
                             </span>
-                            .
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="rounded-2xl border bg-card p-5 shadow-sm transition-shadow hover:shadow-md dark:border-border/60">
-                        <div className="mb-4 flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary dark:bg-primary/20">
-                            <Navigation className="h-5 w-5" />
-                          </div>
-                          <h4 className="font-semibold text-foreground">
-                            Ubicación y Coordenadas
-                          </h4>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="rounded-lg bg-muted/40 p-3 dark:bg-muted/20">
-                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">
-                              Latitud
-                            </span>
-                            <div className="font-mono text-sm mt-1 text-foreground">
-                              {selectedPlace.latitud}
-                            </div>
-                          </div>
-                          <div className="rounded-lg bg-muted/40 p-3 dark:bg-muted/20">
-                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">
-                              Longitud
-                            </span>
-                            <div className="font-mono text-sm mt-1 text-foreground">
-                              {selectedPlace.longitud}
+                            <div className="mb-1.5">
+                              <StarRating
+                                score={selectedPlace.google_score || 0}
+                                size={4}
+                              />
                             </div>
                           </div>
                         </div>
-                        <p className="mt-4 text-xs text-muted-foreground flex items-center gap-1.5">
-                          <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-500" />
-                          Ubicación verificada para rutas óptimas.
+                        <div className="bg-muted/30 p-4 rounded-2xl border border-border/50">
+                          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-1">
+                            Opiniones
+                          </p>
+                          <div className="flex items-end gap-2">
+                            <span className="text-3xl font-bold">
+                              {selectedPlace.total_reviews
+                                ? (selectedPlace.total_reviews / 1000).toFixed(
+                                    1
+                                  ) + "k"
+                                : 0}
+                            </span>
+                            <span className="text-xs text-muted-foreground mb-1.5 font-medium">
+                              reseñas
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Info */}
+                      <div className="space-y-3">
+                        <h3 className="font-bold text-lg flex items-center gap-2">
+                          <Info className="h-5 w-5 text-primary" /> Acerca del
+                          lugar
+                        </h3>
+                        <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
+                          {selectedPlace.descripcion ||
+                            `Disfruta de una experiencia única en ${
+                              selectedPlace.nombre
+                            }. Ideal para quienes buscan ${getCategoryStyle(
+                              selectedPlace.category
+                            ).name.toLowerCase()} en ${
+                              selectedPlace.mexican_state
+                            }.`}
                         </p>
                       </div>
-                    </div>
 
-                    {/* Sugerencias */}
-                    {suggested.length > 0 && (
-                      <div className="space-y-4 mb-15 ">
-                        <div className="flex items-center gap-2">
-                          <Sparkles className="h-5 w-5 text-amber-500 fill-amber-500/20" />
-                          <h3 className="text-lg font-semibold text-foreground">
-                            Cerca de aquí
+                      {/* Sugerencias */}
+                      {nearbySuggestions.length > 0 && (
+                        <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500 delay-100 pt-4">
+                          <h3 className="font-bold text-sm uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                            <Sparkles className="h-4 w-4 text-amber-500" />{" "}
+                            Joyas cercanas
                           </h3>
-                        </div>
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                          {suggested.map((s) => (
-                            <div
-                              key={s.id_api_place}
-                              className="group flex cursor-pointer flex-col gap-3 rounded-xl border bg-card p-3 transition-all hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg dark:border-border/60 dark:hover:bg-accent/30"
-                              onClick={() => setSelectedPlace(s)}
-                            >
-                              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-muted dark:bg-muted/20">
-                                {s.foto_url && (
+                          <div className="grid grid-cols-1 gap-3">
+                            {nearbySuggestions.map((s) => (
+                              <div
+                                key={s.id_api_place}
+                                onClick={() => setSelectedPlace(s)}
+                                className="flex gap-3 p-2 rounded-xl bg-card border hover:border-primary/40 hover:shadow-md cursor-pointer transition-all"
+                              >
+                                <div className="h-16 w-16 rounded-lg bg-muted overflow-hidden relative shrink-0 border">
                                   <Image
-                                    src={s.foto_url}
+                                    src={
+                                      s.foto_url ||
+                                      getDefaultImageForCategory(s.category)
+                                    }
                                     alt={s.nombre}
                                     fill
-                                    className="object-cover transition-transform duration-500 group-hover:scale-110"
+                                    className="object-cover"
                                   />
-                                )}
-                              </div>
-                              <div className="space-y-1">
-                                <p className="truncate text-sm font-bold group-hover:text-primary transition-colors text-foreground">
-                                  {s.nombre}
-                                </p>
-                                <div className="flex items-center justify-between">
-                                  <p className="truncate text-xs text-muted-foreground">
-                                    {s.category}
+                                </div>
+                                <div className="flex flex-col justify-center min-w-0">
+                                  <p className="text-sm font-bold truncate">
+                                    {s.nombre}
                                   </p>
-                                  {s.google_score && (
-                                    <span className="flex items-center gap-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
-                                      <Star className="h-2.5 w-2.5 fill-current" />{" "}
-                                      {s.google_score}
-                                    </span>
-                                  )}
+                                  <p className="text-xs text-muted-foreground">
+                                    {getCategoryStyle(s.category).name}
+                                  </p>
+                                  <p className="text-[10px] text-green-600 font-medium mt-1">
+                                    A {s.distance.toFixed(1)} km
+                                  </p>
                                 </div>
                               </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                </ScrollArea>
-
-                {/* Footer Flotante */}
-                <div className="absolute bottom-0 left-0 right-0 z-20 border-t bg-background/80 p-4 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 sm:px-8 sm:py-5 dark:border-border/60 dark:bg-background/80">
-                  <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-                    <div className="hidden text-sm sm:block">
-                      {currentDay ? (
-                        <span className="text-muted-foreground">
-                          Añadiendo a:{" "}
-                          <span className="font-semibold text-foreground">
-                            {format(currentDay.date, "EEEE d", { locale: es })}
-                          </span>
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground italic">
-                          Selecciona un día en el calendario
-                        </span>
                       )}
                     </div>
-                    <div className="flex w-full gap-3 sm:w-auto">
+                  </ScrollArea>
+                </div>
+
+                {/* Footer */}
+                <div className="p-4 md:p-6 border-t bg-background/95 backdrop-blur z-20">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="hidden md:block text-xs text-muted-foreground">
+                      {isAdded(selectedPlace.id_api_place)
+                        ? "Este lugar ya está en tu itinerario."
+                        : isFull
+                        ? "Día lleno."
+                        : "Listo para añadir."}
+                    </div>
+
+                    <div className="flex gap-3 w-full md:w-auto">
                       <Button
                         variant="outline"
                         onClick={() => setSelectedPlace(null)}
-                        className="flex-1 rounded-xl border-muted-foreground/20 hover:bg-muted sm:flex-none dark:hover:bg-accent"
+                        className="flex-1 md:flex-none"
                       >
-                        Cancelar
+                        Cerrar
                       </Button>
+
                       <Button
-                        onClick={() => {
-                          if (!currentDay || !selectedPlace) {
-                            toast.error("Debes seleccionar un día primero.");
-                            return;
-                          }
-                          onAddLugarToDay(selectedPlace);
-                          toast.success(
-                            `${selectedPlace.nombre} añadido al itinerario`
-                          );
-                        }}
-                        disabled={!canAdd}
-                        className="flex-1 rounded-xl bg-primary font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] hover:shadow-xl sm:min-w-[180px] dark:shadow-none dark:hover:bg-primary/90"
+                        onClick={() =>
+                          selectedPlace && handleAdd(selectedPlace)
+                        }
+                        disabled={
+                          isAdded(selectedPlace.id_api_place) ||
+                          (isFull && !isAdded(selectedPlace.id_api_place))
+                        }
+                        className={cn(
+                          "flex-1 md:min-w-[200px] transition-all duration-300 font-semibold shadow-lg",
+                          justAddedId === selectedPlace.id_api_place
+                            ? "bg-green-600 hover:bg-green-700 text-white shadow-green-200"
+                            : isFull && !isAdded(selectedPlace.id_api_place)
+                            ? "opacity-50 cursor-not-allowed"
+                            : "bg-primary text-primary-foreground shadow-primary/20"
+                        )}
                       >
-                        <MapPin className="mr-2 h-4 w-4" />
-                        Añadir al Mapa
+                        {justAddedId === selectedPlace.id_api_place ? (
+                          <>
+                            {" "}
+                            <CheckCircle2 className="mr-2 h-5 w-5" /> ¡Agregado!{" "}
+                          </>
+                        ) : isAdded(selectedPlace.id_api_place) ? (
+                          <>
+                            {" "}
+                            <CheckCircle2 className="mr-2 h-4 w-4" /> En el plan{" "}
+                          </>
+                        ) : isFull ? (
+                          <>
+                            {" "}
+                            <AlertCircle className="mr-2 h-4 w-4" /> Día Lleno{" "}
+                          </>
+                        ) : (
+                          <>
+                            {" "}
+                            <Plus className="mr-2 h-5 w-5" /> Agregar{" "}
+                          </>
+                        )}
                       </Button>
                     </div>
                   </div>
                 </div>
-              </>
+              </div>
             ) : (
-              // Empty State
-              <div className="flex h-full flex-col items-center justify-center bg-muted/5 p-8 text-center animate-in fade-in duration-500 dark:bg-background/40">
-                <div className="mb-6 flex h-32 w-32 items-center justify-center rounded-full bg-gradient-to-tr from-primary/10 to-blue-500/5 shadow-2xl ring-1 ring-border dark:from-primary/20 dark:to-blue-500/10">
-                  <Map className="h-14 w-14 text-primary/60 dark:text-primary/80" />
+              // EMPTY STATE
+              <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-muted/5 animate-in fade-in duration-500">
+                <div className="w-64 h-64 bg-gradient-to-tr from-primary/10 to-blue-500/10 rounded-full blur-3xl absolute opacity-50" />
+                <div className="relative z-10 flex flex-col items-center">
+                  <div className="h-24 w-24 bg-background rounded-3xl shadow-xl flex items-center justify-center mb-6 rotate-3 border border-border/50">
+                    <MapIcon className="h-12 w-12 text-primary/60" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-foreground">
+                    Selecciona un lugar
+                  </h3>
+                  <p className="text-muted-foreground max-w-xs mt-3 leading-relaxed">
+                    Explora la lista y haz clic en un lugar para ver detalles.
+                  </p>
                 </div>
-                <h3 className="mb-2 text-2xl font-bold tracking-tight text-foreground">
-                  Comienza tu Aventura
-                </h3>
-                <p className="max-w-xs text-muted-foreground text-balance leading-relaxed">
-                  Selecciona una atracción de la lista para ver sus fotos,
-                  reseñas y detalles exclusivos.
-                </p>
               </div>
             )}
           </div>

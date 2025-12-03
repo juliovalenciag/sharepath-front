@@ -100,13 +100,12 @@ export function ItineraryHeader({
           title="Borrar todo"
         >
           <Trash2 className="h-4 w-4 sm:mr-2" />
-          <span className="hidden sm:inline">Reset</span>
         </Button>
 
         <div className="h-4 w-px bg-border mx-1 hidden sm:block" />
 
         <Button
-          variant="secondary"
+          variant="outline"
           size="sm"
           onClick={onOptimize}
           disabled={!canOptimize}
