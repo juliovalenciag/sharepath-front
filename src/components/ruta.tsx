@@ -8,7 +8,7 @@ import * as L from 'leaflet';
 import 'leaflet-routing-machine';
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 
-import { lugar } from "@/app/(dashboard)/dashboard/createItinerario/page"
+import { lugar } from "@/app/(dashboard)/dashboard/reportes/page"
 
 interface RutaProps{
     destinos: lugar[],

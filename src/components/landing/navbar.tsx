@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { ChevronRight, Github } from "lucide-react";
+import { ChevronRight, Github, Bell } from "lucide-react";
 
 import { ThemeToggle } from "./theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -47,6 +47,20 @@ export const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const pathname = usePathname();
+  const [user, setUser] = useState<null | { username: string; correo: string; foto_url: string }>(null);
+
+  // Obtener usuario de localStorage para avatar
+  React.useEffect(() => {
+    try {
+      const storedUser = localStorage.getItem("usuario");
+      const u = storedUser
+        ? JSON.parse(storedUser)
+        : { username: "Usuario", correo: "usuario@sharepath.com", foto_url: "/profile.png" };
+      setUser({ username: u.username, correo: u.correo, foto_url: u.foto_url || "/profile.png" });
+    } catch {
+      setUser({ username: "Usuario", correo: "usuario@sharepath.com", foto_url: "/profile.png" });
+    }
+  }, []);
 
   return (
     <section
@@ -120,6 +134,21 @@ export const Navbar = () => {
         {/* Auth Buttons */}
         <div className="flex items-center gap-2.5">
           <ThemeToggle />
+          {/* Avatar y campana al lado del icono de modo oscuro */}
+          {user && (
+            <div className="flex items-center gap-2">
+              <button aria-label="Notificaciones" className="p-2 rounded-md hover:bg-muted">
+                <Bell className="h-5 w-5" />
+              </button>
+              <Image
+                src={user.foto_url}
+                alt={user.username}
+                width={28}
+                height={28}
+                className="rounded-full object-cover"
+              />
+            </div>
+          )}
           <Link href="/sign-in" className="max-lg:hidden">
             <Button variant="default">
               <span className="relative z-10">Ingresar</span>

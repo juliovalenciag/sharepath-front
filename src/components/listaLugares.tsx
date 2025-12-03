@@ -1,4 +1,4 @@
-import { lugar } from "@/app/(dashboard)/dashboard/createItinerario/page"
+import { lugar } from "@/app/(dashboard)/dashboard/reportes/page"
 
 interface ListaProps
 {
