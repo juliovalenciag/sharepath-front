@@ -228,6 +228,9 @@ export class ItinerariosAPI implements ApiRoutes {
     async getUser(): Promise<Usuario> {
         return await this.get<Usuario>("/user", true);
     }
+    async getUserProfile(query: string): Promise<Usuario> {
+        return await this.get<Usuario>(`/user/profile?q=${encodeURIComponent(query)}`, true);
+    }
 
     async updateUser(body: UpdateUserRequest): Promise<Usuario> {
         // Si hay archivo (foto), usar FormData
