@@ -1,4 +1,4 @@
-// src/app/(viajero)/viajero/itinerarios/crear/components/PlaceSearchDialog.tsx
+// src/app/(viajero)/viajero/itinerarios/crear/components/PlacesSearchDialog.tsx
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";

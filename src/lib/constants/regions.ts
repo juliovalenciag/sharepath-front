@@ -14,6 +14,7 @@ export const REGIONS_DATA: Record<
     short: "CDMX",
     lat: 19.4326,
     lng: -99.1332,
+    
   },
   "Estado de Mexico": {
     label: "Estado de México",

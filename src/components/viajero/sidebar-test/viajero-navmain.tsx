@@ -37,7 +37,7 @@ function longestMatchingHref(pathname: string, items: Item[]) {
 export function ViajeroNavMain({ items }: { items: Item[] }) {
   const pathname = usePathname();
   const activeHref = longestMatchingHref(pathname, items);
-  const isActiveCTA = pathname === "/viajero/itinerarios/nuevo";
+  const isActiveCTA = pathname === "/viajero/itinerarios/crear";
   return (
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
@@ -47,20 +47,28 @@ export function ViajeroNavMain({ items }: { items: Item[] }) {
             <SidebarMenuButton
               tooltip="Crear Itineraio"
               asChild
-            className={cn(
-              "min-w-8 duration-200 ease-linear",
-              "hover:from-blue-700 hover:to-blue-500",
-              "focus-visible:ring-2 focus-visible:ring-sidebar-ring",
-              "shadow-lg border border-blue-700 rounded-md",
-              isActiveCTA
-              ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
-              : "bg-transparent text-blue-600 border-blue-700"
-
-            )}
+              className={cn(
+                "min-w-8 duration-200 ease-linear",
+                "hover:from-blue-700 hover:to-blue-500",
+                "focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+                "shadow-lg border border-blue-700 rounded-md",
+                isActiveCTA
+                  ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                  : "bg-transparent text-blue-600 border-blue-700"
+              )}
             >
-              <Link href="/viajero/itinerarios/nuevo" className="flex items-center gap-2 px-3 py-2">
-                <IconCirclePlusFilled className={cn(isActiveCTA ? "text-white" : "text-blue-600")} />
-                <span className={cn(isActiveCTA ? "text-white" : "text-blue-600")}><strong>Crear Itinerario</strong></span>
+              <Link
+                href="/viajero/itinerarios/nuevo"
+                className="flex items-center gap-2 px-3 py-2"
+              >
+                <IconCirclePlusFilled
+                  className={cn(isActiveCTA ? "text-white" : "text-blue-600")}
+                />
+                <span
+                  className={cn(isActiveCTA ? "text-white" : "text-blue-600")}
+                >
+                  <strong>Crear Itinerario</strong>
+                </span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
