@@ -1,6 +1,6 @@
-// src/lib/itinerary-builder-store.ts
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { format } from "date-fns"; // Importante para el payload
 import { RegionKey } from "./constants/regions";
 
 // ========== TIPOS ==========
@@ -20,11 +20,11 @@ export type BuilderPlace = {
 
 export type BuilderActivity = {
   id: string;
-  fecha: Date; // Se guarda como string ISO, se hidrata a Date
+  fecha: Date;
   descripcion: string;
   lugar: BuilderPlace;
-  start_time: string | null; // "10:00"
-  end_time: string | null; // "11:00"
+  start_time: string | null;
+  end_time: string | null;
 };
 
 export type BuilderMeta = {
@@ -32,75 +32,52 @@ export type BuilderMeta = {
   start: Date;
   end: Date;
   regions: RegionKey[];
-  visibility: "private" | "friends" | "public"; // Agregado para soportar tu flujo completo
+  // Se eliminó 'visibility' y 'companions' ya no es obligatorio en el setup inicial
   companions: string[];
 };
-
-// Helpers de comparación para evitar re-renders innecesarios
-function shallowEqualArray<T>(a: T[], b: T[]): boolean {
-  if (a === b) return true;
-  if (a.length !== b.length) return false;
-  return a.every((val, i) => val === b[i]);
-}
-
-type SetActivitiesInput =
-  | BuilderActivity[]
-  | ((prev: BuilderActivity[]) => BuilderActivity[]);
 
 type ItineraryBuilderState = {
   meta: BuilderMeta | null;
   actividades: BuilderActivity[];
 
+  // Flag para saber si ya leímos el localStorage (evita errores de hidratación)
+  hasHydrated: boolean;
+
   // Acciones
   setMeta: (meta: BuilderMeta | null) => void;
-
-  /**
-   * Actualiza la lista completa de actividades.
-   * Útil para reordenamiento (drag & drop) o optimización.
-   */
-  setActivities: (input: SetActivitiesInput) => void;
-
+  setActivities: (
+    input: BuilderActivity[] | ((prev: BuilderActivity[]) => BuilderActivity[])
+  ) => void;
   addActivity: (activity: BuilderActivity) => void;
   updateActivity: (id: string, patch: Partial<BuilderActivity>) => void;
   removeActivity: (id: string) => void;
 
-  /**
-   * Borra todo el estado y el localStorage asociado.
-   */
-  clear: () => void;
+  // Acción crítica para "Borrar todo"
+  reset: () => void;
+  setHasHydrated: (val: boolean) => void;
 };
 
 // ========== STORE ==========
 
 export const useItineraryBuilderStore = create<ItineraryBuilderState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       meta: null,
       actividades: [],
+      hasHydrated: false,
 
-      setMeta: (meta) => {
-        const current = get().meta;
-        // Evitamos actualización si es idéntico (optimización)
-        if (JSON.stringify(current) === JSON.stringify(meta)) return;
-        set({ meta });
-      },
+      setMeta: (meta) => set({ meta }),
 
       setActivities: (input) => {
         set((state) => {
-          const prev = state.actividades;
-          const next = typeof input === "function" ? input(prev) : input;
-
-          if (shallowEqualArray(prev, next)) return state;
+          const next =
+            typeof input === "function" ? input(state.actividades) : input;
           return { actividades: next };
         });
       },
 
       addActivity: (activity) => {
-        set((state) => {
-          // Prevenir duplicados de ID (seguridad extra)
-          if (state.actividades.some((a) => a.id === activity.id)) return state;
-          return { actividades: [...state.actividades, activity] };
-        });
+        set((state) => ({ actividades: [...state.actividades, activity] }));
       },
 
       updateActivity: (id, patch) => {
@@ -117,23 +94,25 @@ export const useItineraryBuilderStore = create<ItineraryBuilderState>()(
         }));
       },
 
-      clear: () => set({ meta: null, actividades: [] }),
+      // Limpia todo el estado y el localStorage
+      reset: () => set({ meta: null, actividades: [] }),
+
+      setHasHydrated: (val) => set({ hasHydrated: val }),
     }),
     {
-      name: "itinerary-builder-storage-v2", // Nombre clave en localStorage
+      name: "itinerary-storage-v3", // Cambiamos nombre para invalidar versiones viejas rotas
       storage: createJSONStorage(() => localStorage),
 
-      // --- HIDRATACIÓN ---
-      // Convierte los strings de fecha de vuelta a objetos Date reales al recargar la página
+      // Convierte strings de ISO date de vuelta a objetos Date reales
       onRehydrateStorage: () => (state) => {
-        if (!state) return;
+        state?.setHasHydrated(true);
 
-        if (state.meta) {
+        if (state?.meta) {
           state.meta.start = new Date(state.meta.start);
           state.meta.end = new Date(state.meta.end);
         }
 
-        if (state.actividades) {
+        if (state?.actividades) {
           state.actividades = state.actividades.map((a) => ({
             ...a,
             fecha: new Date(a.fecha),
@@ -144,26 +123,25 @@ export const useItineraryBuilderStore = create<ItineraryBuilderState>()(
   )
 );
 
-// ========== HELPER PARA PAYLOAD (Conexión con Backend) ==========
-// Este helper prepara los datos para que coincidan con lo que tu API espera
+// ========== PAYLOAD HELPER ==========
+// Prepara los datos para la API asegurando que las fechas sean correctas
 export function buildItineraryPayload(
   meta: BuilderMeta,
   actividades: BuilderActivity[]
 ) {
   return {
     title: meta.title,
-    visibility: meta.visibility,
+    // Visibility eliminado de la UI, lo mandamos hardcodeado o como default
+    visibility: "friends",
     regions: meta.regions,
-    start_date: meta.start.toISOString().slice(0, 10), // YYYY-MM-DD
-    end_date: meta.end.toISOString().slice(0, 10),
+    // Usamos format local para evitar errores de zona horaria (UTC)
+    start_date: format(meta.start, "yyyy-MM-dd"),
+    end_date: format(meta.end, "yyyy-MM-dd"),
 
-    // Mapeo hacia la interfaz 'Actividad' del backend
     actividades: actividades.map((a) => ({
-      fecha: a.fecha.toISOString().slice(0, 10),
-      description: a.descripcion || "", // CORRECCIÓN: El campo esperado por la API es "description"
+      fecha: format(a.fecha, "yyyy-MM-dd"),
+      description: a.descripcion || "",
       lugarId: a.lugar.id_api_place,
-
-      // Datos extra que agregamos a la interfaz en el paso anterior
       start_time: a.start_time || null,
       end_time: a.end_time || null,
     })),
