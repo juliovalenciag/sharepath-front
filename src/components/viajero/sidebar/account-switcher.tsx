@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
+import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
 import { BadgeCheck, Bell, Edit, LogOut, User } from "lucide-react";
+import Link from "next/link";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -32,6 +34,13 @@ type ActiveUser = {
 };
 
 export function AccountSwitcher() {
+  const router = useRouter();
+  const handleLogout = () => {
+    Cookies.remove("auth_token");
+    localStorage.removeItem("authToken");
+    router.push("/sign-in");
+    router.refresh();
+  };
   const [activeUser, setActiveUser] = useState<ActiveUser | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [errorUser, setErrorUser] = useState<string | null>(null);
@@ -45,7 +54,7 @@ export function AccountSwitcher() {
             : null;
 
         const res = await fetch("https://harol-lovers.up.railway.app/user", {
-        // const res = await fetch("http://localhost:4000/user", {
+          // const res = await fetch("http://localhost:4000/user", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -183,25 +192,33 @@ export function AccountSwitcher() {
             No tienen lógica de navegación/acción aún.
           */}
 
-          <DropdownMenuItem>
+           <DropdownMenuItem>
             <User />
             Perfil
-          </DropdownMenuItem>
+          </DropdownMenuItem> 
           <DropdownMenuItem>
-            <Edit />
-            Cuenta
+            <Link
+              href="/viajero/configuracion/cuenta"
+              className="flex gap-1.5 items-center"
+            >
+              <Edit />
+              Cuenta
+            </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem>
+          {/* <DropdownMenuItem>
             <Bell />
             Notificaciones
-          </DropdownMenuItem>
+          </DropdownMenuItem> */}
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         {/* 
           TODO: Conectar lógica real de logout cuando la tengas lista.
         */}
-        <DropdownMenuItem>
-          <LogOut />
+        <DropdownMenuItem
+          onClick={handleLogout}
+          className="cursor-pointer text-red-600 focus:text-red-600"
+        >
+          <LogOut className="mr-2 h-4 w-4" />
           Cerrar Sesión
         </DropdownMenuItem>
       </DropdownMenuContent>

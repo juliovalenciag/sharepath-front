@@ -20,16 +20,43 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Link from "next/link";
 import { getInitials } from "@/lib/utils";
 
-// ===== Tipos esperados desde el backend =====
+const API_URL = "https://harol-lovers.up.railway.app";
 
+// Estados posibles para responder a una solicitud de amistad
+enum FriendRequestState {
+  PENDING = 0,
+  FRIEND = 1,   // ACEPTAR
+  REJECTED = 2, // RECHAZAR
+}
+
+// Función para llamar al endpoint 
+async function respondToRequest(requestId: string | number, state: number) {
+  const token = localStorage.getItem("authToken");
+  if (!token) throw new Error("No hay sesión");
+
+  const response = await fetch(`${API_URL}/amigo/respond`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      token: token,
+    },
+    
+    body: JSON.stringify({ Id: Number(requestId), state: state }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Error al responder la solicitud");
+  }
+
+  return await response.json();
+}
+
+// ===== Tipos esperados desde el backend =====
 interface ApiFriend {
   id: string;
   username: string;
@@ -103,6 +130,37 @@ export default function FriendsPage() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // --- DATOS ESTÁTICOS PARA PRUEBA VISUAL ---
+  const mockRequest: FriendRequest = {
+    id: "99999", // ID alto para diferenciar
+    username: "test_design",
+    name: "Diseño Estático",
+    avatar: "https://github.com/shadcn.png", // Avatar de ejemplo
+
+    dateLabel: "Hace un momento",
+  };
+
+  const handleRespond = async (id: number, state: number) => { 
+    try {
+      // Si es la solicitud falsa, solo la borramos visualmente (sin llamar al back)
+      if (id === 99999) {
+         setRequests((prev) => prev.filter((req) => Number(req.id) !== id));
+         console.log("Solicitud falsa respondida localmente");
+         return;
+      }
+
+      await respondToRequest(id, state);
+      setRequests((prev) => prev.filter((req) => Number(req.id) !== id));
+
+      if (state === FriendRequestState.FRIEND) {
+        console.log("¡Amigo agregado!");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Hubo un error al procesar la solicitud");
+    }
+  };
+
   useEffect(() => {
     const fetchFriendsData = async () => {
       try {
@@ -116,8 +174,6 @@ export default function FriendsPage() {
           token: token || "",
         };
 
-        // NOTA:
-        // Ajusta estas rutas a como las tengas en tu backend.
         const [friendsRes, requestsRes, suggestionsRes] = await Promise.all([
           fetch("https://harol-lovers.up.railway.app/friends", {
             method: "GET",
@@ -133,15 +189,10 @@ export default function FriendsPage() {
           }),
         ]);
 
-        if (!friendsRes.ok && friendsRes.status !== 404) {
-          throw new Error("Error al obtener amigos");
-        }
-        if (!requestsRes.ok && requestsRes.status !== 404) {
-          throw new Error("Error al obtener solicitudes");
-        }
-        if (!suggestionsRes.ok && suggestionsRes.status !== 404) {
-          throw new Error("Error al obtener sugerencias");
-        }
+        // Manejo de errores silencioso para cargar lo que se pueda
+        if (!friendsRes.ok && friendsRes.status !== 404) console.warn("Error friends");
+        if (!requestsRes.ok && requestsRes.status !== 404) console.warn("Error requests");
+        if (!suggestionsRes.ok && suggestionsRes.status !== 404) console.warn("Error suggestions");
 
         // Amigos
         if (friendsRes.ok) {
@@ -165,23 +216,25 @@ export default function FriendsPage() {
         // Solicitudes
         if (requestsRes.ok) {
           const reqData: ApiFriendRequest[] = await requestsRes.json();
-          setRequests(
-            reqData.map((r) => ({
-              id: r.id,
-              username: r.username,
-              name: r.nombre ?? r.username,
-              avatar: r.foto_url ?? "",
-              message: r.mensaje,
-              dateLabel: r.fecha
-                ? new Date(r.fecha).toLocaleDateString("es-MX", {
-                    day: "2-digit",
-                    month: "short",
-                  })
-                : undefined,
-            }))
-          );
+          const mappedRequests = reqData.map((r) => ({
+            id: r.id,
+            username: r.username,
+            name: r.nombre ?? r.username,
+            avatar: r.foto_url ?? "",
+            message: r.mensaje,
+            dateLabel: r.fecha
+              ? new Date(r.fecha).toLocaleDateString("es-MX", {
+                  day: "2-digit",
+                  month: "short",
+                })
+              : undefined,
+          }));
+
+          // AQUÍ AGREGAMOS LA SOLICITUD ESTÁTICA JUNTO CON LAS REALES
+          setRequests([mockRequest, ...mappedRequests]);
         } else {
-          setRequests([]);
+          // Si falla la API, mostramos al menos la estática
+          setRequests([mockRequest]);
         }
 
         // Sugerencias
@@ -206,14 +259,15 @@ export default function FriendsPage() {
         setErrorMsg(null);
       } catch (error) {
         console.error("Error cargando datos de amigos:", error);
-        setErrorMsg("No se pudo cargar la información de amigos.");
+        // Incluso si hay error global, mostramos la estática para que veas el diseño
+        setRequests([mockRequest]);
       } finally {
         setLoading(false);
       }
     };
 
     fetchFriendsData();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const totalFriends = friends.length;
   const totalRequests = requests.length;
@@ -228,7 +282,7 @@ export default function FriendsPage() {
     );
   }
 
-  if (errorMsg) {
+  if (errorMsg && requests.length === 0) {
     return (
       <div className="mx-auto flex h-full w-full max-w-xl flex-col items-center justify-center gap-6 px-4 py-12">
         <div className="flex flex-col items-center gap-2 text-center">
@@ -367,7 +421,7 @@ export default function FriendsPage() {
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {requests.map((req) => (
-                <FriendRequestCard key={req.id} request={req} />
+                <FriendRequestCard key={req.id} request={req} onRespond={handleRespond} />
               ))}
             </div>
           )}
@@ -508,15 +562,34 @@ function FriendCard({ friend }: { friend: Friend }) {
   );
 }
 
-function FriendRequestCard({ request }: { request: FriendRequest }) {
+function FriendRequestCard({
+  request,
+  onRespond,
+}: {
+  request: FriendRequest;
+  onRespond: (id: number, state: number) => Promise<void>;
+}) {
+  const [loading, setLoading] = useState(false);
+
+  const handleAction = async (state: number) => {
+    setLoading(true);
+    
+    await onRespond(Number(request.id), state);
+    
+    setLoading(false);
+  };
+
   return (
     <Card className="overflow-hidden transition-all hover:shadow-md">
       <CardContent className="p-4">
         <div className="flex gap-3">
+          {/* Avatar */}
           <Avatar className="h-10 w-10">
             <AvatarImage src={request.avatar} alt={request.name} />
             <AvatarFallback>{getInitials(request.name)}</AvatarFallback>
           </Avatar>
+
+          {/* Información del usuario */}
           <div className="flex-1 space-y-1">
             <div className="flex justify-between">
               <h4 className="font-medium text-sm">{request.name}</h4>
@@ -535,18 +608,35 @@ function FriendRequestCard({ request }: { request: FriendRequest }) {
           </div>
         </div>
       </CardContent>
+
+      {/* Botones de Acción (Aceptar / Rechazar) */}
       <div className="grid grid-cols-2 gap-px bg-border border-t">
         <Button
           variant="ghost"
-          className="rounded-none bg-card hover:bg-primary/5 hover:text-primary h-10 text-xs font-medium"
+          className="rounded-none bg-card hover:bg-primary/5 hover:text-primary h-10 text-xs font-medium disabled:opacity-50"
+          onClick={() => handleAction(FriendRequestState.FRIEND)} // Envía 1 (Aceptar)
+          disabled={loading}
         >
-          <UserCheck className="mr-2 h-3.5 w-3.5" /> Aceptar
+          {loading ? (
+            <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <UserCheck className="mr-2 h-3.5 w-3.5" />
+          )}
+          Aceptar
         </Button>
+
         <Button
           variant="ghost"
-          className="rounded-none bg-card hover:bg-destructive/5 hover:text-destructive h-10 text-xs font-medium"
+          className="rounded-none bg-card hover:bg-destructive/5 hover:text-destructive h-10 text-xs font-medium disabled:opacity-50"
+          onClick={() => handleAction(FriendRequestState.REJECTED)} // Envía 2 (Rechazar)
+          disabled={loading}
         >
-          <UserX className="mr-2 h-3.5 w-3.5" /> Rechazar
+          {loading ? (
+            <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <UserX className="mr-2 h-3.5 w-3.5" />
+          )}
+          Rechazar
         </Button>
       </div>
     </Card>

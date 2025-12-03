@@ -2,20 +2,38 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { SUGGESTIONS } from "@/lib/constants/mock";
-
-import Estrellas from "@/components/dashboard-components/estrellas";
 import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import {
+  MapPin,
+  Calendar,
+  Search,
+  Filter,
+  MoreVertical,
+  Heart,
+  Share2,
+  Star,
+  Map as MapIcon,
+  Compass,
+  ArrowRight,
+} from "lucide-react";
+
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
+  type CarouselApi,
 } from "@/components/ui/carousel";
 import {
   Select,
@@ -24,9 +42,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 
-
-// Datos mejorados
+// --- MOCK DATA (Mantenemos tus datos) ---
 const publicaciones = [
   {
     id: 1,
@@ -34,759 +54,513 @@ const publicaciones = [
     calificacion: 4.5,
     usuario: {
       nombre: "Carlos Rodríguez",
-      fotoPerfil: "https://st5.depositphotos.com/18273866/65276/i/950/depositphotos_652763588-stock-photo-one-man-young-adult-caucasian.jpg",
+      fotoPerfil:
+        "https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&w=100&q=80",
     },
+    descripcion:
+      "Desayuno en el Café de Tacuba, el aroma del café recién hecho es increíble. Un recorrido por la historia viva de la ciudad.",
+    ubicacion: "CDMX",
+    dias: 4,
+    lugares: 8,
     itinerario: [
       {
-        dia: 1,
         url: "https://cloudfront-us-east-1.images.arcpublishing.com/elfinanciero/JU4F6HNZGNHE5FKEJ55JESYTJQ.jpg",
-        descripcion: "Desayuno en el Café de Tacuba, el aroma del café recién hecho es increíble.",
-        ubicacion: "Café de Tacuba, Centro Histórico",
-        tags: ["restaurante"],
-        horario: "9:00 AM"
       },
       {
-        dia: 2,
         url: "https://godinchilango.mx/wp-content/uploads/2024/12/museo-palacio-bellas-artes-murales-arte-centro-historico-ciudad-mexico-cdmx_1.jpg",
-        descripcion: "Recorriendo el Palacio de Bellas Artes. La arquitectura es impresionante.",
-        ubicacion: "Palacio de Bellas Artes, Centro",
-        tags: ["museo"],
-        horario: "11:30 AM"
       },
       {
-        dia: 3,
         url: "https://media.istockphoto.com/id/1190793837/es/foto/mexico-city-centro-historico-bellas-artes-sunset-alameda-central.jpg?s=612x612&w=0&k=20&c=g99rVHO_YOl5m_UPlfOy28TkizjzUShbJjVaRmVVg30=",
-        descripcion: "Paseo por la Alameda Central al atardecer. El ambiente es mágico.",
-        ubicacion: "Alameda Central, CDMX",
-        tags: ["parque"],
-        horario: "5:00 PM"
-      },
-      {
-        dia: 4,
-        url: "https://sic.gob.mx/imagenes_cache/museo_476_g_73330.png",
-        descripcion: "Visita al Templo Mayor para conocer la historia azteca.",
-        ubicacion: "Templo Mayor, Centro Histórico",
-        tags: ["museo"],
-        horario: "10:00 AM"
       },
     ],
+    tags: ["Cultura", "Historia", "Comida"],
   },
   {
     id: 2,
     titulo: "Tour Gastronómico por la Roma-Condesa",
-    calificacion: 2.1,
+    calificacion: 4.8,
     usuario: {
       nombre: "Ana Martínez",
-      fotoPerfil: "https://b2472105.smushcdn.com/2472105/wp-content/uploads/2023/09/Poses-Perfil-Profesional-Mujeres-ago.-10-2023-1-819x1024.jpg?lossy=1&strip=1&webp=1",
+      fotoPerfil:
+        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80",
     },
+    descripcion:
+      "Explorando los sabores únicos de la ciudad, desde tacos callejeros hasta alta cocina. ¡Imperdible!",
+    ubicacion: "CDMX",
+    dias: 1,
+    lugares: 5,
     itinerario: [
       {
-        dia: 1,
         url: "https://i0.wp.com/foodandpleasure.com/wp-content/uploads/2021/03/brunch-condesa-lardomexico.jpg?resize=600%2C749&ssl=1",
-        descripcion: "Brunch en la Condesa, el ambiente bohemio es único.",
-        ubicacion: "Café Condesa, Roma-Condesa",
-        tags: ["restaurante"],
-        horario: "11:00 AM"
       },
       {
-        dia: 1,
         url: "https://mexiconewsdaily.com/wp-content/uploads/2025/03/parque-mexico-b02.jpg",
-        descripcion: "Caminata por el Parque México, perfecto para un día soleado.",
-        ubicacion: "Parque México, Condesa",
-        tags: ["parque"],
-        horario: "2:00 PM"
-      },
-      {
-        dia: 1,
-        url: "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/28/af/aa/5e/la-terraza-de-nuestro.jpg",
-        descripcion: "Cena en un restaurante local de la zona, la comida es excepcional.",
-        ubicacion: "Zona Rosa, CDMX",
-        tags: ["restaurante"],
-        horario: "8:00 PM"
       },
     ],
+    tags: ["Gastronomía", "Lifestyle", "Pareja"],
   },
   {
     id: 3,
     titulo: "Aventura en las Pirámides de Teotihuacán",
-    calificacion: 4.8,
+    calificacion: 4.9,
     usuario: {
-      nombre: "Miguel Ángel Torres",
-      fotoPerfil: "https://plus.unsplash.com/premium_photo-1689539137236-b68e436248de?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OXx8cGVyc29uYXxlbnwwfHwwfHx8MA%3D%3D&fm=jpg&q=60&w=3000",
+      nombre: "Miguel Ángel",
+      fotoPerfil:
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80",
     },
+    descripcion:
+      "Subida a la Pirámide del Sol al amanecer. Las vistas valen cada escalón. Energía pura.",
+    ubicacion: "Edomex",
+    dias: 1,
+    lugares: 3,
     itinerario: [
       {
-        dia: 1,
-        url: "https://www.mexicodesconocido.com.mx/wp-content/uploads/2024/04/piramides-teotihuacan-1.jpg",
-        descripcion: "Subida a la Pirámide del Sol al amanecer. Las vistas valen cada escalón.",
-        ubicacion: "Zona Arqueológica de Teotihuacán, Edomex",
-        tags: ["arqueología"],
-        horario: "6:00 AM"
+        url: "https://images.unsplash.com/photo-1706536610031-56776c5bb10a?q=80&w=2670&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       },
       {
-        dia: 1,
         url: "https://cdn2.cocinadelirante.com/sites/default/files/images/2023/11/receta-de-maguey-de-teotihuacan.jpg",
-        descripcion: "Degustación de pulque artesanal en el mercado local.",
-        ubicacion: "Mercado de San Juan, Teotihuacán",
-        tags: ["gastronomía"],
-        horario: "1:00 PM"
-      },
-      {
-        dia: 1,
-        url: "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/15/33/f7/3e/photo0jpg.jpg",
-        descripcion: "Visita al Museo de la Cultura Teotihuacana para entender mejor esta civilización.",
-        ubicacion: "Museo de Sitio, Teotihuacán",
-        tags: ["museo"],
-        horario: "4:00 PM"
       },
     ],
+    tags: ["Arqueología", "Aventura", "Senderismo"],
   },
   {
     id: 4,
-    titulo: "Fin de Semana Mágico en Huasca de Ocampo",
-    calificacion: 4.9,
+    titulo: "Fin de Semana Mágico en Huasca",
+    calificacion: 4.7,
     usuario: {
       nombre: "Laura Mendoza",
-      fotoPerfil: "https://i.pinimg.com/236x/9e/1b/7c/9e1b7c47a76007963af0f968a309def7.jpg",
+      fotoPerfil:
+        "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=100&q=80",
     },
+    descripcion:
+      "Pueblo Mágico con encanto. Los Prismas Basálticos son una maravilla natural que te dejará sin palabras.",
+    ubicacion: "Hidalgo",
+    dias: 2,
+    lugares: 4,
     itinerario: [
       {
-        dia: 1,
-        url: "https://www.mexicodesconocido.com.mx/wp-content/uploads/2019/09/prismas-basaticos-huasca-de-ocampo-hidalgo-1.jpg",
-        descripcion: "Los Prismas Basálticos son una maravilla natural que te dejará sin palabras.",
-        ubicacion: "Prismas Basálticos, Huasca de Ocampo",
-        tags: ["naturaleza"],
-        horario: "10:00 AM"
+        url: "https://images.unsplash.com/photo-1565746088991-b45229ba4981?q=80&w=1289&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       },
       {
-        dia: 1,
-        url: "https://www.eluniversal.com.mx/resizer/5zN2dZ1r4cL8J1vZkC6G3q8Q9_c=/1100x666/cloudfront-us-east-1.images.arcpublishing.com/eluniversal/5SXBKJ5Y2RCJXKQ6A5JXWJ5H3I.jpg",
-        descripcion: "Comida típica en una hacienda del siglo XVI con vistas increíbles.",
-        ubicacion: "Hacienda Santa María Regla, Hidalgo",
-        tags: ["gastronomía"],
-        horario: "2:00 PM"
-      },
-      {
-        dia: 2,
-        url: "https://www.mexicodesconocido.com.mx/wp-content/uploads/2019/09/pueblo-magico-huasca-de-ocampo-hidalgo-1.jpg",
-        descripcion: "Recorrido por las calles empedradas de este Pueblo Mágico lleno de encanto.",
-        ubicacion: "Centro de Huasca de Ocampo, Hidalgo",
-        tags: ["pueblo mágico"],
-        horario: "11:00 AM"
+        url: "https://images.unsplash.com/photo-1565746088991-b45229ba4981?q=80&w=1289&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       },
     ],
+    tags: ["Naturaleza", "Pueblo Mágico", "Familia"],
   },
   {
     id: 5,
-    titulo: "Ruta del Vino y Queso en Querétaro",
+    titulo: "Ruta del Vino y Queso",
     calificacion: 4.6,
     usuario: {
       nombre: "Roberto Silva",
-      fotoPerfil: "https://plus.unsplash.com/premium_photo-1679769911227-429b4e1b184b?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8cmV0cmF0byUyMGRlJTIwYW5jaWFub3xlbnwwfHwwfHx8MA%3D%3D&fm=jpg&q=60&w=3000",
+      fotoPerfil:
+        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=80",
     },
+    descripcion:
+      "Degustación en viñedos boutique y queserías artesanales. Un deleite para el paladar en Querétaro.",
+    ubicacion: "Querétaro",
+    dias: 2,
+    lugares: 6,
     itinerario: [
       {
-        dia: 1,
-        url: "https://www.queretaro.travel/wp-content/uploads/2023/05/vinicola-la-redonda.jpg",
-        descripcion: "Tour y degustación en una vinícola boutique. Los vinos son excelentes.",
-        ubicacion: "Viñedo Freixenet, Ezequiel Montes",
-        tags: ["gastronomía"],
-        horario: "11:00 AM"
+        url: "https://images.unsplash.com/photo-1537640538966-79f369143f8f?q=80&w=2673&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       },
       {
-        dia: 1,
-        url: "https://mediaim.expedia.com/destination/1/aa99b0b6c8c4f6a0e9b3c9c9c9c9c9c9.jpg",
-        descripcion: "Visita a una quesería artesanal para probar los famosos quesos de la región.",
-        ubicacion: "Quesería artesanal, Tequisquiapan",
-        tags: ["gastronomía"],
-        horario: "3:00 PM"
-      },
-      {
-        dia: 2,
-        url: "https://i.pinimg.com/236x/9e/1b/7c/9e1b7c47a76007963af0f968a309def7.jpg",
-        descripcion: "Ascenso a la Peña de Bernal, el tercer monolito más grande del mundo.",
-        ubicacion: "Peña de Bernal, Querétaro",
-        tags: ["naturaleza"],
-        horario: "9:00 AM"
+        url: "https://images.unsplash.com/photo-1537640538966-79f369143f8f?q=80&w=2673&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       },
     ],
+    tags: ["Vino", "Gastronomía", "Relax"],
   },
   {
     id: 7,
-    titulo: "Explorando Taxco: La Ciudad de la Plata",
-    calificacion: 4.7,
+    titulo: "Escapada Romántica a Tepoztlán",
+    calificacion: 4.8,
     usuario: {
       nombre: "Diego Herrera",
-      fotoPerfil: "https://www.lavanguardia.com/files/content_image_mobile_filter/uploads/2018/07/25/5fa43c9755611.jpeg",
+      fotoPerfil:
+        "https://images.unsplash.com/photo-1527980965255-d3b416303d12?auto=format&fit=crop&w=100&q=80",
     },
+    descripcion:
+      "Calles empedradas, plata y vistas increíbles desde el Cristo Monumental.",
+    ubicacion: "Morelos",
+    dias: 2,
+    lugares: 5,
     itinerario: [
       {
-        dia: 1,
-        url: "https://www.mexicodesconocido.com.mx/wp-content/uploads/2019/09/taxco-guerrero-1.jpg",
-        descripcion: "Recorrido por las calles empinadas y pintorescas del centro histórico.",
-        ubicacion: "Centro Histórico, Taxco",
-        tags: ["arquitectura"],
-        horario: "9:00 AM"
+        url: "https://images.unsplash.com/photo-1674216436927-8d5475f83eeb?q=80&w=2000&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       },
       {
-        dia: 1,
-        url: "https://www.mexicodesconocido.com.mx/wp-content/uploads/2019/09/iglesia-santa-prisca-taxco-1.jpg",
-        descripcion: "Visita a la imponente Iglesia de Santa Prisca, joya del barroco mexicano.",
-        ubicacion: "Santa Prisca, Taxco",
-        tags: ["iglesia"],
-        horario: "11:00 AM"
-      },
-      {
-        dia: 1,
-        url: "https://cdn2.cocinadelirante.com/sites/default/files/images/2023/11/pozole-taxqueno.jpg",
-        descripcion: "Comida tradicional en un restaurante familiar con pozole excepcional.",
-        ubicacion: "Mercado de Taxco, Guerrero",
-        tags: ["gastronomía"],
-        horario: "2:00 PM"
-      },
-      {
-        dia: 2,
-        url: "https://www.mexicodesconocido.com.mx/wp-content/uploads/2019/09/plateria-taxco-1.jpg",
-        descripcion: "Compras de artesanías en plata en los talleres locales de platería.",
-        ubicacion: "Talleres de Platería, Taxco",
-        tags: ["artesanías"],
-        horario: "10:00 AM"
+        url: "https://images.unsplash.com/photo-1674216436927-8d5475f83eeb?q=80&w=2000&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       },
     ],
-  }
+    tags: ["Pueblo Mágico", "Arquitectura", "Fotos"],
+  },
 ];
 
-// Componente para cada publicación individual
-function PublicacionItem({ publicacion }) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [emblaApi, setEmblaApi] = useState(null);
+// --- COMPONENTE DE TARJETA MEJORADO ---
+function PublicacionCard({ publicacion }: { publicacion: any }) {
+  const [api, setApi] = useState<CarouselApi>();
+  const [current, setCurrent] = useState(0);
+  const [count, setCount] = useState(0);
 
-  // Obtener información del día actual basado en el slide
-  const actividadActual = publicacion.itinerario[currentIndex];
-  const diaActual = actividadActual?.dia || 1;
-  
-  // Obtener el rango de días del itinerario completo
-  const diasUnicos = [...new Set(publicacion.itinerario.map(item => item.dia))];
-  const totalDias = Math.max(...diasUnicos);
-
-  // Detecta el cambio de slide
   useEffect(() => {
-    if (!emblaApi) return;
+    if (!api) {
+      return;
+    }
+    setCount(api.scrollSnapList().length);
+    setCurrent(api.selectedScrollSnap() + 1);
 
-    const handleSelect = () => {
-      setCurrentIndex(emblaApi.selectedScrollSnap());
-    };
+    api.on("select", () => {
+      setCurrent(api.selectedScrollSnap() + 1);
+    });
+  }, [api]);
 
-    emblaApi.on("select", handleSelect);
-    return () => emblaApi.off("select", handleSelect);
-  }, [emblaApi]);
-
-return (
-  <div className="flex flex-col md:flex-row gap-6 mb-8 p-4 border rounded-lg shadow-sm">
-    {/* Carrusel de fotos */}
-    <div className="md:w-1/2 relative">
-      <Carousel
-        opts={{
-          align: "start",
-          loop: true,
-        }}
-        setApi={setEmblaApi}
-        className="w-full"
-      >
-        <CarouselContent>
-          {publicacion.itinerario.map((foto, index) => (
-            <CarouselItem key={index}>
-              <div className="p-1">
-                <Card className="overflow-hidden">
-                  <CardContent className="flex aspect-square items-center justify-center p-0">
-                    <img
-                      src={foto.url}
-                      alt={`Foto ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </CardContent>
-                </Card>
-              </div>
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-        <CarouselPrevious className="absolute left-2 top-1/2 transform -translate-y-1/2 z-10 bg-white/80 hover:bg-white" />
-        <CarouselNext className="absolute right-2 top-1/2 transform -translate-y-1/2 z-10 bg-white/80 hover:bg-white" />
-      </Carousel>
-      
-    </div>
-    
-    {/* Información de la publicación */}
-    <div className="md:w-1/2 space-y-4 relative">
-      
-      {/* Botón de reporte */}
-      <button 
-        className="absolute top-0 right-0 p-2 hover:text-red-500 transition-colors"
-        aria-label="Reportar publicación"
-        onClick={() => console.log("Reportar publicación:", publicacion.id)}
-      >
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          className="h-6 w-6" 
-          fill="none" 
-          viewBox="0 0 24 24" 
-          stroke="currentColor"
-        >
-          <path 
-            strokeLinecap="round" 
-            strokeLinejoin="round" 
-            strokeWidth={2} 
-            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" 
-          />
-        </svg>
-      </button>
-
-      {/* Header del usuario */}
-      <div className="flex items-center gap-3">
-        <img
-          src={publicacion.usuario.fotoPerfil}
-          alt="Foto de perfil"
-          className="w-10 h-10 rounded-full object-cover border border-gray-200"
-        />
-        <div>
-          <h3 className="text-base font-semibold text-xl">{publicacion.usuario.nombre}</h3>
-        </div>
-      </div>
-
-      {/* Título del itinerario */}
-      <h2 className="text-2xl font-bold">{publicacion.titulo}</h2>
-
-      {/* Contenedor con altura fija para evitar movimiento */}
-      <div className="min-h-[180px]">
-        {/* Información de la actividad actual */}
-        {actividadActual && (
-          <div className="space-y-4">
-            {/* Fila 1: Día y Horario */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
-                <span className="text-sm">Día {diaActual}</span>
-              </div>
-              <span className="text-sm">
-                {actividadActual.horario}
-              </span>
-            </div>
-
-            {/* Fila 2: Ubicación y Tags */}
-            <div className="flex flex-col sm:flex-row gap-4 text-sm">
-              <div className="flex items-center gap-2 flex-1">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
-                <span className="truncate text-sm">{actividadActual.ubicacion}</span>
-              </div>
-
-              {/* Tags */}
-              <div className="flex flex-wrap gap-2">
-                {actividadActual.tags.map((tag, index) => (
-                  <span 
-                    key={index} 
-                    className="px-2 py-1 bg-gray-100 text-gray-700 text-sm rounded-full border border-gray-200"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Descripción - Texto más grande pero no como título */}
-            <p className="text-base leading-relaxed text-xl">
-              {actividadActual.descripcion}
-            </p>
+  return (
+    <Card className="group overflow-hidden border-border/60 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300 flex flex-col h-full bg-card">
+      {/* HEADER: Usuario */}
+      <CardHeader className="p-4 flex flex-row items-center justify-between space-y-0 pb-3">
+        <div className="flex items-center gap-3">
+          <Avatar className="h-9 w-9 border cursor-pointer hover:opacity-80 transition-opacity">
+            <AvatarImage
+              src={publicacion.usuario.fotoPerfil}
+              alt={publicacion.usuario.nombre}
+            />
+            <AvatarFallback>{publicacion.usuario.nombre[0]}</AvatarFallback>
+          </Avatar>
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold leading-none cursor-pointer hover:underline">
+              {publicacion.usuario.nombre}
+            </span>
+            <span className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+              <MapPin className="h-3 w-3" /> {publicacion.ubicacion}
+            </span>
           </div>
-        )}
-      </div>
-
-      {/* Calificación - Fijo en la parte inferior */}
-      <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">Calificar:</span>
-          <Estrellas
-            initial={0}
-            onRate={(valor) => console.log("Nueva calificación:", valor)}
-            size="sm"
-          />
-         <span className="text-2sm">{publicacion.calificacion}</span>
         </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-muted-foreground"
+        >
+          <MoreVertical className="h-4 w-4" />
+        </Button>
+      </CardHeader>
+
+      {/* CARRUSEL DE IMÁGENES */}
+      <div className="relative aspect-[4/3] bg-muted overflow-hidden">
+        <Carousel setApi={setApi} className="w-full h-full">
+          <CarouselContent>
+            {publicacion.itinerario.map((foto: any, index: number) => (
+              <CarouselItem key={index}>
+                <div className="relative w-full h-full aspect-[4/3]">
+                  <img
+                    src={foto.url}
+                    alt={`${publicacion.titulo} - foto ${index + 1}`}
+                    className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                  {/* Gradiente inferior para texto sobre imagen si fuera necesario */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+
+          {/* Controles de Carrusel (Solo visibles en hover) */}
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <CarouselPrevious className="left-2 bg-black/30 hover:bg-black/50 border-0 text-white backdrop-blur-sm h-8 w-8" />
+            <CarouselNext className="right-2 bg-black/30 hover:bg-black/50 border-0 text-white backdrop-blur-sm h-8 w-8" />
+          </div>
+
+          {/* Indicador de Páginas */}
+          <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-md text-white text-[10px] font-medium px-2 py-0.5 rounded-full pointer-events-none">
+            {current}/{count}
+          </div>
+        </Carousel>
       </div>
-    </div>
-  </div>
-);
-}
 
-// Utilidades mejoradas
-function Section({
-  children,
-  className = "",
-  ...rest
-}: React.PropsWithChildren<React.HTMLAttributes<HTMLElement>>) {
-  return (
-    <section {...rest} className={`max-w-7xl mx-auto px-4 md:px-6 ${className}`}>
-      {children}
-    </section>
-  );
-}
+      {/* CONTENIDO */}
+      <CardContent className="p-4 flex-1 flex flex-col gap-3">
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="font-bold text-lg leading-tight line-clamp-1 group-hover:text-primary transition-colors cursor-pointer">
+            {publicacion.titulo}
+          </h3>
+          <div className="flex items-center gap-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded text-xs font-bold shrink-0">
+            <Star className="h-3 w-3 fill-current" />
+            {publicacion.calificacion}
+          </div>
+        </div>
 
-const btn = {
-  primary:
-    "inline-flex items-center justify-center h-11 px-6 rounded-lg bg-primary text-white hover:bg-blue-700 transition-all duration-200 font-medium",
-  ghost:
-    "inline-flex items-center justify-center h-11 px-6 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition-all duration-200 font-medium"
-};
+        <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+          {publicacion.descripcion}
+        </p>
 
-// Tarjeta de sugerencia mejorada
-function PlaceCard({
-  name,
-  city,
-  tag,
-  img,
-}: {
-  name: string;
-  city: string;
-  tag: string;
-  img: string;
-}) {
-  return (
-    <article className="group snap-start min-w-[260px] rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300">
-      <div className="relative h-[160px] overflow-hidden">
-        <img 
-          src={img} 
-          alt={name} 
-          className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300" 
-        />
-        <div className="absolute top-3 left-3">
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/90 backdrop-blur-sm text-gray-700">
-            {tag}
+        {/* Tags */}
+        <div className="flex flex-wrap gap-1.5 pt-1">
+          {publicacion.tags.slice(0, 3).map((tag: string) => (
+            <Badge
+              key={tag}
+              variant="secondary"
+              className="text-[10px] px-2 h-5 font-medium bg-muted/50 hover:bg-muted"
+            >
+              {tag}
+            </Badge>
+          ))}
+        </div>
+      </CardContent>
+
+      <Separator className="bg-border/50" />
+
+      {/* FOOTER */}
+      <CardFooter className="p-3 bg-muted/5 flex items-center justify-between">
+        <div className="flex items-center gap-4 text-xs text-muted-foreground font-medium">
+          <span className="flex items-center gap-1.5">
+            <Calendar className="h-3.5 w-3.5" /> {publicacion.dias} días
+          </span>
+          <span className="flex items-center gap-1.5">
+            <MapIcon className="h-3.5 w-3.5" /> {publicacion.lugares} lugares
           </span>
         </div>
-      </div>
-      <div className="p-4">
-        <h4 className="font-semibold text-gray-900 line-clamp-2 mb-1">{name}</h4>
-        <p className="text-sm text-gray-600 mb-3">
-          {city}
-        </p>
-        <Link
-          href="/viajero/itinerarios/crear"
-          className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-lg py-2.5 hover:bg-gray-50 text-sm font-medium transition-colors"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Añadir al itinerario
-        </Link>
-      </div>
-    </article>
+
+        <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-full"
+          >
+            <Heart className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-full"
+          >
+            <Share2 className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            className="h-8 text-xs px-3 rounded-full ml-1"
+            asChild
+          >
+            <Link href={`/viajero/itinerarios/ver`}>Ver Plan</Link>
+          </Button>
+        </div>
+      </CardFooter>
+    </Card>
   );
 }
 
-// Componente de búsqueda mejorado
-function SearchFilters({ query, estadoSeleccionado, onQueryChange, onEstadoChange }) {
-  // Tags más comunes de las publicaciones
-  const commonTags = [
-    "restaurante", "museo", "parque", "historia", "gastronomía", 
-    "naturaleza", "cultura", "aventura", "playa", "arquitectura"
+// --- FILTROS (STICKY HEADER) ---
+function FilterBar({
+  query,
+  onQueryChange,
+  activeTag,
+  onTagChange,
+  activeState,
+  onStateChange,
+}: any) {
+  const TAGS = [
+    "Todos",
+    "Gastronomía",
+    "Cultura",
+    "Naturaleza",
+    "Aventura",
+    "Pueblo Mágico",
+    "Pareja",
+    "Familia",
   ];
 
   return (
-    <div className="rounded-xl border border-gray-200 p-6 mb-8">
-      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-end justify-between">
-        <div className="flex-1 min-w-0">
-          <label htmlFor="search" className="block text-sm font-medium mb-2">
-            Buscar itinerarios
-          </label>
-          <div className="relative">
-            <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+    <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border/60 pb-2">
+      <div className="max-w-7xl mx-auto px-4 py-4 space-y-4">
+        {/* Fila Superior: Búsqueda y Filtros Principales */}
+        <div className="flex flex-col md:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              id="search"
-              placeholder="Buscar por destino, usuario o actividad..."
+              placeholder="¿A dónde quieres ir? Ej. Tacos en CDMX..."
+              className="pl-9 bg-muted/40 border-border/60 focus-visible:bg-background transition-all h-10 rounded-xl"
               value={query}
               onChange={onQueryChange}
-              className="pl-10 w-full"
             />
           </div>
-        </div>
-        
-        <div className="w-full lg:w-auto">
-          <label htmlFor="estado" className="block text-sm font-medium text-gray-700 mb-2">
-            Filtrar por estado
-          </label>
-          <Select value={estadoSeleccionado} onValueChange={onEstadoChange}>
-            <SelectTrigger className="w-full lg:w-[200px]">
-              <SelectValue placeholder="Selecciona un estado" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos los estados</SelectItem>
-              <SelectItem value="CDMX">Ciudad de México</SelectItem>
-              <SelectItem value="EDOMEX">Estado de México</SelectItem>
-              <SelectItem value="Hidalgo">Hidalgo</SelectItem>
-              <SelectItem value="Guerrero">Guerrero</SelectItem>
-              <SelectItem value="Queretaro">Querétaro</SelectItem>
-            </SelectContent>
-          </Select>
+
+          <div className="flex gap-2">
+            <Select value={activeState} onValueChange={onStateChange}>
+              <SelectTrigger className="w-[140px] md:w-[180px] h-10 rounded-xl bg-muted/40 border-border/60">
+                <div className="flex items-center gap-2 truncate">
+                  <MapPin className="h-3.5 w-3.5 opacity-70" />
+                  <SelectValue placeholder="Estado" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todo México</SelectItem>
+                <SelectItem value="CDMX">Ciudad de México</SelectItem>
+                <SelectItem value="EDOMEX">Estado de México</SelectItem>
+                <SelectItem value="Hidalgo">Hidalgo</SelectItem>
+                <SelectItem value="Querétaro">Querétaro</SelectItem>
+                <SelectItem value="Morelos"> Morelos</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-10 w-10 rounded-xl border-border/60 bg-muted/40"
+              title="Más filtros"
+            >
+              <Filter className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
-        <div className="w-full lg:w-auto pt-2 lg:pt-0">
-          <Button 
-            type="button" 
-            className="w-full lg:w-auto bg-primary hover:bg-secondary"
-            onClick={() => {
-              onQueryChange({ target: { value: '' } });
-              onEstadoChange('todos');
-            }}
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            Reiniciar
-          </Button>
-        </div>
-      </div>
-      
-      {/* Filtros rápidos con tags reales */}
-      <div className="flex flex-wrap gap-2 mt-4">
-        {commonTags.map(tag => (
-          <button
-            key={tag}
-            onClick={() => onQueryChange({ target: { value: tag } })}
-            className="px-3 py-1.5 rounded-md bg-gray-100 hover:bg-gray-200 transition-colors text-sm font-medium text-gray-700 capitalize"
-          >
-            {tag}
-          </button>
-        ))}
+        {/* Fila Inferior: Tags (Scrollable) */}
+        <ScrollArea className="w-full whitespace-nowrap">
+          <div className="flex gap-2 pb-1">
+            {TAGS.map((tag) => (
+              <button
+                key={tag}
+                onClick={() => onTagChange(tag === "Todos" ? "" : tag)}
+                className={cn(
+                  "px-4 py-1.5 rounded-full text-xs font-medium transition-all border",
+                  activeTag === tag || (tag === "Todos" && activeTag === "")
+                    ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                    : "bg-background border-border hover:border-primary/50 hover:bg-muted text-muted-foreground"
+                )}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+          <ScrollBar orientation="horizontal" className="invisible" />
+        </ScrollArea>
       </div>
     </div>
   );
 }
 
+// --- PÁGINA PRINCIPAL ---
 export default function ViajeroLanding() {
   const [query, setQuery] = useState("");
   const [estadoSeleccionado, setEstadoSeleccionado] = useState("todos");
+  const [tagSeleccionado, setTagSeleccionado] = useState("");
 
-  const handleSearchChange = (e) => {
-    setQuery(e.target.value);
-  };
+  // Lógica de filtrado
+  const publicacionesFiltradas = publicaciones.filter((pub) => {
+    const searchLower = query.toLowerCase();
 
-  const handleEstadoChange = (value) => {
-    setEstadoSeleccionado(value);
-  };
+    // 1. Texto
+    const matchText =
+      pub.titulo.toLowerCase().includes(searchLower) ||
+      pub.descripcion.toLowerCase().includes(searchLower) ||
+      pub.usuario.nombre.toLowerCase().includes(searchLower);
 
-  // Añadir estado a las publicaciones existentes
-  const publicacionesConEstado = publicaciones.map(pub => ({
-    ...pub,
-    estado: pub.itinerario[0]?.ubicacion?.includes('CDMX') ? 'CDMX' :
-            pub.itinerario[0]?.ubicacion?.includes('Edomex') ? 'EDOMEX' :
-            pub.itinerario[0]?.ubicacion?.includes('Hidalgo') ? 'Hidalgo' :
-            pub.itinerario[0]?.ubicacion?.includes('Guerrero') ? 'Guerrero' :
-            pub.itinerario[0]?.ubicacion?.includes('Querétaro') ? 'Queretaro' : 'CDMX'
-  }));
-
-  const publicacionesFiltradas = publicacionesConEstado.filter((publicacion) => {
-    const coincideTexto =
-      publicacion.usuario.nombre.toLowerCase().includes(query.toLowerCase()) ||
-      publicacion.titulo.toLowerCase().includes(query.toLowerCase()) ||
-      publicacion.itinerario.some((item) =>
-        item.ubicacion.toLowerCase().includes(query.toLowerCase()) ||
-        item.descripcion.toLowerCase().includes(query.toLowerCase()) ||
-        item.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase()))
-      );
-
-    const coincideEstado =
+    // 2. Estado
+    const matchState =
       estadoSeleccionado === "todos" ||
-      publicacion.estado === estadoSeleccionado;
+      pub.ubicacion.toLowerCase().includes(estadoSeleccionado.toLowerCase());
 
-    return coincideTexto && coincideEstado;
+    // 3. Tag
+    const matchTag =
+      tagSeleccionado === "" ||
+      pub.tags.some((t) => t.toLowerCase() === tagSeleccionado.toLowerCase());
+
+    return matchText && matchState && matchTag;
   });
 
-  const resultadosCount = publicacionesFiltradas.length;
-
   return (
-    <div className="min-h-[calc(100dvh-64px)]">
-      {/* SECCIÓN DE ITINERARIOS MEJORADA */}
-      <Section id="itinerarios">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-8">
-            <h2 className="text-2xl md:text-3xl font-bold mb-2">
-              Descubre
-            </h2>
-            <p className="text-gray-600">
-              Descubre los itinerarios compartidos por viajeros y viajeras como tú.
-            </p>
-          </div>
-          <SearchFilters 
-            query={query}
-            estadoSeleccionado={estadoSeleccionado}
-            onQueryChange={handleSearchChange}
-            onEstadoChange={handleEstadoChange}
-          />
-
-          {/* Contador de resultados */}
-          <div className="flex items-center justify-between mb-6">
-            <p className="text-sm text-gray-600">
-              {resultadosCount} {resultadosCount === 1 ? 'itinerario encontrado' : 'itinerarios encontrados'}
-            </p>
-            {query || estadoSeleccionado !== 'todos' ? (
-              <button
-                onClick={() => {
-                  setQuery('');
-                  setEstadoSeleccionado('todos');
-                }}
-                className="text-sm text-primary hover:text-secondary font-medium"
-              >
-                Limpiar filtros
-              </button>
-            ) : null}
-          </div>
-
-          {/* Grid de publicaciones */}
-          <div className="grid gap-8">
-            {publicacionesFiltradas.length > 0 ? (
-              publicacionesFiltradas.map((p) => (
-                <PublicacionItem key={p.id} publicacion={p} />
-              ))
-            ) : (
-              <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900">No se encontraron itinerarios</h3>
-                <p className="text-gray-600 mb-4 max-w-md mx-auto">
-                  {query || estadoSeleccionado !== 'todos' 
-                    ? "Intenta ajustar tus filtros de búsqueda para ver más resultados."
-                    : "Pronto habrá más itinerarios disponibles."
-                  }
-                </p>
-                {(query || estadoSeleccionado !== 'todos') && (
-                  <Button 
-                    onClick={() => {
-                      setQuery('');
-                      setEstadoSeleccionado('todos');
-                    }}
-                    className={btn.primary}
-                  >
-                    Ver todos los itinerarios
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      </Section>
-
-
-      {/* BLOQUE SOCIAL SIMPLIFICADO */}
-      <Section id="feed" className="py-12">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
-          <div>
-            <h3 className="text-xl md:text-2xl font-bold text-gray-900">
-              De la comunidad
-            </h3>
-          </div>
-          <Link 
-            href="/viajero/itinerarios/nuevo" 
-            className="mt-2 md:mt-0 inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
-          >
-            Publicar mi viaje
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-            </svg>
-          </Link>
-        </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {SUGGESTIONS.slice(0, 3).map((p, i) => (
-            <article
-              key={`feed-${p.id}`}
-              className="rounded-xl border border-gray-200 overflow-hidden bg-white hover:shadow-lg transition-all duration-300"
+    <div className="min-h-screen bg-background">
+      {/* HERO SECTION */}
+      <section className="relative bg-muted/20 border-b border-border/40 pt-10 pb-6 md:pt-16 md:pb-10">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <div className="inline-flex items-center justify-center p-2 bg-background rounded-full shadow-sm border mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <Badge
+              variant="secondary"
+              className="rounded-full px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider mr-2 bg-primary/10 text-primary hover:bg-primary/20"
             >
-              <div className="relative h-[160px] overflow-hidden">
-                <img
-                  src={p.img}
-                  alt={p.name}
-                  className="object-cover w-full h-full hover:scale-105 transition-transform duration-300"
-                />
-                <div className="absolute top-3 left-3">
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-white/90 backdrop-blur-sm text-gray-700 ">
-                    Itinerario
-                  </span>
-                </div>
-              </div>
-              <div className="p-4">
-                <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-                  <span>@{p.id}</span>
-                </div>
-                <h4 className="font-semibold text-gray-900 line-clamp-2 mb-3">{p.name}</h4>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">{p.city}</span>
-                  <div className="flex items-center gap-1 text-sm text-yellow-600 ">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                    {4.2 + i * 0.3}
-                  </div>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      </Section>
-
-      {/* FOOTER CTA SIMPLIFICADO */}
-      <Section className="py-16">
-        <div className="rounded-xl border border-gray-200 p-8 text-center">
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
-            ¿Listo para tu próxima aventura?
-          </h2>
-          <p className="text-gray-600">
-            Empieza a planificar tu viaje perfecto en segundos.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
-            <Link href="/viajero/itinerarios/nuevo" className={btn.primary}>
-              Crear mi itinerario
-            </Link>
-            <Link href="#itinerarios" className={btn.ghost}>
-              Explorar más ideas
-            </Link>
+              Nuevo
+            </Badge>
+            <span className="text-xs font-medium pr-2">
+              Explora itinerarios de la comunidad
+            </span>
           </div>
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-balance mb-4">
+            Descubre tu próxima <span className="text-primary">aventura</span>
+          </h1>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto text-balance leading-relaxed">
+            Inspírate con itinerarios creados por viajeros como tú y planifica
+            el viaje perfecto.
+          </p>
         </div>
-      </Section>
+
+        {/* Elementos decorativos de fondo */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none opacity-40">
+          <div className="absolute top-10 left-10 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-10 right-10 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
+        </div>
+      </section>
+
+      {/* FILTROS STICKY */}
+      <FilterBar
+        query={query}
+        onQueryChange={(e: any) => setQuery(e.target.value)}
+        activeState={estadoSeleccionado}
+        onStateChange={setEstadoSeleccionado}
+        activeTag={tagSeleccionado}
+        onTagChange={setTagSeleccionado}
+      />
+
+      {/* GRID DE RESULTADOS */}
+      <div className="max-w-7xl mx-auto px-4 py-8 pb-20">
+        {/* Header de Resultados */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold flex items-center gap-2">
+            <Compass className="h-5 w-5 text-primary" />
+            Explorar
+          </h2>
+          <span className="text-sm text-muted-foreground">
+            Mostrando <strong>{publicacionesFiltradas.length}</strong>{" "}
+            {publicacionesFiltradas.length === 1 ? "viaje" : "viajes"}
+          </span>
+        </div>
+
+        {publicacionesFiltradas.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {publicacionesFiltradas.map((pub, idx) => (
+              <div
+                key={pub.id}
+                className="animate-in fade-in slide-in-from-bottom-4 duration-700"
+                style={{ animationDelay: `${idx * 100}ms` }}
+              >
+                <PublicacionCard publicacion={pub} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          // EMPTY STATE
+          <div className="flex flex-col items-center justify-center py-24 text-center border-2 border-dashed border-muted rounded-3xl bg-muted/5">
+            <div className="h-20 w-20 bg-muted rounded-full flex items-center justify-center mb-4">
+              <Search className="h-10 w-10 text-muted-foreground/30" />
+            </div>
+            <h3 className="text-xl font-bold text-foreground">
+              No encontramos viajes
+            </h3>
+            <p className="text-muted-foreground max-w-sm mt-2 mb-6">
+              Intenta ajustar tus filtros de búsqueda o prueba con otros
+              términos.
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setQuery("");
+                setEstadoSeleccionado("todos");
+                setTagSeleccionado("");
+              }}
+            >
+              Limpiar filtros
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

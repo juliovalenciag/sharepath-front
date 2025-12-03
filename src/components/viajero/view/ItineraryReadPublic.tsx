@@ -1,73 +1,206 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
-import { Camera, Star, MapPin, Calendar, Tag } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { 
+  Camera, 
+  MapPin, 
+  Calendar, 
+  Plus, 
+  X, 
+  ArrowLeft, 
+  Lock, 
+  Globe, 
+  Info, 
+  CheckCircle2, 
+  AlertCircle, 
+  Loader2,
+  ImagePlus,
+  Eye,
+  GripHorizontal,
+  Maximize2
+} from "lucide-react";
+import { toast } from "sonner";
+import { 
+  DndContext, 
+  closestCenter, 
+  KeyboardSensor, 
+  PointerSensor, 
+  useSensor, 
+  useSensors, 
+  DragOverlay 
+} from "@dnd-kit/core";
+import { 
+  arrayMove, 
+  SortableContext, 
+  sortableKeyboardCoordinates, 
+  useSortable, 
+  rectSortingStrategy 
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 
+// --- TIPOS ---
+interface Lugar {
+  id: string;
+  titulo: string;
+}
+
+interface Dia {
+  dia: number;
+  fecha: string;
+  lugares: Lugar[];
+}
+
+interface Itinerario {
+  id: string;
+  titulo: string;
+  dias: Dia[];
+  resumen: {
+    diasTotales: number;
+    totalLugares: number;
+    categorias: string[];
+  };
+}
+
+interface SortablePhotoProps {
+  id: string;
+  file: File;
+  index: number;
+  onRemove: (index: number) => void;
+  onView: (file: File) => void;
+}
+
+// --- COMPONENTE FOTO ORDENABLE ---
+function SortablePhoto({ id, file, index, onRemove, onView }: SortablePhotoProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : "auto",
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const previewUrl = useMemo(() => URL.createObjectURL(file), [file]);
+
+  return (
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      className="group relative aspect-square rounded-xl overflow-hidden bg-muted border shadow-sm hover:shadow-md transition-all"
+    >
+      <Image 
+        src={previewUrl} 
+        alt="Preview" 
+        fill 
+        className="object-cover" 
+      />
+      
+      {/* Overlay al hacer hover */}
+      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+         <div 
+            className="p-2 bg-white/90 rounded-full cursor-grab active:cursor-grabbing shadow-sm hover:scale-110 transition-transform"
+            {...attributes} 
+            {...listeners}
+         >
+            <GripHorizontal className="h-4 w-4 text-gray-700" />
+         </div>
+      </div>
+
+      {/* Botón Ver */}
+      <button 
+        onClick={(e) => { e.stopPropagation(); onView(file); }}
+        className="absolute bottom-2 left-2 p-1.5 bg-black/40 hover:bg-black/60 rounded-full text-white backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all"
+        title="Ver grande"
+      >
+        <Maximize2 className="h-3 w-3" />
+      </button>
+
+      {/* Botón Eliminar */}
+      <button 
+        onClick={(e) => { e.stopPropagation(); onRemove(index); }}
+        className="absolute top-2 right-2 p-1.5 bg-red-500/80 hover:bg-red-600 rounded-full text-white backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all shadow-sm"
+        title="Eliminar"
+      >
+        <X className="h-3 w-3" />
+      </button>
+    </div>
+  );
+}
+
+// --- COMPONENTE PRINCIPAL ---
 export default function ItineraryPublishView({ id }: { id: string }) {
   const router = useRouter();
-  const [itinerario, setItinerario] = useState<any>(null);
+  
+  // Estados
+  const [itinerario, setItinerario] = useState<Itinerario | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("dia-1");
-  const fileInputRefs = useRef<{[key: string]: HTMLInputElement | null}>({});
+  const [descripcion, setDescripcion] = useState("");
+  const [fotos, setFotos] = useState<File[]>([]);
+  const [privacityMode, setPrivacityMode] = useState<boolean | null>(null);
+  const [publishing, setPublishing] = useState(false);
+  const [lightboxFile, setLightboxFile] = useState<File | null>(null); // Estado para el lightbox
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const MAX_CARACTERES = 300;
+  const MAX_FOTOS = 10;
 
+  // Sensores DnD
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  // --- CARGA ---
   useEffect(() => {
-    async function fetchData() {
+    const fetchData = async () => {
       try {
+        const token = localStorage.getItem("authToken");
+        if (!token) throw new Error("No hay sesión activa");
+
         const res = await fetch(
           `https://harol-lovers.up.railway.app/itinerario/${id}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              token: localStorage.getItem("authToken") || "",
-            },
-          }
+          { headers: { "Content-Type": "application/json", "token": token } }
         );
 
+        if (!res.ok) throw new Error("Error al cargar datos");
+
         const data = await res.json();
-        
         const actividadesOrdenadas = data.actividades?.sort(
           (a: any, b: any) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
         ) || [];
 
-        // Agrupar por día
-        const actividadesPorDia: Record<string, any[]> = {};
-
+        const actividadesPorDia: Record<string, Lugar[]> = {};
         actividadesOrdenadas.forEach((act: any) => {
           const fecha = new Date(act.fecha).toISOString().split("T")[0];
-          if (!actividadesPorDia[fecha]) {
-            actividadesPorDia[fecha] = [];
-          }
-
-          actividadesPorDia[fecha].push({
-            id: act.id,
-            titulo: act.lugar.nombre,
-            descripcion: act.descripcionPersonal || "",
-            imageUrl: act.fotoPersonal || act.lugar.foto_url,
-            categoria: act.lugar.category,
-            estado: act.lugar.mexican_state,
-            lat: act.lugar.latitud,
-            lng: act.lugar.longitud,
-            calificacion: act.lugar.calificacion || 4,
-            fecha: act.fecha,
-            horario: "Todo el día", // Podrías obtener esto de tu API
-            tags: [act.lugar.category] // Podrías agregar más tags
-          });
+          if (!actividadesPorDia[fecha]) actividadesPorDia[fecha] = [];
+          actividadesPorDia[fecha].push({ id: act.id, titulo: act.lugar.nombre });
         });
 
-        const dias = Object.keys(actividadesPorDia)
-          .sort()
-          .map((fecha, index) => ({
-            dia: index + 1,
-            fecha,
-            lugares: actividadesPorDia[fecha],
-          }));
+        const dias = Object.keys(actividadesPorDia).sort().map((fecha, index) => ({
+          dia: index + 1,
+          fecha,
+          lugares: actividadesPorDia[fecha],
+        }));
 
         setItinerario({
           id: data.id,
@@ -76,282 +209,407 @@ export default function ItineraryPublishView({ id }: { id: string }) {
           resumen: {
             diasTotales: dias.length,
             totalLugares: actividadesOrdenadas.length,
-            categorias: [...new Set(actividadesOrdenadas.map((a: any) => a.lugar.category))],
-          },
-          usuario: {
-            nombre: "Tu nombre", // Aquí podrías obtener el nombre del usuario
-            fotoPerfil: "/placeholder-avatar.jpg"
+            categorias: [...new Set(actividadesOrdenadas.map((a: any) => a.lugar.category))] as string[],
           }
         });
+        
+        if (data.descripcion) setDescripcion(data.descripcion);
+
       } catch (err) {
-        console.error("Error cargando itinerario:", err);
+        toast.error("Error", { description: "No pudimos cargar el itinerario." });
+        router.push("/viajero/itinerarios");
       } finally {
         setLoading(false);
       }
-    }
+    };
+
     fetchData();
-  }, [id]);
+  }, [id, router]);
 
-  // Guardar cambios
-  const guardarCambios = async (lugarId: string, nuevosDatos: any) => {
-    try {
-      const res = await fetch(`https://harol-lovers.up.railway.app/actividad/${lugarId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          token: localStorage.getItem("authToken") || "",
-        },
-        body: JSON.stringify({
-          descripcionPersonal: nuevosDatos.descripcion,
-          fotoPersonal: nuevosDatos.imageUrl,
-        }),
+  // --- FOTOS ---
+  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    const archivos = Array.from(files);
+    
+    if (fotos.length + archivos.length > MAX_FOTOS) {
+      toast.warning(`Máximo ${MAX_FOTOS} fotos permitidas.`);
+      return;
+    }
+
+    const validFiles = archivos.filter(file => 
+        file.type.startsWith('image/') && file.size <= 5 * 1024 * 1024
+    );
+
+    if (validFiles.length !== archivos.length) {
+        toast.warning("Algunos archivos eran inválidos (>5MB o no imagen).");
+    }
+
+    setFotos(prev => [...prev, ...validFiles]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removePhoto = (index: number) => {
+    setFotos(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // DnD Handler
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
+    if (active.id !== over.id) {
+      setFotos((items) => {
+        const oldIndex = items.findIndex(f => f.name === active.id);
+        const newIndex = items.findIndex(f => f.name === over.id);
+        return arrayMove(items, oldIndex, newIndex);
       });
+    }
+  };
 
-      if (res.ok) {
-        setItinerario((prev: any) => ({
-          ...prev,
-          dias: prev.dias.map((d: any) => ({
-            ...d,
-            lugares: d.lugares.map((l: any) =>
-              l.id === lugarId ? { ...l, ...nuevosDatos } : l
-            ),
-          })),
-        }));
-      }
+  // --- PUBLICAR ---
+  const publicarItinerario = async () => {
+    if (fotos.length === 0) return toast.error("Se requiere al menos 1 foto.");
+    if (privacityMode === null) return toast.error("Selecciona la privacidad.");
+
+    setPublishing(true);
+    const toastId = toast.loading("Publicando viaje...");
+
+    try {
+      const token = localStorage.getItem("authToken");
+      const formData = new FormData();
+      
+      formData.append('descripcion', descripcion.trim());
+      formData.append('privacity_mode', privacityMode ? 'true' : 'false');
+      fotos.forEach((foto) => formData.append('fotos', foto));
+
+      const response = await fetch(
+        `https://harol-lovers.up.railway.app/publicacion/share/${id}`,
+        {
+          method: "POST",
+          body: formData,
+          headers: { "token": token || "" },
+        }
+      );
+
+      if (!response.ok) throw new Error("Error en servidor");
+
+      toast.success("¡Viaje publicado!", { id: toastId });
+      router.push('/viajero/itinerarios'); 
+
     } catch (error) {
-      console.error("Error guardando cambios:", error);
+      toast.error("Error al publicar", { id: toastId });
+    } finally {
+      setPublishing(false);
     }
-  };
-
-  // Subir imagen
-  const handleImageUpload = (file: File, lugarId: string) => {
-    const imageUrl = URL.createObjectURL(file);
-    
-    const lugar = itinerario.dias
-      .flatMap((d: any) => d.lugares)
-      .find((l: any) => l.id === lugarId);
-    
-    if (lugar) {
-      const nuevosDatos = { ...lugar, imageUrl };
-      setItinerario((prev: any) => ({
-        ...prev,
-        dias: prev.dias.map((d: any) => ({
-          ...d,
-          lugares: d.lugares.map((l: any) =>
-            l.id === lugarId ? nuevosDatos : l
-          ),
-        })),
-      }));
-      guardarCambios(lugarId, nuevosDatos);
-    }
-  };
-
-  // Trigger file input
-  const triggerFileInput = (lugarId: string) => {
-    fileInputRefs.current[lugarId]?.click();
   };
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-        <p className="mt-4 text-lg">Cargando tu itinerario...</p>
-      </div>
+    <div className="h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
     </div>
   );
 
-  if (!itinerario) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <p className="text-xl">Itinerario no encontrado</p>
-        <Button className="mt-4" onClick={() => router.push('/viajero/itinerarios')}>
-          Volver a mis itinerarios
-        </Button>
-      </div>
-    </div>
-  );
+  if (!itinerario) return null;
+
+  const hasPhotos = fotos.length > 0;
+  const hasPrivacy = privacityMode !== null;
+  const isReady = hasPhotos && hasPrivacy;
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header sólido */}
-      <header className="sticky top-0 z-10 bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Button variant="ghost" onClick={() => router.push('/viajero/itinerarios')}>
-            ← Volver
-          </Button>
-          <h1 className="text-xl font-bold text-gray-900">Preparar Publicación</h1>
-          <Button 
-            className="bg-green-600 hover:bg-green-700 text-white"
-            onClick={() => alert('¡Itinerario publicado!')}
-          >
-            Publicar
-          </Button>
+    <div className="min-h-screen bg-muted/5 pb-20">
+      
+      {/* HEADER COMPACTO */}
+      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border/60">
+        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <Button variant="ghost" size="icon" onClick={() => router.back()} className="h-9 w-9 rounded-full shrink-0">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="flex flex-col overflow-hidden">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Publicando</span>
+                <h1 className="text-base font-bold truncate">{itinerario.titulo}</h1>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => router.back()} disabled={publishing} className="hidden sm:flex">
+                Cancelar
+            </Button>
+            <Button 
+                onClick={publicarItinerario} 
+                disabled={!isReady || publishing}
+                size="sm"
+                className={cn("px-6 rounded-full transition-all font-semibold", isReady ? "shadow-lg shadow-primary/20" : "opacity-60")}
+            >
+                {publishing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : "Publicar"}
+            </Button>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-6">
-        {/* Información del itinerario */}
-        <Card className="mb-8 border border-gray-200 shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="flex-1">
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">{itinerario.titulo}</h1>
-                <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
-                    <span>{itinerario.resumen.diasTotales} días</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <MapPin className="w-4 h-4" />
-                    <span>{itinerario.resumen.totalLugares} lugares</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Tag className="w-4 h-4" />
-                    <span>{itinerario.resumen.categorias.length} categorías</span>
-                  </div>
-                </div>
-              </div>
+      <main className="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 items-start">
+        
+        {/* === COLUMNA IZQUIERDA: EDITOR === */}
+        <div className="space-y-8">
+            
+            {/* 1. HISTORIA (Primero, como pediste) */}
+            <Card className="border-none shadow-sm overflow-hidden bg-card">
+                <CardHeader className="pb-4 border-b bg-muted/10 px-6 pt-5">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                        <Info className="h-5 w-5 text-primary" /> Tu Historia
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                    <div className="relative">
+                        <Textarea 
+                            value={descripcion}
+                            onChange={(e) => setDescripcion(e.target.value)}
+                            placeholder="¿Qué fue lo mejor del viaje? Comparte tips, anécdotas o por qué recomiendas esta ruta..."
+                            className="min-h-[140px] text-base leading-relaxed resize-none bg-muted/20 focus:bg-background border-0 focus-visible:ring-1 focus-visible:ring-primary/20 shadow-inner p-4 rounded-xl"
+                            maxLength={MAX_CARACTERES}
+                        />
+                        <div className="flex justify-end mt-2">
+                            <span className={cn("text-xs font-medium px-2 py-0.5 rounded-md", descripcion.length > MAX_CARACTERES * 0.9 ? "text-amber-600 bg-amber-50" : "text-muted-foreground")}>
+                                {descripcion.length}/{MAX_CARACTERES}
+                            </span>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* 2. PRIVACIDAD (Compacto) */}
+            <div className="grid grid-cols-2 gap-4">
+                <button 
+                    onClick={() => setPrivacityMode(true)}
+                    className={cn(
+                        "relative p-4 rounded-xl border-2 transition-all flex items-center gap-3 text-left group",
+                        privacityMode === true 
+                            ? "border-primary bg-primary/5 shadow-sm" 
+                            : "border-transparent bg-card hover:bg-muted/50 shadow-sm"
+                    )}
+                >
+                    <div className={cn("p-2 rounded-full transition-colors", privacityMode === true ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground group-hover:bg-muted/80")}>
+                        <Globe className="h-5 w-5" />
+                    </div>
+                    <div>
+                        <span className="block text-sm font-bold">Público</span>
+                        <span className="text-xs text-muted-foreground">Visible para todos</span>
+                    </div>
+                    {privacityMode === true && (
+                        <div className="absolute top-3 right-3 text-primary animate-in zoom-in">
+                            <CheckCircle2 className="h-4 w-4" />
+                        </div>
+                    )}
+                </button>
+
+                <button 
+                    onClick={() => setPrivacityMode(false)}
+                    className={cn(
+                        "relative p-4 rounded-xl border-2 transition-all flex items-center gap-3 text-left group",
+                        privacityMode === false 
+                            ? "border-primary bg-primary/5 shadow-sm" 
+                            : "border-transparent bg-card hover:bg-muted/50 shadow-sm"
+                    )}
+                >
+                    <div className={cn("p-2 rounded-full transition-colors", privacityMode === false ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground group-hover:bg-muted/80")}>
+                        <Lock className="h-5 w-5" />
+                    </div>
+                    <div>
+                        <span className="block text-sm font-bold">Privado</span>
+                        <span className="text-xs text-muted-foreground">Solo amigos</span>
+                    </div>
+                    {privacityMode === false && (
+                        <div className="absolute top-3 right-3 text-primary animate-in zoom-in">
+                            <CheckCircle2 className="h-4 w-4" />
+                        </div>
+                    )}
+                </button>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Tabs para días */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full mb-8" style={{ gridTemplateColumns: `repeat(${itinerario.dias.length}, minmax(0, 1fr))` }}>
-            {itinerario.dias.map((dia: any) => (
-              <TabsTrigger key={dia.dia} value={`dia-${dia.dia}`} className="text-sm">
-                Día {dia.dia}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+            {/* 3. GALERÍA (Interactivo) */}
+            <Card className="border-none shadow-sm overflow-hidden bg-card">
+                <CardHeader className="pb-4 border-b bg-muted/10 px-6 pt-5 flex flex-row items-center justify-between space-y-0">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                        <Camera className="h-5 w-5 text-primary" /> Galería
+                    </CardTitle>
+                    <span className="text-xs font-medium text-muted-foreground bg-background px-2.5 py-1 rounded-full border shadow-sm">
+                        {fotos.length}/{MAX_FOTOS}
+                    </span>
+                </CardHeader>
+                <CardContent className="p-6">
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                        <SortableContext items={fotos.map(f => f.name)} strategy={rectSortingStrategy}>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                {/* Botón Agregar (Siempre visible si no está lleno) */}
+                                {fotos.length < MAX_FOTOS && (
+                                    <div 
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="aspect-square flex flex-col items-center justify-center border-2 border-dashed rounded-xl border-muted-foreground/20 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-muted/5"
+                                    >
+                                        <div className="h-10 w-10 rounded-full bg-background group-hover:bg-primary/10 flex items-center justify-center mb-2 transition-colors shadow-sm">
+                                            <ImagePlus className="h-5 w-5 text-muted-foreground group-hover:text-primary" />
+                                        </div>
+                                        <span className="text-xs font-semibold text-muted-foreground group-hover:text-primary">Añadir Foto</span>
+                                    </div>
+                                )}
 
-          {itinerario.dias.map((dia: any) => (
-            <TabsContent key={dia.dia} value={`dia-${dia.dia}`} className="space-y-6">
-              {dia.lugares.map((lugar: any) => (
-                <Card key={lugar.id} className="border border-gray-200 shadow-sm overflow-hidden">
-                  <div className="flex flex-col md:flex-row">
-                    {/* Columna de imagen */}
-                    <div className="md:w-1/2 relative">
-                      <img
-                        src={lugar.imageUrl || "/placeholder.jpg"}
-                        className="w-full h-64 md:h-80 object-cover"
-                        alt={lugar.titulo}
-                      />
-                      <div className="absolute top-3 right-3">
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          ref={el => fileInputRefs.current[lugar.id] = el}
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) handleImageUpload(file, lugar.id);
-                          }}
-                        />
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          className="bg-white/90 hover:bg-white backdrop-blur-sm"
-                          onClick={() => triggerFileInput(lugar.id)}
-                        >
-                          <Camera className="w-4 h-4 mr-2" />
-                          Cambiar foto
-                        </Button>
-                      </div>
-                    </div>
+                                {/* Lista de Fotos */}
+                                {fotos.map((foto, idx) => (
+                                    <SortablePhoto 
+                                        key={foto.name} 
+                                        id={foto.name} 
+                                        file={foto} 
+                                        index={idx} 
+                                        onRemove={removePhoto} 
+                                        onView={setLightboxFile}
+                                    />
+                                ))}
+                            </div>
+                        </SortableContext>
+                        <DragOverlay /> {/* Opcional para feedback visual extra */}
+                    </DndContext>
                     
-                    {/* Columna de información */}
-                    <div className="md:w-1/2 p-6 space-y-4">
-                      {/* Header del lugar */}
-                      <div>
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">{lugar.titulo}</h3>
-                        
-                        {/* Fila 1: Día y Horario */}
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <Calendar className="h-4 w-4" />
-                            <span>Día {dia.dia}</span>
-                          </div>
-                          <span className="text-sm text-gray-600">
-                            {lugar.horario}
-                          </span>
+                    <input type="file" ref={fileInputRef} accept="image/*" multiple className="hidden" onChange={handlePhotoUpload} />
+                    
+                    {fotos.length === 0 && (
+                        <div className="text-center py-4 text-muted-foreground text-sm">
+                            Arrastra fotos aquí para organizar tu galería.
                         </div>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
 
-                        {/* Fila 2: Ubicación y Tags */}
-                        <div className="flex flex-col sm:flex-row gap-3 text-sm mb-4">
-                          <div className="flex items-center gap-2 flex-1">
-                            <MapPin className="h-4 w-4 text-gray-600" />
-                            <span className="text-gray-700">{lugar.estado}</span>
-                          </div>
-
-                          {/* Tags */}
-                          <div className="flex flex-wrap gap-2">
-                            {lugar.tags?.map((tag: string, index: number) => (
-                              <span 
-                                key={index} 
-                                className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full border border-gray-200"
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Descripción */}
-                      <div className="space-y-3">
-                        <Label htmlFor={`desc-${lugar.id}`} className="text-sm font-medium text-gray-700">
-                          Tu experiencia:
-                        </Label>
-                        <Textarea
-                          id={`desc-${lugar.id}`}
-                          value={lugar.descripcion}
-                          onChange={(e) => {
-                            setItinerario((prev: any) => ({
-                              ...prev,
-                              dias: prev.dias.map((d: any) => ({
-                                ...d,
-                                lugares: d.lugares.map((l: any) =>
-                                  l.id === lugar.id 
-                                    ? { ...l, descripcion: e.target.value }
-                                    : l
-                                ),
-                              })),
-                            }));
-                          }}
-                          onBlur={() => guardarCambios(lugar.id, lugar)}
-                          placeholder="Comparte tu experiencia en este lugar... ¿Qué te pareció? ¿Qué recomiendas?"
-                          rows={4}
-                          className="resize-none border-gray-300 focus:border-primary"
-                        />
-                        <div className="flex justify-between items-center">
-                          <p className="text-xs text-gray-500">
-                            Tu descripción se guarda automáticamente
-                          </p>
-                          <span className="text-xs text-gray-500">
-                            {lugar.descripcion?.length || 0}/500
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Calificación */}
-                      <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-medium text-gray-700">Calificación del lugar:</span>
-                          <div className="flex items-center gap-1">
-                            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                            <span className="text-sm font-medium">{lugar.calificacion}/5</span>
-                          </div>
-                        </div>
-                      </div>
+        {/* === COLUMNA DERECHA: CONTEXTO & ITINERARIO === */}
+        <div className="space-y-6 lg:sticky lg:top-20">
+            
+            {/* Tarjeta de Resumen */}
+            <Card className="border-none shadow-md overflow-hidden bg-card/80 backdrop-blur-sm">
+                <div className="h-24 bg-gradient-to-br from-primary/10 via-primary/5 to-background p-5 flex flex-col justify-center border-b">
+                    <h3 className="font-bold text-lg text-foreground line-clamp-1">{itinerario.titulo}</h3>
+                    <div className="flex gap-2 mt-2 overflow-hidden flex-wrap h-6">
+                        {itinerario.resumen.categorias.slice(0, 3).map(cat => (
+                            <Badge key={cat} variant="secondary" className="text-[9px] uppercase font-bold tracking-wider bg-background/60 border-0">{cat}</Badge>
+                        ))}
                     </div>
-                  </div>
-                </Card>
-              ))}
-            </TabsContent>
-          ))}
-        </Tabs>
+                </div>
+                
+                <div className="grid grid-cols-2 divide-x divide-border/40 border-b border-border/40 bg-background/50">
+                    <div className="p-4 text-center">
+                        <span className="block text-2xl font-black text-primary">{itinerario.resumen.diasTotales}</span>
+                        <span className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest">Días</span>
+                    </div>
+                    <div className="p-4 text-center">
+                        <span className="block text-2xl font-black text-primary">{itinerario.resumen.totalLugares}</span>
+                        <span className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest">Lugares</span>
+                    </div>
+                </div>
+
+                <div className="p-5 space-y-4 bg-background">
+                    <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Estado
+                    </h4>
+                    <div className="space-y-3">
+                        <CheckItem label={`Fotos (${fotos.length})`} isComplete={hasPhotos} icon={<Camera className="h-3 w-3" />} />
+                        <CheckItem label="Privacidad" isComplete={hasPrivacy} icon={<Eye className="h-3 w-3" />} />
+                        <CheckItem label="Historia" isComplete={descripcion.length > 0} isOptional icon={<Info className="h-3 w-3" />} />
+                    </div>
+                </div>
+            </Card>
+
+            {/* Estructura del Viaje (Timeline Vertical Mejorado) */}
+            <div className="rounded-2xl border bg-card p-0 overflow-hidden shadow-sm hidden lg:block">
+                <div className="p-4 border-b bg-muted/10">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Estructura del viaje</h4>
+                </div>
+                <div className="max-h-[300px] overflow-y-auto p-4 space-y-0 relative">
+                    {/* Línea conectora vertical */}
+                    <div className="absolute left-[27px] top-6 bottom-6 w-0.5 bg-border/60 z-0" />
+                    
+                    {itinerario.dias.map((d, i) => (
+                        <div key={d.dia} className="flex gap-4 relative z-10 pb-6 last:pb-0 group">
+                            {/* Nodo Día */}
+                            <div className="flex flex-col items-center gap-1">
+                                <div className="w-6 h-6 rounded-full bg-background border-2 border-primary text-[10px] font-bold flex items-center justify-center text-primary shadow-sm group-hover:scale-110 transition-transform">
+                                    {d.dia}
+                                </div>
+                            </div>
+                            
+                            {/* Contenido Día */}
+                            <div className="flex-1 min-w-0 pt-0.5">
+                                <div className="flex items-baseline justify-between mb-1.5">
+                                    <p className="text-xs font-bold text-foreground">Día {d.dia}</p>
+                                    <span className="text-[9px] text-muted-foreground font-medium bg-muted px-1.5 py-0.5 rounded-full">
+                                        {d.lugares.length} paradas
+                                    </span>
+                                </div>
+                                <div className="space-y-1.5">
+                                    {d.lugares.slice(0, 3).map(l => (
+                                        <div key={l.id} className="flex items-center gap-2 text-xs text-muted-foreground pl-1 border-l-2 border-transparent hover:border-primary/30 hover:text-foreground transition-colors cursor-default">
+                                            <div className="w-1 h-1 rounded-full bg-muted-foreground/40" />
+                                            <span className="truncate">{l.titulo}</span>
+                                        </div>
+                                    ))}
+                                    {d.lugares.length > 3 && (
+                                        <p className="text-[9px] text-muted-foreground pl-4 italic">
+                                            +{d.lugares.length - 3} más...
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+        </div>
+
       </main>
+
+      {/* LIGHTBOX MODAL */}
+      <Dialog open={!!lightboxFile} onOpenChange={(open) => !open && setLightboxFile(null)}>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black/95 border-none shadow-2xl">
+            <div className="relative w-full h-[80vh] flex items-center justify-center">
+                <DialogTitle className="sr-only">Vista previa</DialogTitle>
+                {lightboxFile && (
+                    <Image 
+                        src={URL.createObjectURL(lightboxFile)} 
+                        alt="Full preview" 
+                        fill 
+                        className="object-contain" 
+                    />
+                )}
+                <button 
+                    onClick={() => setLightboxFile(null)}
+                    className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-white/20 text-white rounded-full transition-colors backdrop-blur-md"
+                >
+                    <X className="h-6 w-6" />
+                </button>
+            </div>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
+}
+
+// Subcomponente CheckItem
+function CheckItem({ label, isComplete, isOptional, icon }: { label: string, isComplete: boolean, isOptional?: boolean, icon: React.ReactNode }) {
+    return (
+        <div className="flex items-center justify-between text-xs group">
+            <div className="flex items-center gap-3">
+                <div className={cn("p-1.5 rounded-full transition-colors", isComplete ? "bg-green-100 text-green-600 dark:bg-green-900/30" : "bg-muted text-muted-foreground")}>
+                    {icon}
+                </div>
+                <span className={cn("font-medium transition-colors", isComplete ? "text-foreground" : "text-muted-foreground group-hover:text-foreground")}>{label}</span>
+            </div>
+            {isComplete ? (
+                <CheckCircle2 className="h-4 w-4 text-green-500 animate-in zoom-in" />
+            ) : isOptional ? (
+                <span className="text-[9px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground font-medium">Opcional</span>
+            ) : (
+                <div className="h-3 w-3 rounded-full border-2 border-muted-foreground/30" />
+            )}
+        </div>
+    )
 }

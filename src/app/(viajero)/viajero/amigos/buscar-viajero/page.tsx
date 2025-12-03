@@ -16,7 +16,9 @@ import {
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -32,23 +34,57 @@ interface ViajeroData {
   foto_url: string | null;
   amigos_en_comun: number;
   ciudad?: string;
+  has_pending_request?: boolean;
+  is_friend?: boolean;
 }
 
 const API_URL = "https://harol-lovers.up.railway.app";
-// const API_URL = "http://localhost:4000";
+
+// API instance
+const api = ItinerariosAPI.getInstance();
+
+async function sendFriendRequest(receiving: string) {
+  return await api.sendFriendRequest(receiving);
+}
 
 // ===== Componentes Internos =====
 
-function ViajeroCard({ data }: { data: ViajeroData }) {
-  const [isAdded, setIsAdded] = useState(false);
+function ViajeroCard({ data, onSent }: { data: ViajeroData; onSent?: (username: string) => void }) {
+  const [isAdded, setIsAdded] = useState<boolean>(Boolean(data.has_pending_request || data.is_friend));
+  const [isSending, setIsSending] = useState(false);
 
-  const handleAdd = (e: React.MouseEvent) => {
-    // IMPORTANTE: Detenemos la propagación para que el click NO active el Link al perfil
+  useEffect(() => {
+    setIsAdded(Boolean(data.has_pending_request || data.is_friend));
+  }, [data.has_pending_request, data.is_friend]);
+
+  const handleAdd = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    // Aquí iría tu lógica de API para agregar
-    setIsAdded(true);
+
+    if (isSending || isAdded) return;
+
+    try {
+      setIsSending(true);
+      console.log("este es el username: ", data.username);
+      const response = await sendFriendRequest(data.username);
+      toast.success("Solicitud enviada correctamente");
+      console.log("Respuesta del backend:", response);
+      setIsAdded(true);
+      if (onSent) onSent(data.username);
+    } catch (error) {
+      console.error("No se pudo enviar la solicitud:", error);
+      toast.error("No se pudo enviar la solicitud");
+    } finally {
+      setIsSending(false);
+    }
   };
+  // const handleAdd = (e: React.MouseEvent) => {
+  //   // IMPORTANTE: Detenemos la propagación para que el click NO active el Link al perfil
+  //   e.preventDefault();
+  //   e.stopPropagation();
+  //   // Aquí iría tu lógica de API para agregar
+  //   setIsAdded(true);
+  // };
 
   return (
     <Link href={`/viajero/perfil/${data.username}`} className="block group">
@@ -224,24 +260,55 @@ export default function BuscarViajeroPage() {
       return;
     }
 
-    const token = localStorage.getItem("authToken");
-    if (!token) return;
-
     setLoading(true);
     setHasSearched(true);
-    
-    try {
-      const response = await fetch(
-        `${API_URL}/user/search?q=${encodeURIComponent(term)}`,
-        {
-          method: "GET",
-          headers: { token: token },
-        }
-      );
 
-      if (!response.ok) throw new Error("Error al buscar viajeros");
-      const data = await response.json();
-      setViajeros(data);
+    try {
+      // 1) Buscar usuarios usando la capa de API
+      const searchResp = await api.searchUsers(term);
+      // Puede venir como { users: [...] } o como arreglo directo
+      let users: any[] = [];
+      if (Array.isArray((searchResp as any).users)) users = (searchResp as any).users;
+      else if (Array.isArray((searchResp as any).data)) users = (searchResp as any).data;
+      else if (Array.isArray(searchResp)) users = searchResp as any[];
+
+      // 2) Obtener solicitudes pendientes del usuario para marcar envíos (status === 0)
+      const pendingUsernames = new Set<string>();
+      try {
+        const requests = await api.getRequests();
+        const myUserJson = localStorage.getItem("user");
+        const myUsername = myUserJson ? JSON.parse(myUserJson).username : null;
+
+        if (requests && Array.isArray((requests as any).data) && myUsername) {
+          (requests as any).data.forEach((req: any) => {
+            const isPending = req.status === 0 || req.status === "0";
+            if (!isPending) return;
+            // Si yo soy quien solicitó, marcar al receiving
+            if (req.requesting_user?.username === myUsername && req.receiving_user?.username) {
+              pendingUsernames.add(req.receiving_user.username);
+            }
+            // Si yo soy quien recibe, marcar al requesting (opcional UX)
+            if (req.receiving_user?.username === myUsername && req.requesting_user?.username) {
+              pendingUsernames.add(req.requesting_user.username);
+            }
+          });
+        }
+      } catch (err) {
+        console.warn("No se pudieron obtener solicitudes pendientes:", err);
+      }
+
+      const mapped: ViajeroData[] = users.map((u: any, idx: number) => ({
+        id: u.id ?? idx,
+        nombre_completo: u.nombre_completo || u.nombre || u.username,
+        username: u.username,
+        foto_url: u.foto_url || null,
+        amigos_en_comun: u.amigos_en_comun || 0,
+        ciudad: u.ciudad,
+        has_pending_request: pendingUsernames.has(u.username),
+        is_friend: u.is_friend || false,
+      }));
+
+      setViajeros(mapped);
     } catch (error) {
       console.error(error);
       setViajeros([]);
@@ -307,7 +374,14 @@ export default function BuscarViajeroPage() {
                 </div>
                 <div className="space-y-3">
                     {viajeros.map((viajero) => (
-                    <ViajeroCard key={viajero.id} data={viajero} />
+                    <ViajeroCard
+                      key={viajero.id}
+                      data={viajero}
+                      onSent={(username) => {
+                        // Actualizar el array de viajeros para mantener estado 'Enviada'
+                        setViajeros((prev) => prev.map((v) => v.username === username ? { ...v, has_pending_request: true } : v));
+                      }}
+                    />
                     ))}
                 </div>
               </div>

@@ -1,4 +1,4 @@
-import { lugar } from "@/app/(dashboard)/dashboard/vermapa/page"
+import { lugar } from "@/app/(dashboard)/dashboard/reportes/page"
 
 interface ListaProps
 {
@@ -10,10 +10,17 @@ export default function ListaLugares({ lugares, onAddLugar } : ListaProps) {
   return <div className="space-y-2">
     {lugares.map( (lugar) => (
         <div
-            key={lugar.id}
+            key={lugar.id_api_place}
             className="p-3 border rounded-lg shadow-sm flex justify-between items-center"
         >
             <div>
+                { lugar.foto_url && (
+                    <img
+                        src={lugar.foto_url}
+                        alt={lugar.nombre}
+                        className="w-16 h-16 object-cover rounded-lg mr-4"
+                    />
+                )}
                 <h4 className="font-semibold">{lugar.nombre}</h4>
             </div>
 

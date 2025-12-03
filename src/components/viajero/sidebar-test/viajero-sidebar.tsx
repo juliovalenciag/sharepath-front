@@ -17,9 +17,9 @@ import {
   IconMapPinFilled,
 } from "@tabler/icons-react";
 
-import { NavDocuments } from "@/components/dashboard-components/nav-documents";
-import { NavSecondary } from "@/components/dashboard-components/nav-secondary";
-import { NavUser } from "@/components/dashboard-components/nav-user";
+import { NavDocuments } from "@/components/viajero-components/nav-documents";
+import { NavSecondary } from "@/components/viajero-components/nav-secondary";
+import { NavUser } from "@/components/viajero-components/nav-user";
 
 import {
   Sidebar,
@@ -31,9 +31,9 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { ViajeroNavMain } from "./viajero-navmain";
-import {useState, useEffect} from "react";
+import { useState, useEffect } from "react";
 
-interface UserData{
+interface UserData {
   username: string;
   correo: string;
   foto_url: string;
@@ -64,27 +64,27 @@ const data = {
 
 export function ViajeroSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const [user, setUser] = useState<UserData | null>(null);
-  useEffect (()=>{
+  useEffect(() => {
     const fetchUserData = async () => {
-      try{
-        const res= await fetch("https://harol-lovers.up.railway.app/user", { 
-          method: 'GET',
+      try {
+        const res = await fetch("https://harol-lovers.up.railway.app/user", {
+          method: "GET",
           headers: {
-            'Content-Type': 'application/json',
-            token: localStorage.getItem('authToken') || ""
-          }
+            "Content-Type": "application/json",
+            token: localStorage.getItem("authToken") || "",
+          },
         });
-        if (!res.ok){
-          throw new Error ("No se pudieron obtener los datos del usuario");
+        if (!res.ok) {
+          throw new Error("No se pudieron obtener los datos del usuario");
         }
-        const data= await res.json();
+        const data = await res.json();
         setUser(data);
       } catch (error) {
         console.error("Error fetching user data:", error);
       }
     };
-    fetchUserData()
-    }, []);
+    fetchUserData();
+  }, []);
   return (
     <Sidebar
       collapsible="icon"
@@ -119,7 +119,11 @@ export function ViajeroSidebar(props: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       <SidebarFooter>
-        {user ? (<NavUser user={user} />) : (<div className="p-4 text-sm text-center">Cargando usuario...</div>)}
+        {user ? (
+          <NavUser user={user} />
+        ) : (
+          <div className="p-4 text-sm text-center">Cargando usuario...</div>
+        )}
       </SidebarFooter>
     </Sidebar>
   );

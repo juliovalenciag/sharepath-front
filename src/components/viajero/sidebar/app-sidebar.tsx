@@ -153,7 +153,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             puedes integrarlos aquí con tu NavDocuments/NavSecondary modernos */}
       </SidebarContent>
 
-      <SidebarFooter>
+      {/* <SidebarFooter>
         {loadingUser && (
           <div className="px-4 py-2 text-xs text-muted-foreground">
             Cargando cuenta...
@@ -167,7 +167,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             No se pudo cargar la cuenta
           </div>
         )}
-      </SidebarFooter>
+      </SidebarFooter> */}
     </Sidebar>
   );
 }

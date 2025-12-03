@@ -50,6 +50,10 @@ export function ChatThread({
     return () => clearTimeout(t);
   }, [text]);
 
+  React.useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth"});
+  }, [conversation.messages]);
+
   const msgs = conversation.messages;
 
   /* Para que los mensajes se muestren hasta abajo */
@@ -67,9 +71,9 @@ export function ChatThread({
   const isFriendOnline = otherMember?.online;
 
   return (
-    <div className="h-full grid grid-rows-[auto_minmax(0,1fr)_auto] bg-gradient-to-t from-blue-100 to-blue-900 rounded-3xl">
+    <div className="h-full grid grid-rows-[auto_minmax(0,1fr)_auto] bg-white overflow-hidden dark:bg-[#0b141a] rounded-3xl border dark:border-gray-700 shadow-xl">
       {/* <header className="px-4 py-3 border-b flex items-center justify-between bg-card/60"> */}
-      <header className="px-4 py-3 border-b flex items-center justify-between bg-card/30">
+      <header className="px-4 py-3 border-b bg-[#2196F3] dark:bg-[#1565C0] dark:border-gray-700 text-white rounded-t-3xl flex items-center justify-between transition-colors">
         <div className="text-center w-full">
           {/* <h3 className="font-semibold text-md">{conversation.title ?? "Chat"}</h3> */}
           <h3 className="font-semibold text-md text-white">{conversation.title ?? "Chat"}</h3>
@@ -130,15 +134,15 @@ export function ChatThread({
                   // )}
                   
                   className={cn(
-                    "max-w-[30%] rounded-2xl px-3 py-2",
+                    "max-w-[75%] rounded-2xl px-4 py-2 shadow-sm",
                     mine
-                      ? "bg-white text-black rounded-tr-sm"
-                      : "bg-blue-800 rounded-tl-sm"
+                      ? "bg-white text-black rounded-tr-sm border border-gray-300 shadow-sm dark:bg-[#4b5563] dark:text-white dark:border-none"
+                      : "bg-blue-800 rounded-tl-sm text-white"
                   )}
                 >
                   {/* {!!m.text && <p className="whitespace-pre-wrap">{m.text}</p>} */}
                   {/* word-wrap: break-word; es overflow-wrap: break-word; */}
-                  {!!m.text && <p className={`break-words  ${mine ? "text-black" : "text-white"}`}>{m.text}</p>}
+                  {!!m.text && <p className="break-words">{m.text}</p>}
                   {!!m.images?.length && (
                     <div className="mt-2 grid grid-cols-2 gap-2">
                       {m.images.map((src) => (
@@ -158,6 +162,8 @@ export function ChatThread({
           );
         })}
 
+        <div ref={bottomRef}></div>
+
         {/* Cuando alguien escribe, corregir porque no se muestra en el otro usuario */}
         {/* {typing && (
           <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
@@ -168,7 +174,7 @@ export function ChatThread({
       </div>
 
       {/* Composer */}
-      <div className="border-t p-3 bg-card/20 dark:bg-card/30">
+      <div className="border-t p-3 bg-gray-50 dark:bg-[#202c33] dark:border-gray-700">
         <div className="flex items-end gap-2">
           {/* <button className="h-10 px-3 rounded border hover:bg-muted">📎</button> */}
           {/* <button className="h-10 px-3 rounded border hover:bg-muted bg-black/5">📎</button> */}
@@ -179,7 +185,7 @@ export function ChatThread({
             rows={1}
             placeholder="Escribe un mensaje"
             // className="flex-1 max-h-40 rounded-[var(--radius)] border bg-background px-3 py-2 resize-y outline-none focus:ring-2 focus:ring-[var(--ring)]"
-            className="flex-1 max-h-40 rounded-[var(--radius)] border bg-background px-3 py-2 resize-none outline-none focus:ring-2 focus:ring-[var(--ring)]"
+            className="flex-1 max-h-40 rounded-xl border border-gray-300 bg-white px-3 py-2 resize-none outline-none focus:ring-2 focus:ring-[#2196F3] dark:bg-[#2a3942] dark:border-none dark:text-white dark:placeholder-gray-400"
           />
           <button
             disabled={!text.trim()}
@@ -189,18 +195,18 @@ export function ChatThread({
               setText("");
             }}
             className={cn(
-              "h-10 px-4 rounded-[var(--radius)] dark:text-white",
+              "h-10 px-4 rounded-[var(--radius)] text-white transition",
               text.trim()
-                ? "bg-[var(--palette-blue)] text-[var(--primary-foreground)] hover:opacity-90"
+                ? "bg-[#2196F3] text-white hover:opacity-90"
                 // : "border text-muted-foreground cursor-not-allowed"
-                : "border text-black cursor-not-allowed bg-black/5"
+                : "border text-black cursor-not-allowed bg-black/5 dark:bg-[#2a3942] dark:text-gray-400 dark:border-none"
             )}
           >
             Enviar
           </button>
         </div>
         {/* <div className="flex items-center justify-between mt-1 text-xs text-muted-foreground"> */}
-        <div className="flex items-center justify-center mt-1 text-sm">
+        <div className="flex items-center justify-center mt-1 text-xs text-gray-500">
           <div>Enter para enviar · Shift+Enter para nueva línea</div>
           {/* <div className="flex gap-2">
             <button className="underline">Programar</button>
