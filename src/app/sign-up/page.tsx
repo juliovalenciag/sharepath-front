@@ -126,7 +126,9 @@ export default function SignUpPage() {
       const registerResponse = await api.doRegister({ nombre_completo: values.nombre_completo, correo: values.correo, 
         username: values.username, password: values.password, role: "user", privacity_mode: false,
       });
-      const user = await api.doLogin(values.correo, values.password);
+      const loginUser = await api.doLogin(values.correo, values.password)
+      
+       router.push("/viajero"); 
 
       return registerResponse;
     })();
