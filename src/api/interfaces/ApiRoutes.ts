@@ -210,6 +210,8 @@ export interface ApiRoutes {
   ) => Promise<CreateItinerarioResponse>;
   getMyItinerarios: () => Promise<ItinerarioListResponse>;
   deleteItinerario: (id: number | string) => Promise<{ message: string }>;
+  
+  // Agregados por el equipo (main):
   getItinerarioById: (id: number | string) => Promise<ItinerarioData>;
   updateItinerario: (
     id: number | string,
@@ -246,6 +248,10 @@ export interface ApiRoutes {
     body: VerifyPasswordRequest
   ) => Promise<{ message: boolean }>;
   searchUsers: (query: string) => Promise<SearchUserResponse>;
+  
+  // TU AGREGADO (Vital para el perfil):
+  getUserProfile: (query: string) => Promise<Usuario>;
+  
   deleteUser: () => Promise<{ message: string }>;
 
   // Amigo
@@ -278,12 +284,18 @@ export interface ShareItineraryRequest {
   fotos: File[];
 }
 
+export interface Foto {
+    id: number;
+    foto_url: string;
+}
+
 export interface Publicacion {
-  id: number;
-  descripcion: string;
-  privacity_mode: boolean;
-  itinerario: any;
-  user_shared: Usuario;
+    id: number;
+    descripcion: string;
+    privacity_mode: boolean;
+    itinerario: { id: number; nombre: string } | null; 
+    fotos: Foto[]; // <-- AGREGADO: Array de fotos
+    user_shared?: Usuario; // Lo dejamos opcional para evitar ciclos
 }
 
 export interface AverageRatingResponse {

@@ -42,17 +42,16 @@ export class ItinerariosAPI implements ApiRoutes {
 
   private constructor() {}
 
-  static getInstance(): ItinerariosAPI {
-    if (!ItinerariosAPI.instance) this.instance = new ItinerariosAPI();
-    return this.instance;
+  public static getInstance(): ItinerariosAPI {
+    if (!ItinerariosAPI.instance) {
+      ItinerariosAPI.instance = new ItinerariosAPI();
+    }
+    return ItinerariosAPI.instance;
   }
 
   // ===== PETICIONES GENÉRICAS =====
-  private async post<T>(
-    route: string,
-    auth: boolean,
-    body: object
-  ): Promise<T> {
+
+  private async post<T>(route: string, auth: boolean, body: object): Promise<T> {
     const token = auth ? localStorage.getItem("authToken") : undefined;
     const request = await fetch(`${this.HOST}${route}`, {
       method: "POST",
@@ -84,7 +83,6 @@ export class ItinerariosAPI implements ApiRoutes {
       },
     });
     console.log("Hice la petición");
-
     console.log(request);
 
     const data = await request.json();
@@ -154,7 +152,6 @@ export class ItinerariosAPI implements ApiRoutes {
 
     if (!request.ok) {
       console.log(data);
-
       const { message } = data as ErrorResponse;
       throw new Error(message);
     }
@@ -174,6 +171,7 @@ export class ItinerariosAPI implements ApiRoutes {
 
     return usuario;
   }
+
   async doRegister(body: RegisterRequest): Promise<RegisterResponse> {
     const resp = await this.post<RegisterResponse>(
       "/auth/register",
@@ -264,6 +262,13 @@ export class ItinerariosAPI implements ApiRoutes {
   // ===== USUARIO =====
   async getUser(): Promise<Usuario> {
     return await this.get<Usuario>("/user", true);
+  }
+
+  async getUserProfile(query: string): Promise<Usuario> {
+    return await this.get<Usuario>(
+      `/user/profile?q=${encodeURIComponent(query)}`,
+      true
+    );
   }
 
   async updateUser(body: UpdateUserRequest): Promise<Usuario> {
