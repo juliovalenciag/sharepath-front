@@ -42,17 +42,25 @@ export class ItinerariosAPI implements ApiRoutes {
 
   private constructor() {}
 
-    async deleteLugar(id: string): Promise<{ message: string }> {
-        return await this.delete<{ message: string }>(`/lugar/${id}`);
+  public static getInstance(): ItinerariosAPI {
+    if (!ItinerariosAPI.instance) {
+      ItinerariosAPI.instance = new ItinerariosAPI();
     }
+    return ItinerariosAPI.instance;
+  }
 
-    // ===== USUARIO =====
-    async getUser(): Promise<Usuario> {
-        return await this.get<Usuario>("/user", true);
-    }
-    async getUserProfile(query: string): Promise<Usuario> {
-        return await this.get<Usuario>(`/user/profile?q=${encodeURIComponent(query)}`, true);
-    }
+  // ===== PETICIONES GENÉRICAS =====
+
+  private async post<T>(route: string, auth: boolean, body: object): Promise<T> {
+    const token = auth ? localStorage.getItem("authToken") : undefined;
+    const request = await fetch(`${this.HOST}${route}`, {
+      method: "POST",
+      body: JSON.stringify(body),
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { token }),
+      },
+    });
 
     const data = await request.json();
 
@@ -75,7 +83,6 @@ export class ItinerariosAPI implements ApiRoutes {
       },
     });
     console.log("Hice la petición");
-
     console.log(request);
 
     const data = await request.json();
@@ -145,7 +152,6 @@ export class ItinerariosAPI implements ApiRoutes {
 
     if (!request.ok) {
       console.log(data);
-
       const { message } = data as ErrorResponse;
       throw new Error(message);
     }
@@ -165,6 +171,7 @@ export class ItinerariosAPI implements ApiRoutes {
 
     return usuario;
   }
+
   async doRegister(body: RegisterRequest): Promise<RegisterResponse> {
     const resp = await this.post<RegisterResponse>(
       "/auth/register",
@@ -255,6 +262,13 @@ export class ItinerariosAPI implements ApiRoutes {
   // ===== USUARIO =====
   async getUser(): Promise<Usuario> {
     return await this.get<Usuario>("/user", true);
+  }
+
+  async getUserProfile(query: string): Promise<Usuario> {
+    return await this.get<Usuario>(
+      `/user/profile?q=${encodeURIComponent(query)}`,
+      true
+    );
   }
 
   async updateUser(body: UpdateUserRequest): Promise<Usuario> {
