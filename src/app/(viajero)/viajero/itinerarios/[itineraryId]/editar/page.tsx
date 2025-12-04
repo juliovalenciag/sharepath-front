@@ -1,335 +1,392 @@
-// src/app/(viajero)/viajero/itinerarios/[id]/editar/page.tsx
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { format, addDays, differenceInCalendarDays } from "date-fns";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
+import { useRouter, useParams } from "next/navigation";
+import { useShallow } from "zustand/react/shallow";
+import dynamic from "next/dynamic";
+import { format, eachDayOfInterval } from "date-fns";
 import { es } from "date-fns/locale";
+import { arrayMove } from "@dnd-kit/sortable";
 import { toast } from "sonner";
+import { Loader2, AlertCircle } from "lucide-react";
 
-import { ItinerariosAPI } from "@/api/ItinerariosAPI";
-import type { ItinerarioData, LugarData } from "@/api/interfaces/ApiRoutes";
-
-import { ItineraryHeader } from "../crear/components/ItineraryHeader";
-import { DaySelector, DayInfo } from "../crear/components/DaySelector";
-import { ActivityListPanel } from "../crear/components/ActivityListPanel";
-import { CinematicMap, MapActivity } from "../crear/components/CinematicMap";
-import { MobileViewToggle } from "../crear/components/MobileViewToggle";
-import { PlaceInfoDialog } from "../crear/components/PlaceInfoDialog";
-import { PlaceSearchDialog } from "../crear/components/PlacesSearchDialog";
-import { ItinerarySetupDialog } from "../crear/components/ItinerarySetupDialog";
-
-import { useItineraryBuilderStore } from "@/lib/itinerary-builder-store";
+// Lógica y Estado
 import {
-  buildMetaFromItinerario,
-  buildBuilderActivitiesFromItinerario,
-  buildRequestFromBuilder,
-} from "@/lib/itinerary-mappers";
+  useItineraryBuilderStore,
+  buildItineraryPayload,
+  BuilderActivity,
+} from "@/lib/itinerary-builder-store";
+import { ItinerariosAPI } from "@/api/ItinerariosAPI";
+import { mapApiToBuilder } from "@/lib/utils/itinerary-adapter";
+import { REGIONS_DATA } from "@/lib/constants/regions";
+import { cn } from "@/lib/utils";
 
-import type { BuilderActivity } from "@/lib/itinerary-builder-store";
-import { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
+// Componentes UI
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
-export default function EditItineraryPage() {
-  const params = useParams<{ id: string }>();
+// Componentes Reutilizados
+// Asegúrate de que estas rutas sean correctas según tu estructura de carpetas
+import { ItineraryHeader } from "../../crear/components/ItineraryHeader";
+import { DaySelector } from "../../crear/components/DaySelector";
+import { ActivityListPanel } from "../../crear/components/ActivityListPanel";
+import { MobileViewToggle } from "../../crear/components/MobileViewToggle";
+import { ItinerarySetupDialog } from "../../crear/components/ItinerarySetupDialog"; 
+import { PlaceSearchDialog } from "../../crear/components/PlacesSearchDialog";
+import { PlaceInfoDialog } from "../../crear/components/PlaceInfoDialog";
+
+// Mapa Dinámico (Lazy)
+const CinematicMap = dynamic(
+  () => import("../../crear/components/CinematicMap").then((mod) => mod.CinematicMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-full w-full bg-muted/30 animate-pulse flex flex-col items-center justify-center text-muted-foreground gap-3">
+        <Loader2 className="h-8 w-8 animate-spin text-primary/50" />
+        <span className="text-sm font-medium tracking-wide">Cargando mapa...</span>
+      </div>
+    ),
+  }
+);
+
+// Helper Distancia
+function distanceKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371; 
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+  return 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * R;
+}
+
+export default function EditarItinerarioPage() {
   const router = useRouter();
-  const api = ItinerariosAPI.getInstance();
+  const params = useParams();
+  // FIX: Asegurar que itineraryId sea string o undefined, no array
+  const itineraryId = Array.isArray(params?.id) ? params.id[0] : params?.id;
 
+  // STORE
   const {
     meta,
     actividades,
     setMeta,
-    setAllActivities, // 👈 Necesitarás agregar esto en tu store
-    reorderActivities, // 👈 Igual que en crear (reordenar dentro de un día)
+    setActivities,
+    addActivity,
     removeActivity,
-    resetAll, // 👈 Limpia el builder (opcional pero útil)
-  } = useItineraryBuilderStore();
+    updateActivity,
+    reset,
+  } = useItineraryBuilderStore(useShallow((s) => s));
 
-  const [isLoading, setIsLoading] = useState(true);
+  // ESTADOS
+  const [isLoadingData, setIsLoadingData] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-
+  const [optimizing, setOptimizing] = useState(false);
+  
+  const [setupOpen, setSetupOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
+  const [saveAlertOpen, setSaveAlertOpen] = useState(false);
+  
+  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
   const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
-  const [mobileView, setMobileView] = useState<"list" | "map">("list");
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const [mobileView, setMobileView] = useState<"list" | "map">("list");
 
-  const [showSetupDialog, setShowSetupDialog] = useState(false);
-  const [showSearchDialog, setShowSearchDialog] = useState(false);
-  const [placeInfoId, setPlaceInfoId] = useState<string | null>(null);
-
-  // ====== CARGA INICIAL DEL ITINERARIO ======
+  // --- CARGA DE DATOS ---
   useEffect(() => {
-    const load = async () => {
-      try {
-        setIsLoading(true);
-        const id = params.id;
-        const it: ItinerarioData = await api.getItinerarioById(id);
+    const loadItinerary = async () => {
+        // FIX: Si no hay ID todavía, no hacemos nada pero no bloqueamos el estado de carga eternamente si falla
+        if (!itineraryId) return;
 
-        // 1) Traer info de lugares
-        const lugaresIds = Array.from(
-          new Set(it.actividades.map((a) => a.lugarId))
-        );
+        try {
+            setIsLoadingData(true);
+            const api = ItinerariosAPI.getInstance();
+            
+            const data = await api.getItinerarioById(itineraryId);
+            
+            // FIX: Verificar si la respuesta es válida antes de procesar
+            if (!data || !data.title) {
+                 throw new Error("Datos incompletos");
+            }
 
-        const lugaresResponses = await Promise.all(
-          lugaresIds.map((lid) => api.getLugarById(lid))
-        );
+            const { meta: loadedMeta, activities: loadedActivities } = mapApiToBuilder(data);
+            
+            setMeta(loadedMeta);
+            setActivities(loadedActivities);
+            
+            if (loadedActivities.length > 0) {
+                const sorted = [...loadedActivities].sort((a,b) => a.fecha.getTime() - b.fecha.getTime());
+                setSelectedDayKey(format(sorted[0].fecha, "yyyy-MM-dd"));
+            } else {
+                setSelectedDayKey(format(loadedMeta.start, "yyyy-MM-dd"));
+            }
 
-        const lugaresById: Record<string, LugarData> = {};
-        lugaresResponses.forEach((l) => {
-          lugaresById[l.id_api_place] = l;
-        });
+            toast.success("Itinerario cargado correctamente");
 
-        // 2) Armar meta y actividades del builder
-        const newMeta = buildMetaFromItinerario(
-          it,
-          it.actividades,
-          lugaresById
-        );
-        const builderActs = buildBuilderActivitiesFromItinerario(
-          it.actividades,
-          lugaresById
-        );
-
-        // 3) Mandar al store
-        setMeta(newMeta);
-        setAllActivities(builderActs); // acción nueva que reemplaza todas las actividades
-
-        // 4) Día seleccionado inicial
-        const firstDayKey = format(newMeta.start, "yyyy-MM-dd");
-        setSelectedDayKey(firstDayKey);
-      } catch (err: any) {
-        console.error(err);
-        toast.error("No se pudo cargar el itinerario", {
-          description: err?.message || "Intenta más tarde.",
-        });
-        router.back();
-      } finally {
-        setIsLoading(false);
-      }
+        } catch (error) {
+            console.error("Error cargando itinerario:", error);
+            toast.error("No se pudo cargar el viaje", { description: "Es posible que no exista o no tengas permiso." });
+            router.push("/viajero/itinerarios");
+        } finally {
+            setIsLoadingData(false);
+        }
     };
 
-    // Opcional: limpiar state previo
-    resetAll?.();
+    loadItinerary();
+  }, [itineraryId, setMeta, setActivities, router]);
 
-    void load();
-  }, [params.id]);
 
-  // ====== DÍAS DEL ITINERARIO (DaySelector + CinematicMap) ======
-  const days: DayInfo[] = useMemo(() => {
+  // --- MEMOS ---
+  const days = useMemo(() => {
     if (!meta?.start || !meta?.end) return [];
-    const diff = differenceInCalendarDays(meta.end, meta.start);
-    const arr: DayInfo[] = [];
-
-    for (let i = 0; i <= diff; i++) {
-      const d = addDays(meta.start, i);
-      arr.push({
-        key: format(d, "yyyy-MM-dd"),
-        date: d,
-        label: `Día ${i + 1}`,
-        subtitle: format(d, "d MMM", { locale: es }),
-      });
-    }
-
-    return arr;
+    try {
+      return eachDayOfInterval({ start: meta.start, end: meta.end }).map((date, idx) => ({
+        key: format(date, "yyyy-MM-dd"),
+        date,
+        label: `Día ${idx + 1}`,
+        subtitle: format(date, "d MMM", { locale: es }),
+      }));
+    } catch { return []; }
   }, [meta?.start, meta?.end]);
 
-  // Día actual
-  const currentDay = useMemo(
-    () => days.find((d) => d.key === selectedDayKey) || null,
-    [days, selectedDayKey]
-  );
+  const currentDayActivities = useMemo(() => {
+    if (!selectedDayKey) return [];
+    return actividades.filter((a) => format(a.fecha, "yyyy-MM-dd") === selectedDayKey);
+  }, [actividades, selectedDayKey]);
 
-  // Actividades del día actual
-  const currentDayActivities: BuilderActivity[] = useMemo(() => {
-    if (!currentDay) return [];
-    return actividades.filter(
-      (a) => format(a.fecha, "yyyy-MM-dd") === currentDay.key
-    );
-  }, [actividades, currentDay]);
+  const currentDay = useMemo(() => days.find((d) => d.key === selectedDayKey) || null, [days, selectedDayKey]);
+  
+  const initialMapCenter = useMemo(() => {
+    if (!meta?.regions || meta.regions.length === 0) return undefined;
+    // @ts-ignore
+    const regionData = REGIONS_DATA[meta.regions[0]];
+    return regionData ? { lat: regionData.lat, lng: regionData.lng } : undefined;
+  }, [meta?.regions]);
 
-  // Datos para el mapa
-  const mapActivities: MapActivity[] = useMemo(() => {
-    return actividades.map((a) => ({
-      id: a.id,
-      nombre: a.lugar.nombre,
-      lat: a.lugar.latitud,
-      lng: a.lugar.longitud,
-      fecha: a.fecha,
-      start_time: a.start_time,
-    }));
-  }, [actividades]);
+  const tripProgress = useMemo(() => {
+    if (days.length === 0) return 0;
+    const filledDays = new Set(actividades.map(a => format(a.fecha, "yyyy-MM-dd"))).size;
+    return (filledDays / days.length) * 100;
+  }, [days, actividades]);
 
-  // ====== HANDLERS DnD ======
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveDragId(String(event.active.id));
-  };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    setActiveDragId(null);
-    if (!over || active.id === over.id || !currentDay) return;
+  // --- HANDLERS ---
 
-    reorderActivities?.(currentDay.key, String(active.id), String(over.id));
-  };
-
-  // ====== HANDLERS UI ======
-
-  const handleReset = () => {
-    // Este reset es solo del builder, no borra en backend
-    if (confirm("¿Quieres limpiar el itinerario actual del editor?")) {
-      resetAll?.();
-      if (meta?.start) {
-        setSelectedDayKey(format(meta.start, "yyyy-MM-dd"));
-      }
+  const handleReset = useCallback(() => {
+    if (window.confirm("¿Descartar cambios y recargar?")) {
+       window.location.reload(); 
     }
-  };
+  }, []);
 
-  const handleOptimize = async () => {
-    // Aquí reusas la lógica que ya tengas en la página de crear
-    // (usar /itinerario/optimization + update en el store)
-    // Por ahora solo disparo un toast para que sepas dónde conectar
-    toast.info("Pendiente: integrar optimizeRoute en el editor.");
-  };
-
-  const handleSave = async () => {
-    if (!meta) {
-      toast.error("Falta configurar el itinerario.");
-      setShowSetupDialog(true);
+  const handlePreUpdate = () => {
+    if (!meta) return;
+    if (actividades.length === 0) {
+      toast.error("El plan está vacío", { 
+        description: "Agrega al menos un lugar antes de guardar." 
+      });
       return;
     }
+    const filledDaysCount = new Set(actividades.map(a => format(a.fecha, "yyyy-MM-dd"))).size;
+    if (filledDaysCount < days.length) {
+      setSaveAlertOpen(true);
+    } else {
+      executeUpdate();
+    }
+  };
+
+  const executeUpdate = async () => {
+    if (!meta || !itineraryId) return;
+    setSaveAlertOpen(false);
+    setIsSaving(true);
 
     try {
-      setIsSaving(true);
-      const body = buildRequestFromBuilder(meta, actividades);
-      await api.updateItinerario(params.id, body);
-      toast.success("Itinerario actualizado correctamente.");
-      router.push("/viajero/itinerarios"); // o a la vista de detalle
-    } catch (err: any) {
-      console.error(err);
-      toast.error("No se pudo guardar el itinerario", {
-        description: err?.message || "Intenta nuevamente.",
-      });
+      const payload = buildItineraryPayload(meta, actividades);
+      await ItinerariosAPI.getInstance().updateItinerario(itineraryId, payload);
+      toast.success("Cambios guardados");
+    } catch (error: any) {
+      console.error(error);
+      toast.error("Error al guardar", { description: error.message });
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleAddPlaceClick = () => {
-    if (!currentDay) {
-      toast.error("Selecciona primero un día para agregar lugares.");
-      return;
+  const handleOptimize = useCallback(async () => {
+    if (!currentDay || currentDayActivities.length < 3) {
+        toast.warning("Se necesitan más lugares para optimizar");
+        return;
     }
-    setShowSearchDialog(true);
+    setOptimizing(true);
+    const toastId = toast.loading("Optimizando ruta...");
+    await new Promise(r => setTimeout(r, 600));
+
+    try {
+        const items = [...currentDayActivities];
+        const startNode = items.shift()!; 
+        const optimizedPath: BuilderActivity[] = [startNode];
+
+        while (items.length > 0) {
+          const current = optimizedPath[optimizedPath.length - 1];
+          let bestIdx = -1, minDist = Infinity;
+          items.forEach((cand, i) => {
+            const d = distanceKm(current.lugar.latitud, current.lugar.longitud, cand.lugar.latitud, cand.lugar.longitud);
+            if (d < minDist) { minDist = d; bestIdx = i; }
+          });
+          if (bestIdx !== -1) optimizedPath.push(items.splice(bestIdx, 1)[0]);
+        }
+
+        const others = actividades.filter(a => format(a.fecha, "yyyy-MM-dd") !== selectedDayKey);
+        setActivities([...others, ...optimizedPath]);
+        toast.success("Ruta optimizada", { id: toastId });
+    } catch (e) { toast.error("Error", { id: toastId }); } finally {
+        setOptimizing(false);
+    }
+  }, [currentDay, currentDayActivities, actividades, selectedDayKey, setActivities]);
+
+  const handleDragStart = (e: any) => setActiveDragId(e.active.id);
+  const handleDragEnd = (e: any) => {
+    setActiveDragId(null);
+    const { active, over } = e;
+    if (!over || active.id === over.id || !currentDay) return;
+    const oldIndex = currentDayActivities.findIndex((a) => a.id === active.id);
+    const newIndex = currentDayActivities.findIndex((a) => a.id === over.id);
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const reordered = arrayMove(currentDayActivities, oldIndex, newIndex);
+      const others = actividades.filter((a) => format(a.fecha, "yyyy-MM-dd") !== selectedDayKey);
+      setActivities([...others, ...reordered]);
+    }
   };
 
-  const handleSelectDay = (key: string) => {
-    setSelectedDayKey(key);
-  };
 
-  const handleAddLugarToDay = (lugar: LugarData) => {
-    if (!currentDay) return;
-    // Idealmente reusarías la misma acción que en crear:
-    // p.ej. addActivityForDay(currentDay.key, lugar)
-    useItineraryBuilderStore
-      .getState()
-      .addActivityForDay?.(currentDay.key, lugar);
-  };
+  // --- RENDER ---
 
-  // ====== RENDER ======
-
-  if (isLoading || !meta) {
+  if (isLoadingData) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <p className="text-sm text-muted-foreground">Cargando itinerario...</p>
+      <div className="h-[calc(100vh-4rem)] w-full flex flex-col items-center justify-center bg-background gap-4">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="text-muted-foreground font-medium animate-pulse">Cargando editor...</p>
       </div>
     );
   }
 
+  if (!meta) return null;
+
   return (
     <>
-      {/* Modal de configuración (reutilizado) */}
-      <ItinerarySetupDialog
-        open={showSetupDialog}
-        onOpenChange={setShowSetupDialog}
-      />
-
-      {/* Modal de búsqueda de lugares (reutilizado) */}
+      <ItinerarySetupDialog open={setupOpen} onOpenChange={setSetupOpen} />
+      
       <PlaceSearchDialog
-        open={showSearchDialog}
-        onOpenChange={setShowSearchDialog}
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
         currentDay={currentDay}
-        onAddLugarToDay={handleAddLugarToDay}
-      />
-
-      {/* Modal de información del lugar (reutilizado) */}
-      <PlaceInfoDialog
-        isOpen={!!placeInfoId}
-        onClose={() => setPlaceInfoId(null)}
-        activityId={placeInfoId}
-        allActivities={actividades}
-        onUpdate={(id, patch) => {
-          // Si en tu store ya tienes algo como updateActivity, úsalo aquí
-          useItineraryBuilderStore.getState().updateActivity?.(id, patch);
+        // @ts-ignore
+        defaultState={meta?.regions[0]}
+        onAddLugarToDay={(lugar) => {
+          if (!currentDay) return;
+          addActivity({
+            id: crypto.randomUUID(),
+            fecha: currentDay.date,
+            descripcion: "",
+            lugar: lugar as any,
+            start_time: null,
+            end_time: null,
+          });
+          toast.success("Lugar agregado");
         }}
       />
 
-      {/* Toggle móvil lista/mapa */}
-      <MobileViewToggle view={mobileView} onChange={setMobileView} />
+      <PlaceInfoDialog
+        isOpen={infoOpen}
+        onClose={() => setInfoOpen(false)}
+        activityId={selectedActivityId}
+        allActivities={actividades}
+        onUpdate={updateActivity}
+      />
 
-      <div className="flex h-full flex-col">
-        {/* HEADER */}
+      <AlertDialog open={saveAlertOpen} onOpenChange={setSaveAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
+                <AlertCircle className="h-5 w-5" /> Tienes días sin planes
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Deseas guardar los cambios así o prefieres seguir editando?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSaving}>Seguir editando</AlertDialogCancel>
+            <AlertDialogAction onClick={executeUpdate} disabled={isSaving} className="bg-primary">
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Guardar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <div className="flex h-[calc(100vh-4rem)] flex-col bg-background text-foreground overflow-hidden animate-in fade-in duration-500">
+        
+        <div className="w-full bg-muted h-1">
+            <div className="h-full bg-primary transition-all duration-1000 ease-out" style={{ width: `${tripProgress}%` }} />
+        </div>
+
         <ItineraryHeader
           meta={meta}
-          onEditSetup={() => setShowSetupDialog(true)}
+          onEditSetup={() => setSetupOpen(true)}
           onReset={handleReset}
           onOptimize={handleOptimize}
-          onSave={handleSave}
+          onSave={handlePreUpdate}
           isSaving={isSaving}
-          canOptimize={actividades.length > 1}
+          canOptimize={currentDayActivities.length >= 3 && !optimizing}
         />
 
-        {/* BODY */}
-        <div className="flex flex-1 overflow-hidden">
-          {/* COLUMNA IZQUIERDA: Días + Lista */}
-          <div className="flex w-full flex-col md:w-[420px] lg:w-[460px] border-r bg-muted/10">
-            <DaySelector
-              days={days}
-              selectedDayKey={selectedDayKey}
-              onSelect={handleSelectDay}
+        <div className="flex flex-1 overflow-hidden relative group/canvas">
+          <aside className={cn(
+              "flex flex-col w-full md:w-[440px] lg:w-[500px] bg-background border-r transition-transform duration-500 ease-in-out absolute md:relative h-full z-20 shadow-xl md:shadow-none",
+              mobileView === "list" ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+            )}>
+            <DaySelector days={days} selectedDayKey={selectedDayKey} onSelect={setSelectedDayKey} />
+            
+            <ActivityListPanel
+              activities={currentDayActivities}
+              currentDayLabel={currentDay?.label || null}
+              onAddPlace={() => setSearchOpen(true)}
+              onRemoveActivity={removeActivity}
+              onViewDetails={(id) => { setSelectedActivityId(id); setInfoOpen(true); }}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+              activeDragId={activeDragId}
             />
-            <div className="flex-1 min-h-0">
-              <ActivityListPanel
-                activities={currentDayActivities}
-                currentDayLabel={currentDay?.label ?? null}
-                onAddPlace={handleAddPlaceClick}
-                onRemoveActivity={removeActivity}
-                onViewDetails={setPlaceInfoId}
-                onDragEnd={handleDragEnd}
-                onDragStart={handleDragStart}
-                activeDragId={activeDragId}
-              />
-            </div>
-          </div>
+          </aside>
 
-          {/* COLUMNA DERECHA: Mapa */}
-          <div className="hidden md:block flex-1">
+          <main className={cn(
+              "flex-1 relative transition-all duration-500 ease-in-out absolute md:relative inset-0 bg-muted/10 z-10",
+              mobileView === "map" ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 md:translate-x-0 md:opacity-100"
+            )}>
             <CinematicMap
-              activities={mapActivities}
+              activities={actividades.map((a) => ({
+                id: a.id,
+                nombre: a.lugar.nombre,
+                lat: a.lugar.latitud,
+                lng: a.lugar.longitud,
+                fecha: a.fecha,
+                start_time: null,
+              }))}
               days={days}
               selectedDayKey={selectedDayKey}
               onSelectDay={setSelectedDayKey}
+              // @ts-ignore
+              initialCenter={initialMapCenter}
             />
-          </div>
+          </main>
 
-          {/* En móvil, decide si mostrar mapa o lista (lista ya se muestra arriba) */}
-          {mobileView === "map" && (
-            <div className="md:hidden absolute inset-x-0 bottom-0 top-[56px]">
-              <CinematicMap
-                activities={mapActivities}
-                days={days}
-                selectedDayKey={selectedDayKey}
-                onSelectDay={setSelectedDayKey}
-              />
-            </div>
-          )}
+          <MobileViewToggle view={mobileView} onChange={setMobileView} />
         </div>
       </div>
     </>
