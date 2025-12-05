@@ -1,12 +1,16 @@
 "use client";
 
 import * as React from "react";
-import { ChatLayout } from "@/components/viajero/chat/ChatLayout"; 
+import { ChatLayout } from "@/components/viajero/chat/ChatLayout";
+import { useSearchParams } from "next/navigation";
 
 export default function ViajeroChatsPage() {
+  const searchParams = useSearchParams();
+  const initialUsername = searchParams.get("username") || undefined;
+
   return (
     <div className="min-h-[calc(100dvh-64px)] bg-background">
-      <ChatLayout />
+      <ChatLayout initialUsername={initialUsername} />
     </div>
   );
 }

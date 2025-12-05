@@ -46,7 +46,7 @@ function adaptSocketUserToConversation(user: SocketUser, selfUser: User): Conver
 }
 //////
 
-export function ChatLayout() {
+export function ChatLayout({ initialUsername }: { initialUsername?: string }) {
   const { socket, userID, username } = useSocket();
   const [socketUsers, setSocketUsers] = React.useState<SocketUser[]>([]);
   const [activeId, setActiveId] = React.useState<string | undefined>(undefined); 
@@ -63,10 +63,6 @@ export function ChatLayout() {
       //console.log("ChatLayout: Recibido evento 'users'", users);
       const allUsers = users.map((u) => ({ ...u, hasNewMessages: false }));
       setSocketUsers(allUsers);
-      
-      if (allUsers.length > 0 && !activeId) {
-        setActiveId(allUsers[0].userID);
-      }
     });
 
     socket.on("user connected", (user: SocketUser) => {
@@ -126,6 +122,19 @@ export function ChatLayout() {
       socket.off("get friends list");
     };
   }, [socket, activeId, userID, username]);
+
+  // Si initialUsername está disponible y socketUsers ya se cargó, buscar y setear el activeId
+  React.useEffect(() => {
+    if (initialUsername && socketUsers.length > 0) {
+      const targetUser = socketUsers.find((u) => u.username === initialUsername);
+      if (targetUser) {
+        setActiveId(targetUser.userID);
+      }
+    } else if (!initialUsername && socketUsers.length > 0 && !activeId) {
+      // Solo setear el primer usuario si no hay initialUsername y activeId no está seteado
+      setActiveId(socketUsers[0].userID);
+    }
+  }, [initialUsername, socketUsers]);
   
   const selfUser: User | null = React.useMemo(() => {
     if (!userID || !username) return null;

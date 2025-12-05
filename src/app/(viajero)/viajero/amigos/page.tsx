@@ -24,6 +24,10 @@ import { getInitials } from "@/lib/utils";
 
 const API_URL = "https://harol-lovers.up.railway.app";
 
+import { ItinerariosAPI } from "@/api/ItinerariosAPI";
+
+const api = ItinerariosAPI.getInstance();
+
 // Estados posibles para responder a una solicitud de amistad
 enum FriendRequestState {
   PENDING = 0,
@@ -325,6 +329,31 @@ export default function FriendsPage() {
     };
 
     loadFriends();
+
+    // Cargar sugerencias de amigos
+    const loadSuggestions = async () => {
+      try {
+        const resp = await api.getFriendSuggestions();
+        const list = Array.isArray(resp?.data) ? resp.data : [];
+        const mapped: FriendSuggestion[] = list.map((s: any) => ({
+          id: s.username || String(s.id || ""),
+          username: s.username,
+          name: s.nombre_completo || s.username,
+          avatar: s.foto_url || "",
+          city: s.ciudad,
+          country: s.pais,
+          mutualCount: s.mutuos || 0,
+          interests: s.intereses || [],
+        }));
+
+        setSuggestions(mapped);
+      } catch (err) {
+        console.warn("No se pudieron cargar sugerencias:", err);
+        setSuggestions([]);
+      }
+    };
+
+    loadSuggestions();
   }, []);
 
   const totalFriends = friends.length;
@@ -595,13 +624,15 @@ function FriendCard({
               )}
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-foreground"
-          >
-            <MessageCircle className="h-4 w-4" />
-          </Button>
+          <Link href={`/viajero/chats?username=${friend.username}`}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            >
+              <MessageCircle className="h-4 w-4" />
+            </Button>
+          </Link>
         </div>
 
         <div className="space-y-2 rounded-lg bg-muted/40 p-2.5 text-xs text-muted-foreground">
