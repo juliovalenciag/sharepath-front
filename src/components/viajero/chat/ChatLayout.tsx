@@ -18,6 +18,7 @@ type SocketUser = {
   connected: boolean;
   messages: any[];
   hasNewMessages?: boolean;
+  unreadCount: number;
 };
 
 //Funciones auxiliar para adaptar datos del socket al front
@@ -41,13 +42,25 @@ function adaptSocketUserToConversation(user: SocketUser, selfUser: User): Conver
   const uiMessages: Message[] = user.messages.map((msg) =>
     adaptSocketMessageToUIMessage(msg, selfUser.id)
   );
+
+  let unreadValue = 0;
+
+  if(user.unreadCount && user.unreadCount > 0)
+  {
+    unreadValue = user.unreadCount;
+  }
+  else if(user.hasNewMessages)
+  {
+    unreadValue = 1;//Si llega en tiempo real
+  }
+
   return {
     id: user.userID,
     title: user.username,
     members: [selfUser, { id: user.userID, name: user.username, online: user.connected }],
     messages: uiMessages,
     lastMessage: uiMessages[uiMessages.length - 1],
-    unread: user.hasNewMessages ? 1 : 0,
+    unread: unreadValue,//Mensajes sin leer
     tripId: undefined,
   };
 }
@@ -90,7 +103,8 @@ export function ChatLayout() {
             ...newUser,
             //Si ya habia mensajes guardados, se mantienen, sino array vacio
             messages: existingUser ? existingUser.messages : [],
-            hasNewMessages: existingUser ? existingUser.hasNewMessages : false
+            hasNewMessages: existingUser ? existingUser.hasNewMessages : false,
+            unreadCount: existingUser ? existingUser.unreadCount : (newUser.unreadCount || 0)
           };
         });
       });
@@ -151,6 +165,8 @@ export function ChatLayout() {
         //   console.warn("El navegador bloqueo el sonido por falta de interacción", error)
         // });
 
+        const currentActiveId = activeIdRef.current;
+
         setSocketUsers((prev) =>
           prev.map((u) => {
             const fromSelf = message.from === userID;
@@ -166,13 +182,16 @@ export function ChatLayout() {
 
               if(!fromSelf)
               {
-                socket.emit("mark messages received", { withUserID: targetUserID });
+               socket.emit("mark messages received", { withUserID: targetUserID });
               }
 
               return {
                 ...u,
                 messages: [...u.messages, message], //Se agrega el array existente
-                hasNewMessages: u.userID !== activeId,
+                // hasNewMessages: u.userID !== activeId,
+                hasNewMessages: !isChatOpen,
+                // unreadCount: u.userID !== activeId ? (u.unreadCount + 1) : 0,
+                unreadCount: isChatOpen ? 0 : (u.unreadCount + 1),
               };
             }
             return u;
@@ -271,7 +290,7 @@ export function ChatLayout() {
     setActiveId(id);
     setSocketUsers((prev) =>
       prev.map((u) =>
-        u.userID === id ? { ...u, hasNewMessages: false } : u
+        u.userID === id ? { ...u, hasNewMessages: false, unreadCount: 0 } : u
       )
     );
 

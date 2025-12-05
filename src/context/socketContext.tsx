@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 
 //Datos del contexto
@@ -78,7 +78,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       if(err.message.includes("inválido") || err.message.includes("No se proporcionó"))
       {
         console.error("Credenciales inválidas, limpiando sessionID...");
-        localStorage.remove("sessionID");
+        localStorage.removeItem("sessionID");
       }
     })
 
