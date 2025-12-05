@@ -11,7 +11,9 @@ export type Message = {
   text?: string;
   images?: string[];
   createdAt: string; // ISO
-  status?: "sent" | "delivered" | "seen";
+  status?: string;
+  // status?: "sent" | "delivered" | "seen";
+  // status?: number;
   reactions?: { by: string; emoji: string }[];
   system?: boolean;
 };

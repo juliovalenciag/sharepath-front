@@ -1,12 +1,14 @@
 "use client";
 
 import * as React from "react";
+import { useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Conversation, Message, User } from "./_types";
 import { ChatsSidebar } from "./ChatsSidebar";
 import { ChatThread } from "./ChatThread";
 import { ChatDetails } from "./ChatDetails";
 import { useSocket } from "@/context/socketContext"; //
+import { m } from "motion/react";
 //import { currentUser } from "./_mock"; //
 
 //Datos que se reciben del servidor
@@ -21,12 +23,17 @@ type SocketUser = {
 //Funciones auxiliar para adaptar datos del socket al front
 function adaptSocketMessageToUIMessage(socketMsg: any, selfUserID: string): Message {
   const isMine = socketMsg.from === selfUserID;
+
+  let statusUI = "sent";
+  if (socketMsg.status === 1) statusUI = "received";
+  else if (socketMsg.status === 2) statusUI = "read";
+
   return {
-    id: crypto.randomUUID(),
+    id: socketMsg.id || crypto.randomUUID(),
     authorId: socketMsg.from,
     text: socketMsg.content,
-    createdAt: new Date().toISOString(),
-    status: isMine ? "sent" : undefined,
+    createdAt: socketMsg.createdAt || new Date().toISOString(),
+    status: isMine ? statusUI : undefined,
   };
 }
 
@@ -51,35 +58,66 @@ export function ChatLayout() {
   const [socketUsers, setSocketUsers] = React.useState<SocketUser[]>([]);
   const [activeId, setActiveId] = React.useState<string | undefined>(undefined); 
 
+  const activeIdRef = useRef<string | undefined>(undefined); //Para acceder al chat del amigo
+
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => { activeIdRef.current = activeId }, [activeId]);
+
   React.useEffect(() => {
+    audioRef.current = new Audio('/sonido.mp3');
+
     if (!socket || !userID || !username) {
-        //console.log("ChatLayout: Esperando username socket y userID...");
+        console.log("ChatLayout: Esperando username socket y userID...");
         return;
     }
+
+    console.log("ChatLayout: Pidiendo la lista de amigos al servidor...");
+    socket.emit("get friends list");
     
-    //console.log("ChatLayout: Socket y userID listos. Configurando listeners...");
+    console.log("ChatLayout: Socket y userID listos. Configurando listeners...");
 
     socket.on("users", (users: SocketUser[]) => {
-      //console.log("ChatLayout: Recibido evento 'users'", users);
-      const allUsers = users.map((u) => ({ ...u, hasNewMessages: false }));
-      setSocketUsers(allUsers);
+      console.log("ChatLayout: Recibido evento 'users'", users);
+
+      setSocketUsers((currentUsers) => {
+        const currentUsersMap = new Map(currentUsers.map(u => [u.userID, u]));
+
+        return users.map(newUser => {
+          const existingUser = currentUsersMap.get(newUser.userID);
+
+          return{
+            ...newUser,
+            //Si ya habia mensajes guardados, se mantienen, sino array vacio
+            messages: existingUser ? existingUser.messages : [],
+            hasNewMessages: existingUser ? existingUser.hasNewMessages : false
+          };
+        });
+      });
       
-      if (allUsers.length > 0 && !activeId) {
-        setActiveId(allUsers[0].userID);
-      }
+      // if (allUsers.length > 0 && !activeId) {
+      //   setActiveId(allUsers[0].userID);
+      // }
     });
 
     socket.on("user connected", (user: SocketUser) => {
-      //console.log("ChatLayout: Recibido evento 'user connected'", user);
-      setSocketUsers((prev) =>
-        prev.map((u) =>
-          u.userID === user.userID ? { ...u, connected: true } : u
-        )
-      );
+      console.log("ChatLayout: Recibido evento 'user connected'", user);
+      setSocketUsers((prev) => {
+        const exists = prev.find(u => u.userID === user.userID);
+        if(exists)
+        {
+          return prev.map((u) => u.userID === user.userID ? { ...u, connected: true } : u)
+        }
+        else
+        {
+          //Si es nuevo, lo agregamos
+          return [...prev, { ...user, connected: true, messages: [], hasNewMessages: false }];
+        }
+      });
     });
 
     socket.on("user disconnected", (disconnectedID: string) => {
-      //console.log(`${disconnectedID} desconectado`);
+      console.log(`${disconnectedID} desconectado`);
       
       setSocketUsers((prev) => {
         return prev.map((u) => {
@@ -94,17 +132,46 @@ export function ChatLayout() {
       });
     });
 
+    socket.on("chat history", ({ withUserID, messages }) => {
+      console.log('Chat history');
+      setSocketUsers((prev) => prev.map((u) => {
+        if(u.userID === withUserID)
+        {
+          return { ...u, messages: messages }; //Se guardan los mensajes en el estado
+        }
+        return u;
+      }));
+    });
+
     socket.on("private message", (message: { content: string; from: string; to: string }) => {
-        //console.log("ChatLayout: Recibido evento 'private message'", message);
+        console.log("ChatLayout: Recibido evento 'private message'", message);
+
+        audioRef.current?.play()
+        // audioRef.current?.play().catch((error) => {
+        //   console.warn("El navegador bloqueo el sonido por falta de interacción", error)
+        // });
+
         setSocketUsers((prev) =>
           prev.map((u) => {
             const fromSelf = message.from === userID;
             const targetUserID = fromSelf ? message.to : message.from;
-            
+            const isChatOpen = activeIdRef.current === targetUserID;
+
             if (u.userID === targetUserID) {
+              //Si el chat esta abierto y recibo un mensaje, se marca como leido
+              if(!fromSelf && isChatOpen)
+              {
+                socket.emit("mark messages read", { withUserID: targetUserID });
+              }
+
+              if(!fromSelf)
+              {
+                socket.emit("mark messages received", { withUserID: targetUserID });
+              }
+
               return {
                 ...u,
-                messages: [...u.messages, message],
+                messages: [...u.messages, message], //Se agrega el array existente
                 hasNewMessages: u.userID !== activeId,
               };
             }
@@ -114,19 +181,50 @@ export function ChatLayout() {
       }
     );
 
-    //console.log("ChatLayout: Pidiendo la lista de amigos al servidor...");
-    socket.emit("get friends list");
+    socket.on("messages read", ({ byUserID }) => {
+      console.log('Mensaje Evento messages read');
+      setSocketUsers((prev) => prev.map((u) => {
+        if(u.userID === byUserID){
+          //Actualizar status de mis mensajes enviados a este usuario
+          const updatedMessages = u.messages.map(m => 
+            m.from === userID ? { ...m, status: 2 } : m
+          );
+
+          return { ...u, messages: updatedMessages };
+        }
+        return u;
+      }));
+    });
+
+    socket.on("message received", ({ byUserID }) => {
+      console.log('Evento mensaje received');
+      setSocketUsers((prev) => prev.map((u) => {
+
+        if(u.userID === byUserID)
+        {
+          const updatedMessages = u.messages.map(m => 
+            (m.from === userID && (!m.status || m.status < 1)) ? { ...m, status: 1 } : m
+          );
+          return { ...u, messages: updatedMessages }
+        }
+
+        return u;
+      }));
+    });
 
     return () => {
-      //console.log("ChatLayout: Limpiando listeners de socket");
+      console.log("ChatLayout: Limpiando listeners de socket");
       socket.off("users");
       socket.off("user connected");
       socket.off("user disconnected");
+      socket.off("chat history");
       socket.off("private message");
+      socket.off("messages read");
+      socket.off("message received");
       socket.off("get friends list");
     };
-  }, [socket, activeId, userID, username]);
-  
+  }, [socket, userID, username]);
+
   const selfUser: User | null = React.useMemo(() => {
     if (!userID || !username) return null;
     return {
@@ -148,7 +246,7 @@ export function ChatLayout() {
   function sendMessage(text: string) {
     if (!active || !socket || !userID) return; //userID del contexto del socket
     
-    //console.log(`ChatLayout: Enviando mensaje a ${active.id}`);
+    console.log(`ChatLayout: Enviando mensaje a ${active.id}`);
     socket.emit("private message", {
       content: text,
       to: active.id,
@@ -158,6 +256,8 @@ export function ChatLayout() {
       content: text,
       from: userID, //userID del contexto
       to: active.id,
+      createdAt: new Date().toISOString(),
+      status: 0 //Enviado
     };
 
     setSocketUsers((prev) =>
@@ -174,6 +274,14 @@ export function ChatLayout() {
         u.userID === id ? { ...u, hasNewMessages: false } : u
       )
     );
+
+    if(socket){
+      //Pedir historial de mensajes
+      socket.emit("fetch messages", { withUserID: id });
+
+      //Marcar como leidos
+      socket.emit("mark messages read", { withUserID: id});
+    }
   };
 
   const [showDetails, setShowDetails] = React.useState(true);
@@ -187,11 +295,11 @@ if (!selfUser) {
   }
 
 return (
-  <div className="grid grid-cols-[1fr_2fr] gap-2 h-full bg-white dark:bg-[#0b141a] transition-colors">
+  <div className="grid grid-cols-[1fr_2fr] gap-2 h-full bg-white dark:bg-[#0b141a] transition-colors overflow-hidden">
       {/* Barra lateral de Chats (contactos) */}
-      <aside>
+      <aside className="border-r border-gray-200 dark:border-gray-700 h-full overflow-hidden">
         {
-          active &&
+          // active &&
           <ChatsSidebar
             conversations={conversationsForUI}
             activeId={activeId}
