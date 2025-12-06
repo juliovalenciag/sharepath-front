@@ -706,7 +706,7 @@ export default function ViajeroLanding() {
             </h3>
           </div>
           <Link 
-            href="/viajero/itinerarios/nuevo" 
+            href="/viajero/itinerarios/crear" 
             className="mt-2 md:mt-0 inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
           >
             Publicar mi viaje
@@ -763,7 +763,7 @@ export default function ViajeroLanding() {
             Empieza a planificar tu viaje perfecto en segundos.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
-            <Link href="/viajero/itinerarios/nuevo" className={btn.primary}>
+            <Link href="/viajero/itinerarios/crear" className={btn.primary}>
               Crear mi itinerario
             </Link>
             <Link href="#itinerarios" className={btn.ghost}>

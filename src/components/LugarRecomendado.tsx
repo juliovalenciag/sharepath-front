@@ -28,7 +28,7 @@ export default function LugarRecomendado() {
               <Lightbulb className="w-5 h-5 "/>Sugerencia de lugar</p>
               Palacio de Bellas Artes
             </CardTitle>
-            <CardDescription className="text-sm text-gray-600 mt-2">
+            <CardDescription className="text-sm mt-2">
               Uno de los recintos culturales más emblemáticos de México, ubicado
               en el corazón de la CDMX.
               <Button

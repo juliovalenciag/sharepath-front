@@ -74,14 +74,14 @@ const schema = z
   .object({
     nombre: z
       .string()
-      .min(3, "El nombre es muy corto")
-      .max(50, "El nombre es muy largo"),
+      .trim() // <--- Agregamos esto para limpiar espacios antes de validar
+      .min(3, "El nombre debe tener al menos 3 caracteres válidos")
+      .max(50, "El nombre es muy largo"), // Por defecto permite letras, números y símbolos
     regions: z
       .array(z.enum(regionValues))
       .min(1, { message: "Selecciona al menos un destino" }),
     start: z.date().nullable().optional(),
     end: z.date().nullable().optional(),
-    visibility: z.enum(["private", "friends", "public"]),
     companions: z.array(z.string()).default([]),
   })
   .refine(
@@ -595,55 +595,6 @@ export default function CreateItineraryForm() {
                 ))}
               </div>
             </section> */}
-
-            {/* Compañeros de viaje */}
-            <section className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="block text-sm font-medium">
-                  ¿Con quién viajas?
-                </label>
-                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                  <IconUsersGroup className="w-3.5 h-3.5" />
-                  Opcional
-                </span>
-              </div>
-
-              <Input
-                type="text"
-                placeholder="Escribe un nombre y presiona Enter (p. ej. Ana, Luis...)"
-                className="h-10 rounded-lg text-sm"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === ",") {
-                    e.preventDefault();
-                    addCompanionTokenFromText(
-                      (e.target as HTMLInputElement).value
-                    );
-                    (e.target as HTMLInputElement).value = "";
-                  }
-                }}
-              />
-
-              {!!companions.length && (
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {companions.map((c) => (
-                    <span
-                      key={c}
-                      className="inline-flex items-center gap-1 rounded-full border px-2 py-[2px] text-xs bg-muted/60"
-                    >
-                      {c}
-                      <button
-                        type="button"
-                        className="opacity-70 hover:opacity-100"
-                        aria-label={`Quitar ${c}`}
-                        onClick={() => removeCompanionToken(c)}
-                      >
-                        <IconX className="h-3.5 w-3.5" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </section>
           </div>
 
           {/* Columna derecha (sticky): resumen  + CTA */}
@@ -695,15 +646,6 @@ export default function CreateItineraryForm() {
                         Sin definir
                       </span>
                     )}
-                  </div>
-                </div>
-
-                <div className="text-sm">
-                  <div className="text-muted-foreground">Visibilidad</div>
-                  <div className="mt-1 text-xs">
-                    {visibility === "private" && "Solo tú puedes verlo"}
-                    {visibility === "friends" && "Visible para tus amigos"}
-                    {visibility === "public" && "Itinerario público"}
                   </div>
                 </div>
               </div>

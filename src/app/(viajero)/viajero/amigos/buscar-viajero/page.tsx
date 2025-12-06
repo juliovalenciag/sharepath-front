@@ -16,7 +16,9 @@ import {
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -32,22 +34,56 @@ interface ViajeroData {
   foto_url: string | null;
   amigos_en_comun: number;
   ciudad?: string;
+  status?: number; // 0: pending, 1: unknown, 2: friend
 }
 
+// Tipo de sugerencia proveniente del backend
+interface FriendSuggestionApi {
+  username: string;
+  nombre_completo: string;
+  correo?: string;
+  foto_url?: string | null;
+}
 const API_URL = "https://harol-lovers.up.railway.app";
-// const API_URL = "http://localhost:4000";
+
+// API instance
+const api = ItinerariosAPI.getInstance();
+
+async function sendFriendRequest(receiving: string) {
+  return await api.sendFriendRequest(receiving);
+}
 
 // ===== Componentes Internos =====
 
-function ViajeroCard({ data }: { data: ViajeroData }) {
-  const [isAdded, setIsAdded] = useState(false);
+function ViajeroCard({ data, onSent }: { data: ViajeroData; onSent?: (username: string) => void }) {
+  const [status, setStatus] = useState<number | undefined>(data.status);
+  const [isSending, setIsSending] = useState(false);
 
-  const handleAdd = (e: React.MouseEvent) => {
-    // IMPORTANTE: Detenemos la propagación para que el click NO active el Link al perfil
+  useEffect(() => {
+    setStatus(data.status);
+  }, [data.status]);
+
+  const handleAdd = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    // Aquí iría tu lógica de API para agregar
-    setIsAdded(true);
+
+    // No hacer nada si ya está pendiente o es amigo
+    if (isSending || status === 0 || status === 2) return;
+
+    try {
+      setIsSending(true);
+      console.log("este es el username: ", data.username);
+      const response = await sendFriendRequest(data.username);
+      toast.success("Solicitud enviada correctamente");
+      console.log("Respuesta del backend:", response);
+      setStatus(0); // Cambiar a pendiente
+      if (onSent) onSent(data.username);
+    } catch (error) {
+      console.error("No se pudo enviar la solicitud:", error);
+      toast.error("No se pudo enviar la solicitud");
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
@@ -90,14 +126,22 @@ function ViajeroCard({ data }: { data: ViajeroData }) {
           {/* Acciones */}
           <div className="flex items-center gap-3 pl-2">
             {/* Botón Agregar con lógica aislada */}
-            <Button 
-              size="sm" 
-              variant={isAdded ? "secondary" : "default"}
-              className={`h-8 px-3 text-xs font-medium transition-all ${isAdded ? "text-muted-foreground bg-muted" : "shadow-sm"}`}
+            <Button
+              size="sm"
+              variant={status === 0 || status === 2 ? "secondary" : "default"}
+              className={`h-8 px-3 text-xs font-medium transition-all ${status === 0 || status === 2 ? "text-muted-foreground bg-muted" : "shadow-sm"}`}
               onClick={handleAdd}
-              disabled={isAdded}
+              disabled={status === 0 || status === 2 || isSending}
             >
-              {isAdded ? (
+              {isSending ? (
+                <>
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Enviando
+                </>
+              ) : status === 2 ? (
+                <>
+                  <UserCheck className="mr-1.5 h-3.5 w-3.5" /> Amigo
+                </>
+              ) : status === 0 ? (
                 <>
                   <UserCheck className="mr-1.5 h-3.5 w-3.5" /> Enviada
                 </>
@@ -123,12 +167,14 @@ function SugerenciaCard({
   status,
   amigosComun = 12,
   foto_url,
+  onConnect,
 }: {
   nombre: string;
   username?: string; // Hacer opcional si el mock no lo tiene, pero ideal tenerlo
   status: "Agregar" | "Solicitud enviada";
   amigosComun?: number;
   foto_url?: string;
+  onConnect?: (username?: string) => void | Promise<void>;
 }) {
   // Fallback username for mock data
   const safeUsername = username || nombre.toLowerCase().replace(/\s+/g, '');
@@ -161,7 +207,7 @@ function SugerenciaCard({
           disabled={status === "Solicitud enviada"}
           onClick={(e) => {
              e.preventDefault();
-             // Lógica agregar
+             if (onConnect) onConnect(username);
           }}
         >
           {status === "Solicitud enviada" ? "Pendiente" : "Conectar"}
@@ -213,6 +259,8 @@ const mockSugerencias = [
 export default function BuscarViajeroPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [viajeros, setViajeros] = useState<ViajeroData[]>([]);
+  const [sugerenciasApi, setSugerenciasApi] = useState<FriendSuggestionApi[]>([]);
+  const [pendingSugerencias, setPendingSugerencias] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
@@ -224,24 +272,74 @@ export default function BuscarViajeroPage() {
       return;
     }
 
-    const token = localStorage.getItem("authToken");
-    if (!token) return;
-
     setLoading(true);
     setHasSearched(true);
-    
-    try {
-      const response = await fetch(
-        `${API_URL}/user/search?q=${encodeURIComponent(term)}`,
-        {
-          method: "GET",
-          headers: { token: token },
-        }
-      );
 
-      if (!response.ok) throw new Error("Error al buscar viajeros");
-      const data = await response.json();
-      setViajeros(data);
+    try {
+      // 1) Buscar usuarios usando la capa de API
+      const searchResp = await api.searchUsers(term);
+      // Puede venir como { users: [...] } o como arreglo directo
+      let users: any[] = [];
+      if (Array.isArray((searchResp as any).users)) users = (searchResp as any).users;
+      else if (Array.isArray((searchResp as any).data)) users = (searchResp as any).data;
+      else if (Array.isArray(searchResp)) users = searchResp as any[];
+
+      // 2) Obtener solicitudes pendientes (status === 0) y amigos (status === 2)
+      const userStatus = new Map<string, number>(); // username -> status
+      const myUserJson = localStorage.getItem("user");
+      const myUsername = myUserJson ? JSON.parse(myUserJson).username : null;
+
+      // Obtener mis amigos actuales
+      try {
+        const friendsResp = await api.getFriends();
+        const friends = Array.isArray(friendsResp) ? friendsResp : [];
+        friends.forEach((friend: any) => {
+          const friendUsername =
+            friend.receiving_user?.username === myUsername
+              ? friend.requesting_user?.username
+              : friend.receiving_user?.username;
+          if (friendUsername) {
+            userStatus.set(friendUsername, 2); // status 2 = friend
+          }
+        });
+      } catch (err) {
+        console.warn("No se pudieron obtener amigos:", err);
+      }
+
+      // Obtener solicitudes pendientes (status === 0)
+      try {
+        const requests = await api.getRequests();
+        if (requests && Array.isArray((requests as any).data) && myUsername) {
+          (requests as any).data.forEach((req: any) => {
+            const isPending = req.status === 0 || req.status === "0";
+            if (!isPending) return;
+            // Si yo soy quien solicitó, marcar al receiving como pendiente
+            if (req.requesting_user?.username === myUsername && req.receiving_user?.username) {
+              userStatus.set(req.receiving_user.username, 0); // status 0 = pending
+            }
+            // Si yo soy quien recibe, marcar al requesting como pendiente también
+            if (req.receiving_user?.username === myUsername && req.requesting_user?.username) {
+              userStatus.set(req.requesting_user.username, 0); // status 0 = pending
+            }
+          });
+        }
+      } catch (err) {
+        console.warn("No se pudieron obtener solicitudes pendientes:", err);
+      }
+
+      const mapped: ViajeroData[] = users
+        .map((u: any, idx: number) => ({
+          id: u.id ?? idx,
+          nombre_completo: u.nombre_completo || u.nombre || u.username,
+          username: u.username,
+          foto_url: u.foto_url || null,
+          amigos_en_comun: u.amigos_en_comun || 0,
+          ciudad: u.ciudad,
+          status: userStatus.get(u.username) ?? 1, // 1 = unknown/can add
+        }))
+        .filter((v) => v.username !== myUsername); // No mostrar al usuario mismo
+
+      setViajeros(mapped);
     } catch (error) {
       console.error(error);
       setViajeros([]);
@@ -261,6 +359,27 @@ export default function BuscarViajeroPage() {
     }, 500);
     return () => clearTimeout(timeout);
   }, [searchTerm]);
+
+  // Cargar sugerencias desde el backend
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await api.getFriendSuggestions();
+        const list = Array.isArray(res?.data) ? res.data : [];
+        if (!mounted) return;
+        setSugerenciasApi(list);
+      } catch (err) {
+        console.warn("No se pudieron cargar sugerencias:", err);
+        if (!mounted) return;
+        setSugerenciasApi([]);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -307,7 +426,14 @@ export default function BuscarViajeroPage() {
                 </div>
                 <div className="space-y-3">
                     {viajeros.map((viajero) => (
-                    <ViajeroCard key={viajero.id} data={viajero} />
+                    <ViajeroCard
+                      key={viajero.id}
+                      data={viajero}
+                      onSent={(username) => {
+                        // Actualizar el array de viajeros para mantener estado 'Enviada' (status 0)
+                        setViajeros((prev) => prev.map((v) => v.username === username ? { ...v, status: 0 } : v));
+                      }}
+                    />
                     ))}
                 </div>
               </div>
@@ -332,14 +458,37 @@ export default function BuscarViajeroPage() {
           
           <ScrollArea className="w-full whitespace-nowrap pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
             <div className="flex gap-4 py-1">
-              {mockSugerencias.map((sugerencia) => (
-                <SugerenciaCard
-                  key={sugerencia.id}
-                  nombre={sugerencia.nombre}
-                  username={sugerencia.username}
-                  status={sugerencia.status}
-                />
-              ))}
+              {sugerenciasApi.length === 0 ? (
+                mockSugerencias.map((sugerencia) => (
+                  <SugerenciaCard
+                    key={sugerencia.id}
+                    nombre={sugerencia.nombre}
+                    username={sugerencia.username}
+                    status={sugerencia.status}
+                  />
+                ))
+              ) : (
+                sugerenciasApi.map((s) => (
+                  <SugerenciaCard
+                    key={s.username}
+                    nombre={s.nombre_completo}
+                    username={s.username}
+                    foto_url={s.foto_url || undefined}
+                    status={pendingSugerencias.has(s.username) ? "Solicitud enviada" : "Agregar"}
+                    onConnect={async (u?: string) => {
+                      if (!u) return;
+                      try {
+                        await sendFriendRequest(u);
+                        toast.success("Solicitud enviada");
+                        setPendingSugerencias((prev) => new Set(prev).add(u));
+                      } catch (err) {
+                        console.error("Error enviando solicitud desde sugerencias:", err);
+                        toast.error("No se pudo enviar la solicitud");
+                      }
+                    }}
+                  />
+                ))
+              )}
             </div>
             <ScrollBar orientation="horizontal" />
           </ScrollArea>

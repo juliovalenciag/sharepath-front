@@ -3,7 +3,7 @@
 import {
   getCategoryName,
   getDefaultImageForCategory,
-} from "@/components/dashboard-components/category-utils";
+} from "@/lib/category-utils";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,10 +39,10 @@ const DiaCard2: React.FC<DiaCardProps> = ({ diaDetalle }) => {
 
   return (
     <>
-      <Card className="w-full h-full">
+      <Card className="w-full h-full border-0 shadow-none">
         <CardHeader className="flex justify-between items-center m-0">
           {diaDetalle.dia}
-          <div> ⭐{diaDetalle.calificacion.toFixed(1)}</div>
+          {/* <div> ⭐{diaDetalle.calificacion.toFixed(1)}</div> */}
         </CardHeader>
         <CardContent>
           <Image

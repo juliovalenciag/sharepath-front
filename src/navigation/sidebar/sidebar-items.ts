@@ -78,11 +78,11 @@ export const sidebarItems: NavGroup[] = [
         url: "/viajero/itinerarios",
         icon: BookMarked,
       },
-      {
-        title: "Mapa",
-        url: "/viajero/mapa",
-        icon: Map,
-      },
+      // {
+      //   title: "Mapa",
+      //   url: "/viajero/mapa",
+      //   icon: Map,
+      // },
       // {
       //   title: "Analytics",
       //   url: "/dashboard/coming-soon",
@@ -106,54 +106,54 @@ export const sidebarItems: NavGroup[] = [
         icon: MessageSquare,
         comingSoon: false,
       },
-      {
-        title: "Notificaciones",
-        url: "/viajero/notificaciones",
-        icon: Calendar,
-        comingSoon: true,
-      },
+      // {
+      //   title: "Notificaciones",
+      //   url: "/viajero/notificaciones",
+      //   icon: Calendar,
+      //   comingSoon: true,
+      // },
     ],
   },
-  {
-    id: 3,
-    label: "Otros",
-    items: [
-      {
-        title: "Configuración",
-        url: "/configuracion",
-        icon: Settings,
-        subItems: [
-          {
-            title: "Perfil",
-            url: "/viajero/configuracion/perfil",
-            icon: User,
-            newTab: false,
-          },
-          {
-            title: "Cuenta",
-            url: "/viajero/configuracion/cuenta",
-            icon: UserPen,
-            newTab: false,
-          },
-          {
-            title: "Apariencia",
-            url: "/viajero/configuracion/apariencia",
-            icon: LayoutPanelLeft,
-            newTab: false,
+  // {
+  //   id: 3,
+  //   label: "Otros",
+  //   items: [
+  //     {
+  //       title: "Configuración",
+  //       url: "/configuracion",
+  //       icon: Settings,
+  //       subItems: [
+  //         {
+  //           title: "Perfil",
+  //           url: "/viajero/configuracion/perfil",
+  //           icon: User,
+  //           newTab: false,
+  //         },
+  //         {
+  //           title: "Cuenta",
+  //           url: "/viajero/configuracion/cuenta",
+  //           icon: UserPen,
+  //           newTab: false,
+  //         },
+  //         {
+  //           title: "Apariencia",
+  //           url: "/viajero/configuracion/apariencia",
+  //           icon: LayoutPanelLeft,
+  //           newTab: false,
          
-          },
-          {
-            title: "Notificaciones",
-            url: "/viajero/configuracion/notificaciones",
-            newTab: false,
-          },
-          {
-            title: "Pantalla",
-            url: "/viajero/configuracion/pantalla",
-            newTab: false,
-          },
-        ],
-      },
-    ],
-  },
+  //         },
+  //         {
+  //           title: "Notificaciones",
+  //           url: "/viajero/configuracion/notificaciones",
+  //           newTab: false,
+  //         },
+  //         {
+  //           title: "Pantalla",
+  //           url: "/viajero/configuracion/pantalla",
+  //           newTab: false,
+  //         },
+  //       ],
+  //     },
+  //   ],
+  // },
 ];

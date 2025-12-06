@@ -1,571 +1,394 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
+import { useRouter, useParams } from "next/navigation";
+import { useShallow } from "zustand/react/shallow";
 import dynamic from "next/dynamic";
-import { useParams, useRouter } from "next/navigation";
-import { format } from "date-fns";
+import { format, eachDayOfInterval } from "date-fns";
 import { es } from "date-fns/locale";
-
-import { TripHeader } from "@/components/viajero/editor/TripHeader";
-import DiaDetalle from "@/components/DiaDetalle2";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Input } from "@/components/ui/input";
-
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-
+import { arrayMove } from "@dnd-kit/sortable";
 import { toast } from "sonner";
-import { PLACES, type Place } from "@/lib/constants/mock-itinerary-data";
+import { Loader2, AlertCircle } from "lucide-react";
 
-// Mapa igual que en "ver itinerario"
-const ItineraryMap = dynamic(
-  () => import("@/components/viajero/view/ItineraryMap"),
-  { ssr: false }
+// Lógica y Estado
+import {
+  useItineraryBuilderStore,
+  buildItineraryPayload,
+  BuilderActivity,
+} from "@/lib/itinerary-builder-store";
+import { ItinerariosAPI } from "@/api/ItinerariosAPI";
+import { mapApiToBuilder } from "@/lib/utils/itinerary-adapter";
+import { REGIONS_DATA } from "@/lib/constants/regions";
+import { cn } from "@/lib/utils";
+
+// Componentes UI
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+// Componentes Reutilizados
+// Asegúrate de que estas rutas sean correctas según tu estructura de carpetas
+import { ItineraryHeader } from "../../crear/components/ItineraryHeader";
+import { DaySelector } from "../../crear/components/DaySelector";
+import { ActivityListPanel } from "../../crear/components/ActivityListPanel";
+import { MobileViewToggle } from "../../crear/components/MobileViewToggle";
+import { ItinerarySetupDialog } from "../../crear/components/ItinerarySetupDialog"; 
+import { PlaceSearchDialog } from "../../crear/components/PlacesSearchDialog";
+import { PlaceInfoDialog } from "../../crear/components/PlaceInfoDialog";
+
+// Mapa Dinámico (Lazy)
+const CinematicMap = dynamic(
+  () => import("../../crear/components/CinematicMap").then((mod) => mod.CinematicMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-full w-full bg-muted/30 animate-pulse flex flex-col items-center justify-center text-muted-foreground gap-3">
+        <Loader2 className="h-8 w-8 animate-spin text-primary/50" />
+        <span className="text-sm font-medium tracking-wide">Cargando mapa...</span>
+      </div>
+    ),
+  }
 );
 
-// ---------- Tipos ----------
-
-interface Actividad {
-  id: number | string; // id de la ACTIVIDAD en el backend (o local para nuevas)
-  lugarId: number | string; // id del lugar en catálogo
-  nombre: string;
-  lat: number;
-  lng: number;
-  description?: string;
-  foto_url?: string;
-  categoria?: string;
-  estado?: string;
+// Helper Distancia
+function distanceKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371; 
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+  return 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * R;
 }
 
-interface Dia {
-  id: number | string;
-  nombre: string; // "5 nov"
-  fecha: Date;
-  lugares: Actividad[];
-}
-
-// ---------- Auxiliares ----------
-
-function SortableDiaDetalle({
-  lugar,
-  onActivityChange,
-  onDelete,
-}: {
-  lugar: Actividad;
-  onActivityChange: (
-    id: string | number,
-    field: keyof Actividad,
-    value: any
-  ) => void;
-  onDelete: (id: string | number) => void;
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id: lugar.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  return (
-    <div ref={setNodeRef} style={style} {...attributes}>
-      <DiaDetalle
-        lugar={lugar}
-        onActivityChange={onActivityChange}
-        onDelete={onDelete}
-        dragListeners={listeners}
-      />
-    </div>
-  );
-}
-
-function SelectorDias({
-  dias,
-  diaActivoId,
-  setDiaActivoId,
-}: {
-  dias: Dia[];
-  diaActivoId: number | string;
-  setDiaActivoId: (id: number | string) => void;
-}) {
-  if (!dias.length) return null;
-
-  return (
-    <div className="space-y-4 p-3">
-      <div className="flex flex-wrap gap-3 justify-center">
-        {dias.map((dia) => (
-          <Button
-            key={dia.id}
-            variant={diaActivoId === dia.id ? "default" : "outline"}
-            onClick={() => setDiaActivoId(dia.id)}
-          >
-            {dia.nombre}
-          </Button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ---------- Página principal ----------
-
-export default function EditItineraryPage() {
+export default function EditarItinerarioPage() {
   const router = useRouter();
   const params = useParams();
-  const itineraryId = String((params as any).itineraryId);
+  // FIX: Asegurar que itineraryId sea string o undefined, no array
+  const itineraryId = Array.isArray(params?.id) ? params.id[0] : params?.id;
 
-  const [titulo, setTitulo] = useState("Editar itinerario");
-  const [diasData, setDiasData] = useState<Dia[]>([]);
-  const [diaActivoId, setDiaActivoId] = useState<number | string>(1);
+  // STORE
+  const {
+    meta,
+    actividades,
+    setMeta,
+    setActivities,
+    addActivity,
+    removeActivity,
+    updateActivity,
+    reset,
+  } = useItineraryBuilderStore(useShallow((s) => s));
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  // ESTADOS
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [optimizing, setOptimizing] = useState(false);
+  
+  const [setupOpen, setSetupOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
+  const [saveAlertOpen, setSaveAlertOpen] = useState(false);
+  
+  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
+  const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const [mobileView, setMobileView] = useState<"list" | "map">("list");
 
-  const posicionInicial: [number, number] = [19.5043, -99.147];
-  const zoomInicial = 13;
-
-  // --- búsqueda de lugares ---
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<Place[]>([]);
-
-  // DnD
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
-
-  // ---------- Cargar itinerario del servidor ----------
+  // --- CARGA DE DATOS ---
   useEffect(() => {
-    async function fetchData() {
-      try {
-        setLoading(true);
+    const loadItinerary = async () => {
+        // FIX: Si no hay ID todavía, no hacemos nada pero no bloqueamos el estado de carga eternamente si falla
+        if (!itineraryId) return;
 
-        const res = await fetch(
-          `https://harol-lovers.up.railway.app/itinerario/${itineraryId}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              token: localStorage.getItem("authToken") || "",
-            },
-          }
-        );
-
-        if (!res.ok) {
-          const txt = await res.text().catch(() => "");
-          console.error("Error al cargar itinerario:", res.status, txt);
-          toast.error("No se pudo cargar el itinerario.");
-          setDiasData([]);
-          return;
-        }
-
-        const data = await res.json();
-        console.log("Itinerario a editar:", data);
-
-        setTitulo(data.title || "Editar itinerario");
-
-        const actividades = Array.isArray(data.actividades)
-          ? data.actividades
-          : [];
-
-        if (!actividades.length) {
-          toast.info("Este itinerario todavía no tiene actividades.");
-          setDiasData([]);
-          return;
-        }
-
-        // Ordenar por fecha
-        const actividadesOrdenadas = actividades.sort(
-          (a: any, b: any) =>
-            new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
-        );
-
-        // Agrupar por fecha YYYY-MM-DD
-        const actividadesPorFecha: Record<string, any[]> = {};
-        actividadesOrdenadas.forEach((act: any) => {
-          let fechaStr: string;
-
-          if (typeof act.fecha === "string") {
-            if (act.fecha.includes("T")) {
-              fechaStr = new Date(act.fecha).toISOString().split("T")[0];
-            } else {
-              fechaStr = act.fecha;
+        try {
+            setIsLoadingData(true);
+            const api = ItinerariosAPI.getInstance();
+            
+            const data = await api.getItinerarioById(itineraryId);
+            
+            // FIX: Verificar si la respuesta es válida antes de procesar
+            if (!data || !data.title) {
+                 throw new Error("Datos incompletos");
             }
-          } else {
-            fechaStr = new Date(act.fecha).toISOString().split("T")[0];
-          }
 
-          if (!actividadesPorFecha[fechaStr]) {
-            actividadesPorFecha[fechaStr] = [];
-          }
-          actividadesPorFecha[fechaStr].push(act);
-        });
+            const { meta: loadedMeta, activities: loadedActivities } = mapApiToBuilder(data);
+            
+            setMeta(loadedMeta);
+            setActivities(loadedActivities);
+            
+            if (loadedActivities.length > 0) {
+                const sorted = [...loadedActivities].sort((a,b) => a.fecha.getTime() - b.fecha.getTime());
+                setSelectedDayKey(format(sorted[0].fecha, "yyyy-MM-dd"));
+            } else {
+                setSelectedDayKey(format(loadedMeta.start, "yyyy-MM-dd"));
+            }
 
-        const fechasOrdenadas = Object.keys(actividadesPorFecha).sort();
+            toast.success("Itinerario cargado correctamente");
 
-        const nuevosDias: Dia[] = fechasOrdenadas.map((fechaStr, index) => {
-          const fechaDate = new Date(fechaStr);
-          const actsDia = actividadesPorFecha[fechaStr];
-
-          const lugares: Actividad[] = actsDia.map((act: any) => ({
-            id: act.id,
-            lugarId: act.lugar?.id ?? act.lugarId ?? act.id,
-            nombre: act.lugar?.nombre ?? "Lugar",
-            lat: act.lugar?.latitud,
-            lng: act.lugar?.longitud,
-            description: act.description,
-            foto_url: act.lugar?.foto_url,
-            categoria: act.lugar?.category,
-            estado: act.lugar?.mexican_state,
-          }));
-
-          return {
-            id: index + 1,
-            nombre: format(fechaDate, "d MMM", { locale: es }),
-            fecha: fechaDate,
-            lugares,
-          };
-        });
-
-        setDiasData(nuevosDias);
-        setDiaActivoId(nuevosDias[0]?.id ?? 1);
-      } catch (err: any) {
-        console.error(err);
-        toast.error("Error al cargar el itinerario.");
-        setDiasData([]);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    if (itineraryId) fetchData();
-  }, [itineraryId]);
-
-  const diaActual = diasData.find((d) => d.id === diaActivoId);
-  const lugaresActivos = diaActual ? diaActual.lugares : [];
-
-  // ---------- Búsqueda de lugares (local con PLACES) ----------
-  useEffect(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) {
-      setSearchResults([]);
-      return;
-    }
-
-    const filtered = PLACES.filter((p) => {
-      const name = p.nombre?.toLowerCase() || "";
-      const state =
-        (p.mexican_state as string | undefined)?.toLowerCase() || "";
-      return name.includes(q) || state.includes(q);
-    }).slice(0, 20); // limitar resultados
-
-    setSearchResults(filtered);
-  }, [searchQuery]);
-
-  const handleAddPlaceFromSearch = (place: Place) => {
-    if (!diaActual) {
-      toast.error("Primero selecciona un día.");
-      return;
-    }
-
-    // evitar duplicados por lugarId en el día actual
-    const yaExiste = diaActual.lugares.some(
-      (l) => String(l.lugarId) === String(place.id_api_place)
-    );
-    if (yaExiste) {
-      toast.info(`${place.nombre} ya está en el día seleccionado.`);
-      return;
-    }
-
-    const nuevaActividad: Actividad = {
-      id: `${place.id_api_place}-${Date.now()}`, // id temporal local
-      lugarId: place.id_api_place,
-      nombre: place.nombre,
-      lat: place.latitud,
-      lng: place.longitud,
-      description: "",
-      foto_url: place.foto_url,
-      categoria: place.category,
-      estado: place.mexican_state,
+        } catch (error) {
+            console.error("Error cargando itinerario:", error);
+            toast.error("No se pudo cargar el viaje", { description: "Es posible que no exista o no tengas permiso." });
+            router.push("/viajero/itinerarios");
+        } finally {
+            setIsLoadingData(false);
+        }
     };
 
-    setDiasData((dias) => {
-      const diaIndex = dias.findIndex((d) => d.id === diaActivoId);
-      if (diaIndex === -1) return dias;
+    loadItinerary();
+  }, [itineraryId, setMeta, setActivities, router]);
 
-      const nuevosDias = [...dias];
-      nuevosDias[diaIndex] = {
-        ...nuevosDias[diaIndex],
-        lugares: [...nuevosDias[diaIndex].lugares, nuevaActividad],
-      };
 
-      return nuevosDias;
-    });
+  // --- MEMOS ---
+  const days = useMemo(() => {
+    if (!meta?.start || !meta?.end) return [];
+    try {
+      return eachDayOfInterval({ start: meta.start, end: meta.end }).map((date, idx) => ({
+        key: format(date, "yyyy-MM-dd"),
+        date,
+        label: `Día ${idx + 1}`,
+        subtitle: format(date, "d MMM", { locale: es }),
+      }));
+    } catch { return []; }
+  }, [meta?.start, meta?.end]);
 
-    toast.success(`${place.nombre} añadido al día seleccionado.`);
-  };
+  const currentDayActivities = useMemo(() => {
+    if (!selectedDayKey) return [];
+    return actividades.filter((a) => format(a.fecha, "yyyy-MM-dd") === selectedDayKey);
+  }, [actividades, selectedDayKey]);
 
-  // ---------- Drag & Drop ----------
-  function handleDragEnd(event: any) {
-    const { active, over } = event;
-    if (!over) return;
-    if (active.id === over.id) return;
+  const currentDay = useMemo(() => days.find((d) => d.key === selectedDayKey) || null, [days, selectedDayKey]);
+  
+  const initialMapCenter = useMemo(() => {
+    if (!meta?.regions || meta.regions.length === 0) return undefined;
+    // @ts-ignore
+    const regionData = REGIONS_DATA[meta.regions[0]];
+    return regionData ? { lat: regionData.lat, lng: regionData.lng } : undefined;
+  }, [meta?.regions]);
 
-    setDiasData((dias) => {
-      const diaIndex = dias.findIndex((d) => d.id === diaActivoId);
-      if (diaIndex === -1) return dias;
+  const tripProgress = useMemo(() => {
+    if (days.length === 0) return 0;
+    const filledDays = new Set(actividades.map(a => format(a.fecha, "yyyy-MM-dd"))).size;
+    return (filledDays / days.length) * 100;
+  }, [days, actividades]);
 
-      const oldIndex = dias[diaIndex].lugares.findIndex(
-        (l) => l.id === active.id
-      );
-      const newIndex = dias[diaIndex].lugares.findIndex(
-        (l) => l.id === over.id
-      );
-      if (oldIndex === -1 || newIndex === -1) return dias;
 
-      const updated = [...dias[diaIndex].lugares];
-      const [moved] = updated.splice(oldIndex, 1);
-      updated.splice(newIndex, 0, moved);
+  // --- HANDLERS ---
 
-      const nuevosDias = [...dias];
-      nuevosDias[diaIndex] = {
-        ...nuevosDias[diaIndex],
-        lugares: updated,
-      };
+  const handleReset = useCallback(() => {
+    if (window.confirm("¿Descartar cambios y recargar?")) {
+       window.location.reload(); 
+    }
+  }, []);
 
-      return nuevosDias;
-    });
-  }
-
-  // ---------- Editar campos de una actividad ----------
-  const handleActivityChange = (
-    actividadId: string | number,
-    field: keyof Actividad,
-    value: any
-  ) => {
-    setDiasData((currentDias) => {
-      const diaIndex = currentDias.findIndex((d) => d.id === diaActivoId);
-      if (diaIndex === -1) return currentDias;
-
-      const nuevosDias = [...currentDias];
-      const nuevosLugares = nuevosDias[diaIndex].lugares.map((lugar) =>
-        lugar.id === actividadId ? { ...lugar, [field]: value } : lugar
-      );
-
-      nuevosDias[diaIndex] = {
-        ...nuevosDias[diaIndex],
-        lugares: nuevosLugares,
-      };
-
-      return nuevosDias;
-    });
-  };
-
-  // ---------- Eliminar actividad ----------
-  const handleDelete = (actividadId: string | number) => {
-    setDiasData((currentDias) => {
-      const diaIndex = currentDias.findIndex((d) => d.id === diaActivoId);
-      if (diaIndex === -1) return currentDias;
-
-      const nuevosDias = [...currentDias];
-      nuevosDias[diaIndex] = {
-        ...nuevosDias[diaIndex],
-        lugares: nuevosDias[diaIndex].lugares.filter(
-          (lugar) => lugar.id !== actividadId
-        ),
-      };
-
-      return nuevosDias;
-    });
-  };
-
-  // ---------- Guardar cambios ----------
-  const handleSave = async () => {
-    if (!diasData.length) {
-      toast.error("No hay actividades en el itinerario.");
+  const handlePreUpdate = () => {
+    if (!meta) return;
+    if (actividades.length === 0) {
+      toast.error("El plan está vacío", { 
+        description: "Agrega al menos un lugar antes de guardar." 
+      });
       return;
     }
+    const filledDaysCount = new Set(actividades.map(a => format(a.fecha, "yyyy-MM-dd"))).size;
+    if (filledDaysCount < days.length) {
+      setSaveAlertOpen(true);
+    } else {
+      executeUpdate();
+    }
+  };
 
-    setSaving(true);
-
-    const actividadesPayload = diasData.flatMap((dia) =>
-      dia.lugares.map((lugar) => ({
-        fecha: format(dia.fecha, "yyyy-MM-dd"),
-        description: lugar.description || `Visita a ${lugar.nombre || "lugar"}`,
-        lugarId: String(lugar.lugarId ?? lugar.id),
-      }))
-    );
-
-    const body = {
-      title: titulo,
-      actividades: actividadesPayload,
-    };
+  const executeUpdate = async () => {
+    if (!meta || !itineraryId) return;
+    setSaveAlertOpen(false);
+    setIsSaving(true);
 
     try {
-      const promise = fetch(
-        `https://harol-lovers.up.railway.app/itinerario/${itineraryId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            token: localStorage.getItem("authToken") || "",
-          },
-          body: JSON.stringify(body),
-        }
-      );
-
-      toast.promise(promise, {
-        loading: "Guardando cambios...",
-        success: async (res) => {
-          if (!res.ok) {
-            const data = await res.json().catch(() => null);
-            throw new Error(
-              data?.message || "Error al actualizar el itinerario."
-            );
-          }
-          router.push("/viajero/itinerarios");
-          return "Itinerario actualizado con éxito.";
-        },
-        error: (err) =>
-          err?.message || "Ocurrió un error al guardar los cambios.",
-      });
-    } catch (err: any) {
-      console.error(err);
-      toast.error("Error inesperado al guardar.");
+      const payload = buildItineraryPayload(meta, actividades);
+      await ItinerariosAPI.getInstance().updateItinerario(itineraryId, payload);
+      toast.success("Cambios guardados");
+    } catch (error: any) {
+      console.error(error);
+      toast.error("Error al guardar", { description: error.message });
     } finally {
-      setSaving(false);
+      setIsSaving(false);
     }
   };
 
-  // ---------- Mapa (igual que ver itinerario) ----------
-  const placesForMap = lugaresActivos.map((lugar) => ({
-    id: String(lugar.id),
-    name: lugar.nombre,
-    city: lugar.description || "",
-    tag: lugar.categoria || "lugar",
-    img: lugar.foto_url,
-    lat: lugar.lat,
-    lng: lugar.lng,
-  }));
+  const handleOptimize = useCallback(async () => {
+    if (!currentDay || currentDayActivities.length < 3) {
+        toast.warning("Se necesitan más lugares para optimizar");
+        return;
+    }
+    setOptimizing(true);
+    const toastId = toast.loading("Optimizando ruta...");
+    await new Promise(r => setTimeout(r, 600));
 
-  // ---------- Render ----------
-  if (loading) {
+    try {
+        const items = [...currentDayActivities];
+        const startNode = items.shift()!; 
+        const optimizedPath: BuilderActivity[] = [startNode];
+
+        while (items.length > 0) {
+          const current = optimizedPath[optimizedPath.length - 1];
+          let bestIdx = -1, minDist = Infinity;
+          items.forEach((cand, i) => {
+            const d = distanceKm(current.lugar.latitud, current.lugar.longitud, cand.lugar.latitud, cand.lugar.longitud);
+            if (d < minDist) { minDist = d; bestIdx = i; }
+          });
+          if (bestIdx !== -1) optimizedPath.push(items.splice(bestIdx, 1)[0]);
+        }
+
+        const others = actividades.filter(a => format(a.fecha, "yyyy-MM-dd") !== selectedDayKey);
+        setActivities([...others, ...optimizedPath]);
+        toast.success("Ruta optimizada", { id: toastId });
+    } catch (e) { toast.error("Error", { id: toastId }); } finally {
+        setOptimizing(false);
+    }
+  }, [currentDay, currentDayActivities, actividades, selectedDayKey, setActivities]);
+
+  const handleDragStart = (e: any) => setActiveDragId(e.active.id);
+  const handleDragEnd = (e: any) => {
+    setActiveDragId(null);
+    const { active, over } = e;
+    if (!over || active.id === over.id || !currentDay) return;
+    const oldIndex = currentDayActivities.findIndex((a) => a.id === active.id);
+    const newIndex = currentDayActivities.findIndex((a) => a.id === over.id);
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const reordered = arrayMove(currentDayActivities, oldIndex, newIndex);
+      const others = actividades.filter((a) => format(a.fecha, "yyyy-MM-dd") !== selectedDayKey);
+      setActivities([...others, ...reordered]);
+    }
+  };
+
+
+  // --- RENDER ---
+
+  if (isLoadingData) {
     return (
-      <div className="flex items-center justify-center h-[calc(100svh-3rem)]">
-        <p className="text-sm text-muted-foreground">Cargando itinerario...</p>
+      <div className="h-[calc(100vh-4rem)] w-full flex flex-col items-center justify-center bg-background gap-4">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="text-muted-foreground font-medium animate-pulse">Cargando editor...</p>
       </div>
     );
   }
 
+  if (!meta) return null;
+
   return (
-    <div className="flex flex-col md:flex-row h-[calc(100svh-3rem)] overflow-hidden">
-      {/* IZQUIERDA: Editor */}
-      <div className="w-full md:w-1/2 h-1/2 md:h-full overflow-y-auto border-r bg-background">
-        <TripHeader
-          title={titulo}
-          subtitle="Edita tu itinerario, ajusta días y actividades"
-        />
+    <>
+      <ItinerarySetupDialog open={setupOpen} onOpenChange={setSetupOpen} />
+      
+      <PlaceSearchDialog
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+        currentDay={currentDay}
+        // @ts-ignore
+        defaultState={meta?.regions[0]}
+        onAddLugarToDay={(lugar) => {
+          if (!currentDay) return;
+          addActivity({
+            id: crypto.randomUUID(),
+            fecha: currentDay.date,
+            descripcion: "",
+            lugar: lugar as any,
+            start_time: null,
+            end_time: null,
+          });
+          toast.success("Lugar agregado");
+        }}
+      />
 
-        <div className="flex items-center gap-2 text-sm justify-center p-2 border-b bg-muted/30">
-          <h2 className="font-bold px-2">Plan de viaje</h2>
-          <Separator orientation="vertical" className="h-4 hidden sm:block" />
-          <Button
-            variant="default"
-            className="h-auto px-3 py-1"
-            onClick={handleSave}
-            disabled={saving}
-          >
-            Guardar cambios
-          </Button>
+      <PlaceInfoDialog
+        isOpen={infoOpen}
+        onClose={() => setInfoOpen(false)}
+        activityId={selectedActivityId}
+        allActivities={actividades}
+        onUpdate={updateActivity}
+      />
+
+      <AlertDialog open={saveAlertOpen} onOpenChange={setSaveAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
+                <AlertCircle className="h-5 w-5" /> Tienes días sin planes
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Deseas guardar los cambios así o prefieres seguir editando?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSaving}>Seguir editando</AlertDialogCancel>
+            <AlertDialogAction onClick={executeUpdate} disabled={isSaving} className="bg-primary">
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Guardar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <div className="flex h-[calc(100vh-4rem)] flex-col bg-background text-foreground overflow-hidden animate-in fade-in duration-500">
+        
+        <div className="w-full bg-muted h-1">
+            <div className="h-full bg-primary transition-all duration-1000 ease-out" style={{ width: `${tripProgress}%` }} />
         </div>
 
-        <SelectorDias
-          dias={diasData}
-          diaActivoId={diaActivoId}
-          setDiaActivoId={setDiaActivoId}
+        <ItineraryHeader
+          meta={meta}
+          onEditSetup={() => setSetupOpen(true)}
+          onReset={handleReset}
+          onOptimize={handleOptimize}
+          onSave={handlePreUpdate}
+          isSaving={isSaving}
+          canOptimize={currentDayActivities.length >= 3 && !optimizing}
         />
 
-        {/* BUSCADOR DE LUGARES */}
-        <div className="px-4 pb-3 space-y-2">
-          <p className="text-xs font-medium text-muted-foreground">
-            Buscar lugares para añadir al día seleccionado
-          </p>
-          <Input
-            placeholder="Buscar por nombre o estado (ej. 'Centro Histórico', 'CDMX')"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-9 text-sm"
-          />
+        <div className="flex flex-1 overflow-hidden relative group/canvas">
+          <aside className={cn(
+              "flex flex-col w-full md:w-[440px] lg:w-[500px] bg-background border-r transition-transform duration-500 ease-in-out absolute md:relative h-full z-20 shadow-xl md:shadow-none",
+              mobileView === "list" ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+            )}>
+            <DaySelector days={days} selectedDayKey={selectedDayKey} onSelect={setSelectedDayKey} />
+            
+            <ActivityListPanel
+              activities={currentDayActivities}
+              currentDayLabel={currentDay?.label || null}
+              onAddPlace={() => setSearchOpen(true)}
+              onRemoveActivity={removeActivity}
+              onViewDetails={(id) => { setSelectedActivityId(id); setInfoOpen(true); }}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+              activeDragId={activeDragId}
+            />
+          </aside>
 
-          {searchResults.length > 0 && (
-            <div className="mt-2 max-h-52 overflow-y-auto rounded-md border bg-card text-xs">
-              {searchResults.map((place) => (
-                <div
-                  key={place.id_api_place}
-                  className="flex items-center justify-between gap-2 px-2 py-1.5 border-b last:border-b-0 hover:bg-muted/60"
-                >
-                  <div className="flex flex-col">
-                    <span className="font-medium">{place.nombre}</span>
-                    <span className="text-[10px] text-muted-foreground">
-                      {place.category} · {place.mexican_state}
-                    </span>
-                  </div>
-                  <Button
-                    size="xs"
-                    className="text-[10px] px-2 py-1"
-                    onClick={() => handleAddPlaceFromSearch(place)}
-                  >
-                    Añadir
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
+          <main className={cn(
+              "flex-1 relative transition-all duration-500 ease-in-out absolute md:relative inset-0 bg-muted/10 z-10",
+              mobileView === "map" ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 md:translate-x-0 md:opacity-100"
+            )}>
+            <CinematicMap
+              activities={actividades.map((a) => ({
+                id: a.id,
+                nombre: a.lugar.nombre,
+                lat: a.lugar.latitud,
+                lng: a.lugar.longitud,
+                fecha: a.fecha,
+                start_time: null,
+              }))}
+              days={days}
+              selectedDayKey={selectedDayKey}
+              onSelectDay={setSelectedDayKey}
+              // @ts-ignore
+              initialCenter={initialMapCenter}
+            />
+          </main>
+
+          <MobileViewToggle view={mobileView} onChange={setMobileView} />
         </div>
-
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={lugaresActivos.map((lugar) => lugar.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            {lugaresActivos.map((lugar) => (
-              <SortableDiaDetalle
-                key={lugar.id}
-                lugar={lugar}
-                onActivityChange={handleActivityChange}
-                onDelete={handleDelete}
-              />
-            ))}
-          </SortableContext>
-        </DndContext>
       </div>
-
-      {/* DERECHA: Mapa */}
-      <div className="w-full md:w-1/2 h-1/2 md:h-full bg-gray-100">
-        <ItineraryMap
-          places={placesForMap}
-          center={posicionInicial}
-          zoom={zoomInicial}
-        />
-      </div>
-    </div>
+    </>
   );
 }

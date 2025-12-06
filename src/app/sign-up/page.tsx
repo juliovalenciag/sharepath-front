@@ -15,6 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 
+import { ItinerariosAPI } from "@/api/ItinerariosAPI";
+
 // 1. Definimos el "contrato" de validación con Zod
 const formSchema = z.object({
   nombre_completo: z.string()
@@ -41,11 +43,10 @@ const formSchema = z.object({
       message: "El correo es requerido.",
     })
     .refine((email) => {
-      // Valida todos los dominios 
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i; 
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
       return emailRegex.test(email);
     }, {
-      message: "Ingrese un correo válido",
+      message: "Ingresa un correo válido",
     }),
   
   password: z.string()
@@ -111,29 +112,26 @@ export default function SignUpPage() {
       formData.append("foto", values.foto);
     }
 
-    const promise = fetch("https://harol-lovers.up.railway.app/auth/register/", {
-      method: "POST",
-      body: formData,
-    }).then(async (res) => {
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "No se pudo completar el registro.");
-      }
-      // Necesario el token del usuario 
-      const formJSON = Object.fromEntries(formData.entries()); 
-     const loginRes = await fetch("https://harol-lovers.up.railway.app/auth", { // espera a promise 
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ correo: formJSON.correo, password: formJSON.password }),
-      })
-    const loginData = await loginRes.json(); 
-    localStorage.setItem("token", loginData.token); // obtener el token 
-    console.log("token new user: ",loginData.token); 
+    const api = ItinerariosAPI.getInstance();
 
-      return res.json();
-    });
+    const promise = (async () => {
+      const correoVal = formData.get("correo");
+      const usernameVal = formData.get("username");
+      const passwordVal = formData.get("password");
+      const nombreVal = formData.get("nombre_completo");
+
+      if (!correoVal ||!usernameVal || !passwordVal ||!nombreVal)
+          throw new Error("Datos inválidos");
+   
+      const registerResponse = await api.doRegister({ nombre_completo: values.nombre_completo, correo: values.correo, 
+        username: values.username, password: values.password, role: "user", privacity_mode: false,
+      });
+      const loginUser = await api.doLogin(values.correo, values.password)
+      
+       router.push("/viajero"); 
+
+      return registerResponse;
+    })();
 
     toast.promise(promise, {
       loading: "Creando tu cuenta...",
@@ -193,7 +191,7 @@ export default function SignUpPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormControl>
-                        <Input type="email" placeholder="Correo electrónico" {...field} className="py-6" disabled={isLoading} />
+                        <Input type="email" placeholder="Correo (ejemplo: usuario@dominio.com)" {...field} className="py-6" disabled={isLoading} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -229,7 +227,7 @@ export default function SignUpPage() {
                 />
                 
                 <p className="text-xs text-muted-foreground">
-                    Al registrarte, aceptas nuestros <Link href="/sign-up/terminos" className="underline">Terminos y Condiciones</Link>.
+                    Al registrarte, aceptas nuestras <Link href="/sign-up/terminos" className="underline">Terminos y Condiciones</Link>.
                 </p>
 
                 <Button type="submit" className="w-full py-6 text-lg font-semibold" style={{ backgroundColor: '#555', color: 'white' }} disabled={isLoading}>

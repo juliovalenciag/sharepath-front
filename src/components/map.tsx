@@ -9,7 +9,7 @@ import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility
 
 import BusquedaMapa from "./busquedaMapa"
 import Ruta from "./ruta"
-import { lugar } from "@/app/(dashboard)/dashboard/createItinerario/page"
+import { lugar } from "@/app/(dashboard)/dashboard/reportes/page"
 
 interface MapProps{
   posicion: LatLngExpression,
@@ -31,11 +31,11 @@ export default function Mapa(props: MapProps) {
       <Ruta destinos={itinerario} />
       <BusquedaMapa onAddLugar={onAddLugar} />
 
-      <Marker position={posicion}>
+      {/* <Marker position={posicion}>
         <Popup>
           ESCOM <br /> Escula Superior de Computo
         </Popup>
-      </Marker>
+      </Marker> */}
     </MapContainer>
   );
 }
