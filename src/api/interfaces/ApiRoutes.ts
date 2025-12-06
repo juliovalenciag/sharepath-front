@@ -73,28 +73,29 @@ export interface ItinerarioListResponse {
 }
 
 export interface CreateLugarRequest {
-  id_api_place: string;
-  category: string;
-  mexican_state: string;
-  nombre: string;
-  latitud: number;
-  longitud: number;
-  foto_url: string;
-  google_score: number;
-  total_reviews: number;
+    id_api_place:  string;      
+    category:      string;
+    mexican_state: string;
+    nombre:        string;
+    latitud:       number;
+    longitud:      number;
+    foto_url:      string;
+    google_score:  number;
+    total_reviews: number;
+    descripcion:  string;
 }
 
 export interface LugarData {
-  id_api_place: string;
-  category: string;
-  mexican_state: string;
-  nombre: string;
-  latitud: number;
-  longitud: number;
-  descripcion: string;
-  foto_url: string;
-  google_score: number;
-  total_reviews: number;
+    id_api_place:  string;
+    category:      string;
+    mexican_state: string;
+    nombre:        string;
+    latitud:       number;
+    longitud:      number;
+    foto_url:      string;
+    google_score:  number;
+    total_reviews: number;
+    descripcion:  string;
 }
 
 export interface LugaresListResponse {

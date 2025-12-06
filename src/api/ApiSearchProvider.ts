@@ -44,7 +44,8 @@ export class ApiSearchProvider {
        const totalAntes = responseArray.length;
        
        responseArray = responseArray.filter(lugar => 
-          lugar.nombre && lugar.nombre.toLowerCase().includes(queryLower)
+          (lugar.nombre && lugar.nombre.toLowerCase().includes(queryLower)) ||
+          (lugar.descripcion && lugar.descripcion.toLowerCase().includes(queryLower)) // Para tener en cuenta la descripción en la busqueda uwu
        );
        
        console.log(`🧹 Filtro local: De ${totalAntes} resultados de la API, quedaron ${responseArray.length} coincidencias.`);
