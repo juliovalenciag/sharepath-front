@@ -22,7 +22,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Link from "next/link";
 import { getInitials } from "@/lib/utils";
 
-const API_URL = "https://harol-lovers.up.railway.app";
+//const API_URL = "https://harol-lovers.up.railway.app";
+const API_URL = "http://localhost:4000";
 
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 
@@ -45,6 +46,7 @@ async function respondToRequest(requestId: string | number, state: number) {
     headers: {
       "Content-Type": "application/json",
       token: token,
+      Authorization: `Bearer ${token}`,
     },
 
     body: JSON.stringify({ Id: Number(requestId), state: state }),
@@ -156,6 +158,7 @@ export default function FriendsPage() {
       headers: {
         "Content-Type": "application/json",
         token,
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ Id: Number(requestId), state }),
     });
@@ -191,6 +194,7 @@ export default function FriendsPage() {
       headers: {
         "Content-Type": "application/json",
         token,
+        Authorization: `Bearer ${token}`,
       },
     });
 
@@ -208,6 +212,7 @@ export default function FriendsPage() {
       headers: {
         "Content-Type": "application/json",
         token,
+        Authorization: `Bearer ${token}`,
       },
     });
 
@@ -226,6 +231,7 @@ export default function FriendsPage() {
         headers: {
           "Content-Type": "application/json",
           token,
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -250,6 +256,7 @@ export default function FriendsPage() {
           headers: {
             "Content-Type": "application/json",
             token,
+            Authorization: `Bearer ${token}`,
           },
         });
 

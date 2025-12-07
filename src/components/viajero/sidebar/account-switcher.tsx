@@ -33,8 +33,16 @@ type ActiveUser = {
   readonly role: string;
 };
 
-export function AccountSwitcher() {
+//Definir usuario
+interface AccountSwitcherProps {
+  type?: "admin" | "viajero";
+}
+
+export function AccountSwitcher({ type = "viajero" }: AccountSwitcherProps) {
   const router = useRouter();
+
+  //Rutas dinamicas segun usuario
+  const profileRoute = type === "admin" ? "/admin/configuracion/cuenta" : "/viajero/configuracion/cuenta";
   const handleLogout = () => {
     Cookies.remove("auth_token");
     localStorage.removeItem("authToken");
@@ -53,8 +61,8 @@ export function AccountSwitcher() {
             ? localStorage.getItem("authToken")
             : null;
 
-        const res = await fetch("https://harol-lovers.up.railway.app/user", {
-          // const res = await fetch("http://localhost:4000/user", {
+        //const res = await fetch("https://harol-lovers.up.railway.app/user", {
+           const res = await fetch("http://localhost:4000/user", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -73,7 +81,7 @@ export function AccountSwitcher() {
           name: data.username,
           email: data.correo,
           avatar: data.foto_url,
-          role: "viajero", // Rol fijo para este proyecto
+          role: type === "admin" ? "Administrador" : "Viajero", // Rol fijo para este proyecto
         });
         setErrorUser(null);
       } catch (error) {
@@ -86,7 +94,7 @@ export function AccountSwitcher() {
     };
 
     fetchUserData();
-  }, []);
+  }, [type]);
 
   // Estado de carga
   if (loadingUser) {
@@ -198,7 +206,7 @@ export function AccountSwitcher() {
           </DropdownMenuItem> 
           <DropdownMenuItem>
             <Link
-              href="/viajero/configuracion/cuenta"
+              href={profileRoute}
               className="flex gap-1.5 items-center"
             >
               <Edit />

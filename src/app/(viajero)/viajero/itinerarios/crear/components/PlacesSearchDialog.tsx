@@ -19,6 +19,8 @@ import {
   ListTodo,
   ChevronUp,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   X,
   Map as MapIcon,
   Trash2,
@@ -119,6 +121,8 @@ const StarRating = ({
 type PlaceSearchDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  allDays: DayInfo[];
+  onSelectDay: (dayKey: string) => void;
   currentDay: DayInfo | null;
   onAddLugarToDay: (lugar: LugarData) => void;
   defaultState?: string;
@@ -127,6 +131,8 @@ type PlaceSearchDialogProps = {
 export function PlaceSearchDialog({
   open,
   onOpenChange,
+  allDays,
+  onSelectDay,
   currentDay,
   onAddLugarToDay,
 }: PlaceSearchDialogProps) {
@@ -279,6 +285,26 @@ export function PlaceSearchDialog({
   const isAdded = (id_place: string) =>
     currentDayActivities.some((a) => a.lugar.id_api_place === id_place);
 
+  const { dayIndex, canGoNext, canGoPrev } = useMemo(() => {
+    if (!currentDay || !allDays || allDays.length === 0) {
+      return { dayIndex: -1, canGoNext: false, canGoPrev: false };
+    }
+    const idx = allDays.findIndex((d) => d.key === currentDay.key);
+    return {
+      dayIndex: idx,
+      canGoNext: idx < allDays.length - 1,
+      canGoPrev: idx > 0,
+    };
+  }, [currentDay, allDays]);
+
+  const handleDayChange = (direction: "next" | "prev") => {
+    if (direction === "next" && canGoNext) {
+      onSelectDay(allDays[dayIndex + 1].key);
+    } else if (direction === "prev" && canGoPrev) {
+      onSelectDay(allDays[dayIndex - 1].key);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex h-[95vh] w-[98vw] max-w-[98vw] flex-col gap-0 overflow-hidden rounded-xl border-border/50 p-0 shadow-2xl sm:max-w-[95vw] md:max-w-[90vw] lg:max-w-[1300px] bg-background">
@@ -289,10 +315,30 @@ export function PlaceSearchDialog({
               <Search className="h-5 w-5 text-primary" />
               Explorar Lugares
             </DialogTitle>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <span>{results.length} resultados</span>
               <span>•</span>
-              <span>{currentDay?.label || "Sin día seleccionado"}</span>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 rounded-full"
+                  onClick={() => handleDayChange("prev")}
+                  disabled={!canGoPrev}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="font-medium text-foreground">{currentDay?.label || "Sin día"}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 rounded-full"
+                  onClick={() => handleDayChange("next")}
+                  disabled={!canGoNext}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
 
