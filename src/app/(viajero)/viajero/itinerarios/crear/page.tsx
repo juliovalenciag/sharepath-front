@@ -356,6 +356,8 @@ export default function CrearItinerarioPage() {
         open={searchOpen}
         onOpenChange={setSearchOpen}
         currentDay={currentDay}
+        allDays={days}
+        onSelectDay={setSelectedDayKey}
         // @ts-ignore
         defaultState={meta?.regions[0]}
         onAddLugarToDay={(lugar) => {
