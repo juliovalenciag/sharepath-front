@@ -59,33 +59,33 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
       // console.log("Token encontrado. Generando Socket...");
 
-      const newSocket = io("http://localhost:4000", {
+      const newSocket = io("https://harol-lovers.up.railway.app", {
         path: "/socket.io/",
         auth: { sessionID, token },
         autoConnect: false,
+        // reconnection: true,
       });
 
       newSocket.on("connect", () => {
-          console.log("Socket Conectado");
+          // console.log("Socket Conectado!");
           setIsConnected(true);
       });
 
       newSocket.on("session", ({ sessionID, userID, username }) => {
-        console.log("Sesion valida, actualizando datos...");
+        // console.log("Sesion valida, actualizando datos...");
         localStorage.setItem("sessionID", sessionID);
         newSocket.auth = { sessionID, token };
         setUserID(userID);
         setUsername(username);
 
-        console.log("Pidiendo lista de amigos...");
+        //Pedir amigos aqui
+        // console.log("Pidiendo lista de amigos...");
         newSocket.emit("get friends list");
       });
 
       newSocket.on("users", (users) => {
-        console.log("📦 Contexto: Recibida lista de amigos global: ", users.length);
+        // console.log("Contexto: Recibida lista de amigos: ", users.length);
       });
-
-      newSocket.on("private message", ()  => console.log("Mensaje privado"));
 
       newSocket.on("disconnect", () => setIsConnected(false));
       // newSocket.off("session");
@@ -106,7 +106,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         intervalo = setInterval(() => {
             const conecto = intentarConectar();
             if (conecto) {
-                clearInterval(intervalo); // Si se conecta, se deja de esperar
+                clearInterval(intervalo); //Si conecta, se deja de buscar
             }
         }, 500); //Revisa cada medio segundo
     }
@@ -116,16 +116,6 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       if (intervalo) clearInterval(intervalo);
     };
   }, [socket]);
-
-  //   const handleGlobalMessage = (message: any) => {
-  //     console.log("Se recibio un mensaje");
-  //     //const currentUserID = userIDRef.current;
-
-  //     //if(currentUserID && message.from !== currentUserID)
-  //     //{
-  //     //  socket.emit("mark messages received", { withUserID: message.from });
-  //     //}
-  //   };
 
   return (
     <SocketContext.Provider value={{ socket, isConnected, userID, username, recargarUsuario }}>
