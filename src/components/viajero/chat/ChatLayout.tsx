@@ -1,3 +1,4 @@
+// ChatLayout original
 "use client";
 
 import * as React from "react";
@@ -15,6 +16,7 @@ import { m } from "motion/react";
 type SocketUser = {
   userID: string;
   username: string;
+  foto_url?: string;
   connected: boolean;
   messages: any[];
   hasNewMessages?: boolean;
@@ -57,7 +59,7 @@ function adaptSocketUserToConversation(user: SocketUser, selfUser: User): Conver
   return {
     id: user.userID,
     title: user.username,
-    members: [selfUser, { id: user.userID, name: user.username, online: user.connected }],
+    members: [selfUser, { id: user.userID, name: user.username, online: user.connected, foto_url: user.foto_url }],
     messages: uiMessages,
     lastMessage: uiMessages[uiMessages.length - 1],
     unread: unreadValue,//Mensajes sin leer
@@ -67,9 +69,24 @@ function adaptSocketUserToConversation(user: SocketUser, selfUser: User): Conver
 //////
 
 export function ChatLayout() {
-  const { socket, userID, username } = useSocket();
+  const { socket, userID, username, recargarUsuario } = useSocket();
+
+  React.useEffect(() => {
+    if(!userID){
+      // console.log("userID: ", userID);
+      recargarUsuario();
+    }
+  }, [userID, recargarUsuario])
+
+  // console.log("DEBUG CHAT LAYOUT:", { 
+  //     userID, 
+  //     username, 
+  //     socketConectado: !!socket 
+  // });
+
   const [socketUsers, setSocketUsers] = React.useState<SocketUser[]>([]);
-  const [activeId, setActiveId] = React.useState<string | undefined>(undefined); 
+  const [activeId, setActiveId] = React.useState<string | undefined>(undefined);
+  const [loadingFriends, setLoadingFriends] = React.useState(true);
 
   const activeIdRef = useRef<string | undefined>(undefined); //Para acceder al chat del amigo
 
@@ -81,17 +98,41 @@ export function ChatLayout() {
     audioRef.current = new Audio('/sonido.mp3');
 
     if (!socket || !userID || !username) {
-        console.log("ChatLayout: Esperando username socket y userID...");
+        console.log("ChatLayout: Esperando username socket y userID... Socket no listo");
         return;
     }
 
-    console.log("ChatLayout: Pidiendo la lista de amigos al servidor...");
-    socket.emit("get friends list");
+  const timer = setTimeout(() => {
+        console.log("Forzando actualización de lista de amigos...");
+        
+        if (socket.connected && userID) {
+            // Intento 1: Pedir lista
+            socket.emit("get friends list", { userID });
+        } else {
+            // Intento 2: Si no se conecta, forzar reconexión
+            socket.disconnect();
+            socket.connect();
+        }
+    }, 1000); // 1000ms = 1 segundo de retraso
+
+    // clearTimeout(timera);
     
-    console.log("ChatLayout: Socket y userID listos. Configurando listeners...");
+    const requestFriendList = () => {
+      setTimeout(() => {
+        console.log("Conetado, solicitando amigos...");
+        socket.emit("get friends list");
+      }, 500)
+    };
+
+    if(socket.connected) requestFriendList();
+
+    socket.on("connect", requestFriendList);
+
+    // console.log("ChatLayout: Socket y userID listos. Configurando listeners...");
 
     socket.on("users", (users: SocketUser[]) => {
-      console.log("ChatLayout: Recibido evento 'users'", users);
+      console.log("ChatLayout: Recibido evento 'users'");
+      setLoadingFriends(false);
 
       setSocketUsers((currentUsers) => {
         const currentUsersMap = new Map(currentUsers.map(u => [u.userID, u]));
@@ -104,7 +145,8 @@ export function ChatLayout() {
             //Si ya habia mensajes guardados, se mantienen, sino array vacio
             messages: existingUser ? existingUser.messages : [],
             hasNewMessages: existingUser ? existingUser.hasNewMessages : false,
-            unreadCount: existingUser ? existingUser.unreadCount : (newUser.unreadCount || 0)
+            unreadCount: existingUser ? existingUser.unreadCount : (newUser.unreadCount || 0),
+            foto_url: existingUser ? existingUser.foto_url : (newUser.foto_url || ""),
           };
         });
       });
@@ -115,7 +157,8 @@ export function ChatLayout() {
     });
 
     socket.on("user connected", (user: SocketUser) => {
-      console.log("ChatLayout: Recibido evento 'user connected'", user);
+      // console.log("ChatLayout: Recibido evento 'user connected'", user);
+      console.log(`Evento recibido: ${user.userID} se conectó.`);
       setSocketUsers((prev) => {
         const exists = prev.find(u => u.userID === user.userID);
         if(exists)
@@ -131,19 +174,19 @@ export function ChatLayout() {
     });
 
     socket.on("user disconnected", (disconnectedID: string) => {
-      console.log(`${disconnectedID} desconectado`);
+      // console.log(`${disconnectedID} desconectado`);
+      console.log(`Evento recibido: Usuario ${disconnectedID} se desconectó.`);
       
-      setSocketUsers((prev) => {
-        return prev.map((u) => {
-          if (u.userID === disconnectedID) {
-             //console.log(`${u.username} desconectado.`);
-             return { ...u, connected: false };
-          } else {
-             // console.log(`Comparando "${u.userID}" con "${disconnectedID}" no coincide`);
-             return u;
-          }
-        });
-      });
+setSocketUsers((prev) => {
+  return prev.map((u) => {
+    if (String(u.userID) === String(disconnectedID)) {
+        console.log(`Desconectando a: ${u.username}`);
+        return { ...u, connected: false };
+    } else {
+        return u;
+    }
+  });
+});
     });
 
     socket.on("chat history", ({ withUserID, messages }) => {
@@ -232,7 +275,9 @@ export function ChatLayout() {
     });
 
     return () => {
+      clearTimeout(timer);
       console.log("ChatLayout: Limpiando listeners de socket");
+      socket.off("connect");
       socket.off("users");
       socket.off("user connected");
       socket.off("user disconnected");
@@ -240,9 +285,8 @@ export function ChatLayout() {
       socket.off("private message");
       socket.off("messages read");
       socket.off("message received");
-      socket.off("get friends list");
     };
-  }, [socket, userID, username]);
+  }, [socket, userID, username, loadingFriends]);
 
   const selfUser: User | null = React.useMemo(() => {
     if (!userID || !username) return null;
@@ -255,6 +299,7 @@ export function ChatLayout() {
   }, [userID, username]);
 
   const conversationsForUI: Conversation[] = React.useMemo(() => {
+    console.log("DEBUG USUARIO:", { userID, username, socket: !!socket });
     if (!selfUser) return []; //Si aun no sabemos quienes somos, no muestra nada
     //Pasa 'selfUser' a la funcion que adapta los sockets al front
     return socketUsers.map((u) => adaptSocketUserToConversation(u, selfUser));
@@ -346,9 +391,16 @@ return (
           />
         ) : (
           <div className="h-full grid place-content-center text-center text-muted-foreground">
-            {socketUsers.length > 0
+            {/* {socketUsers.length > 0
               ? "Selecciona una conversación"
-              : "No tienes amigos en tu lista"}
+              : "No tienes amigos en tu lista"} */}
+            {loadingFriends ? (
+              "Cargando amigos..."
+            ) : socketUsers.length === 0 ? (
+              "No tienes amigos en tu lista"
+            ) : (
+              "Selecciona una conversación"
+            )}
           </div>
         )}
       </main>

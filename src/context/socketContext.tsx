@@ -1,3 +1,4 @@
+//socketCOntext original
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useRef } from "react";
@@ -9,6 +10,7 @@ interface ISocketContext {
   isConnected: boolean;
   userID: string | null;
   username: string | null;
+  recargarUsuario: () => void;
 }
 
 //Incializacion de datos del contexto
@@ -17,6 +19,7 @@ const SocketContext = createContext<ISocketContext>({
   isConnected: false,
   userID: null,
   username: null,
+  recargarUsuario: () => {}
 });
 
 export const useSocket = () => useContext(SocketContext);
@@ -27,75 +30,105 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const [userID, setUserID] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
 
+  const recargarUsuario = () => {
+    const storedUser = localStorage.getItem("user");
+    if(storedUser) {
+      const datosUsuario = JSON.parse(storedUser);
+      setUserID(datosUsuario.correo);
+      setUsername(datosUsuario.username);
+    }
+  };
+
+  useEffect(() => {
+    recargarUsuario();
+  }, []);
+
   useEffect(() => {
     //console.log("Iniciando configuracion de SocketConext...");
-    
-    const sessionID = localStorage.getItem("sessionID");
-    const token = localStorage.getItem("authToken");
+    // if(loadingUser) return;
+    if(socket) return;
 
-    if (!token) { 
-      console.log('No se encontró token');
-      return;
+    const intentarConectar = () => {
+      const token = localStorage.getItem("authToken");
+      const sessionID = localStorage.getItem("sessionID");
+
+      if(!token){
+        // console.log("Buscando token...");
+        return false;
+      }
+
+      // console.log("Token encontrado. Generando Socket...");
+
+      const newSocket = io("http://localhost:4000", {
+        path: "/socket.io/",
+        auth: { sessionID, token },
+        autoConnect: false,
+      });
+
+      newSocket.on("connect", () => {
+          console.log("Socket Conectado");
+          setIsConnected(true);
+      });
+
+      newSocket.on("session", ({ sessionID, userID, username }) => {
+        console.log("Sesion valida, actualizando datos...");
+        localStorage.setItem("sessionID", sessionID);
+        newSocket.auth = { sessionID, token };
+        setUserID(userID);
+        setUsername(username);
+
+        console.log("Pidiendo lista de amigos...");
+        newSocket.emit("get friends list");
+      });
+
+      newSocket.on("users", (users) => {
+        console.log("📦 Contexto: Recibida lista de amigos global: ", users.length);
+      });
+
+      newSocket.on("private message", ()  => console.log("Mensaje privado"));
+
+      newSocket.on("disconnect", () => setIsConnected(false));
+      // newSocket.off("session");
+      // newSocket.off("connect");
+      // newSocket.off("connect_error");
+      // newSocket.off("disconnect");
+      //Se pueden poner los .off aqui?
+
+      setSocket(newSocket);
+      return true; //Se encontro el token y se conecto el Socket
     }
 
-    const newSocket = io("http://localhost:4000", {
-      //withCredentials: true,
-      path: "/socket.io/",
-      autoConnect: false,
-      auth: {
-        sessionID: sessionID,
-        token: token
-      },
-    });
-
-    // newSocket.auth = { 
-    //     sessionID: sessionID,
-    //     token: token 
-    // };
-
-    newSocket.on("session", ({ sessionID, userID, username }) => {
-      //console.log(`Evento session - SocketContext: Sesión recibida. ID: ${userID}, Nombre: ${username}, Sesion ID: ${sessionID}`);
-      newSocket.auth = { sessionID, token }; 
-      localStorage.setItem("sessionID", sessionID);
-      setUserID(userID);
-      setUsername(username);//Guarda el username en el navegador y estado de react
-    });
-
-    newSocket.on("connect", () => {
-      //console.log("SocketContext: Conectado al servidor");
-      setIsConnected(true);
-    });
-
-    newSocket.on("disconnect", () => {
-      //console.log("SocketContext: Se perdió la conexión");
-      setIsConnected(false);
-    });
-
-    newSocket.on("connect_error", (err) => {
-      console.error(`SocketContext: Error de conexion ${err.message}`);
-
-      //Si el servidor rechaza el token o el sessionID, se borran para evitar bucles, es decir, se borra sessionID y se asigna una nueva.
-      if(err.message.includes("inválido") || err.message.includes("No se proporcionó"))
-      {
-        console.error("Credenciales inválidas, limpiando sessionID...");
-        localStorage.removeItem("sessionID");
-      }
-    })
-
-    //console.log("Intentando conectar...");
-    newSocket.connect();
-
-    //Guardar el socket en el estado de react
-    setSocket(newSocket);
+    const exito = intentarConectar();
+    
+    let intervalo: NodeJS.Timeout;
+    if (!exito) {
+        console.log("Token no listo. Esperando token...");
+        intervalo = setInterval(() => {
+            const conecto = intentarConectar();
+            if (conecto) {
+                clearInterval(intervalo); // Si se conecta, se deja de esperar
+            }
+        }, 500); //Revisa cada medio segundo
+    }
 
     return () => {
       //console.log("SocketContext: Desconectando usuario...")
-      newSocket.disconnect();
+      if (intervalo) clearInterval(intervalo);
     };
-  }, []);
+  }, [socket]);
+
+  //   const handleGlobalMessage = (message: any) => {
+  //     console.log("Se recibio un mensaje");
+  //     //const currentUserID = userIDRef.current;
+
+  //     //if(currentUserID && message.from !== currentUserID)
+  //     //{
+  //     //  socket.emit("mark messages received", { withUserID: message.from });
+  //     //}
+  //   };
 
   return (
-    <SocketContext.Provider value={{ socket, isConnected, userID, username }}>
+    <SocketContext.Provider value={{ socket, isConnected, userID, username, recargarUsuario }}>
       {children}
     </SocketContext.Provider>
   );
