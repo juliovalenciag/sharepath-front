@@ -32,7 +32,8 @@ export const NotificationProvider = ({
 
       try {
         // Asumimos que tu endpoint es /notificaciones y usa el mismo método de auth
-        const response = await fetch("http://localhost:4000/notificacion", {
+        const response = await fetch("https://harol-lovers.up.railway.app/notificacion", {
+        //const response = await fetch("http://localhost:4000/notificacion", {
           headers: {
             "Content-Type": "application/json",
             token: token,
