@@ -93,7 +93,7 @@ export default async function Layout({
               <LayoutControls {...layoutPreferences} /> 
               <ThemeSwitcher />
               <NotificationBell />
-              <AccountSwitcher />
+              <AccountSwitcher type="viajero"/>
             </div>
           </div>
         </header>
