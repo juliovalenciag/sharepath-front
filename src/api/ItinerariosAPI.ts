@@ -32,6 +32,10 @@ import {
   ListRecomen,
   Block,
   UnBlock,
+  CreateResenaRequest,
+  UpdateResenaRequest,
+  Resena,
+  PublicacionConResenas,
 } from "./interfaces/ApiRoutes";
 
 export class ItinerariosAPI implements ApiRoutes {
@@ -422,5 +426,31 @@ export class ItinerariosAPI implements ApiRoutes {
 
   async getMyPublications(): Promise<Publicacion[]> {
     return await this.get<Publicacion[]>("/publicacion/", true);
+  }
+
+  async getPublicationWithResenas(publicacionId: number): Promise<PublicacionConResenas> {
+      return await this.get<PublicacionConResenas>(`/publicacion/${publicacionId}`, true);
+  }
+
+  async deletePublication(publicacionId: number): Promise<{ message: string }> {
+      return await this.delete<{ message: string }>(`/publicacion/${publicacionId}`);
+  }
+
+  // ===== RESEÑAS =====
+
+  async createResena(publicacionId: number, body: CreateResenaRequest): Promise<Resena> {
+      return await this.post<Resena>(`/resena/publicacion/${publicacionId}`, true, body);
+  }
+
+  async updateResena(resenaId: number, body: UpdateResenaRequest): Promise<Resena> {
+      return await this.put<Resena>(`/resena/${resenaId}`, true, body);
+  }
+
+  async deleteResena(resenaId: number): Promise<Resena> {
+      return await this.delete<Resena>(`/resena/${resenaId}`);
+  }
+
+  async getResenasByPublicacion(publicacionId: number): Promise<Resena[]> {
+      return await this.get<Resena[]>(`/resena/publicacion/${publicacionId}`, true);
   }
 }
