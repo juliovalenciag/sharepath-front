@@ -2,6 +2,7 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeSelector } from "./theme-selector";
 import { ModeSwitcher } from "./mode-switcher";
+import { AccountSwitcher } from "@/components/viajero/sidebar/account-switcher";
 
 export function SiteHeader() {
   return (
@@ -14,8 +15,10 @@ export function SiteHeader() {
         />
         <h1 className="text-base font-medium">Share Path</h1>
         <div className="ml-auto flex items-center gap-2">
+
           {/* <ThemeSelector /> */}
           <ModeSwitcher />
+          <AccountSwitcher type="admin"/>
         </div>
       </div>
     </header>

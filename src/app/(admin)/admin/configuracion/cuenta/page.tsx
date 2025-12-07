@@ -64,7 +64,7 @@ export default function AccountPage() {
         </div>
 
         {/* Boton para editar información */}
-        <Link href="/viajero/configuracion/cuenta/editar">
+        <Link href="/admin/configuracion/cuenta/editar">
           <Button
             variant="outline"
             className="flex items-center gap-2 self-end sm:self-auto"
