@@ -271,12 +271,43 @@ export interface ApiRoutes {
   // Sugerencias de amigos
   getFriendSuggestions: () => Promise<FriendSuggestionResponse>;
 
-    // Reportes.
-    createReport: (publicationId: number, reason: string) => Promise<CreateReportResponse>;
-    getReports: () => Promise<Reporte[]>;
-    getReportById: (reportId: number) => Promise<Reporte>;
-    deleteReport: (reportId: number) => Promise<void>; // Manda error si no se puede eliminar
+  // Reportes.
+  createReport: (publicationId: number, reason: string) => Promise<CreateReportResponse>;
+  getReports: () => Promise<Reporte[]>;
+  getReportById: (reportId: number) => Promise<Reporte>;
+  deleteReport: (reportId: number) => Promise<void>; // Manda error si no se puede eliminar
+
+  // Obtener informacion de otro usuario.
+  getOtherUserInfo: (username: string) => Promise<UserInfoResponse>;
 }
+export interface UserInfoResponse {
+  correo:          string;
+  username:        string;
+  nombre_completo: string;
+  foto_url:        string;
+  privacity_mode:  boolean;
+  role:            string;
+  publicaciones:   Publicacione[];
+}
+
+export interface Publicacione {
+  id:             number;
+  descripcion:    string;
+  privacity_mode: boolean;
+  fotos:          Foto[];
+  itinerario:     Itinerario;
+}
+
+export interface Foto {
+  id:       number;
+  foto_url: string;
+}
+
+export interface Itinerario {
+  id:     number;
+  nombre: string;
+}
+
 export interface CreateReportResponse {
     description:      string;
     publicacion:      Publicacion;
