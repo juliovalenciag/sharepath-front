@@ -41,15 +41,10 @@ import {
 
 export class ItinerariosAPI implements ApiRoutes {
 
-<<<<<<< HEAD
-  //private HOST = "https://harol-lovers.up.railway.app";
-  private HOST = "http://localhost:4000";
-=======
   private static instance: ItinerariosAPI
->>>>>>> 324d33fa21baacece5aba7c4a9342e358214edea
 
-  private HOST = "https://harol-lovers.up.railway.app"
-  // private HOST = "http://localhost:4000"
+  //private HOST = "https://harol-lovers.up.railway.app"
+   private HOST = "http://localhost:4000"
 
 
   private constructor() { }
@@ -457,7 +452,6 @@ export class ItinerariosAPI implements ApiRoutes {
     return await this.get<Publicacion[]>("/publicacion/", true);
   }
 
-<<<<<<< HEAD
   // ===== NOTIFICACIONES =====
   async markNotificationAsRead(
     notificationId: string | number
@@ -471,10 +465,8 @@ export class ItinerariosAPI implements ApiRoutes {
   async getNotifications(): Promise<RawNotification[]> {
     return await this.get<RawNotification[]>("/notificacion", true);
   }
-}
-=======
 
-  // ===== REPORTES =====
+    // ===== REPORTES =====
   async createReport(publicationId: number, reason: string): Promise<CreateReportResponse> {
     return await this.post<CreateReportResponse>("/reporte/registro", true, {
       publicationId,
@@ -497,4 +489,6 @@ export class ItinerariosAPI implements ApiRoutes {
     return await this.get<UserInfoResponse>(`/user/profile/${encodeURIComponent(username)}`, true);
   }
 }
->>>>>>> 324d33fa21baacece5aba7c4a9342e358214edea
+
+
+

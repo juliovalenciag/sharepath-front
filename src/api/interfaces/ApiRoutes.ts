@@ -271,7 +271,6 @@ export interface ApiRoutes {
   // Sugerencias de amigos
   getFriendSuggestions: () => Promise<FriendSuggestionResponse>;
 
-<<<<<<< HEAD
   getAverageRating: (publicationId: number) => Promise<AverageRatingResponse>;
   shareItinerary: (
     itinerarioId: number,
@@ -295,7 +294,6 @@ export interface RawNotification {
   isRead: boolean;
   resourceId?: string | number;
   emisor: Usuario;
-=======
   // Reportes.
   createReport: (publicationId: number, reason: string) => Promise<CreateReportResponse>;
   getReports: () => Promise<Reporte[]>;
@@ -371,7 +369,6 @@ export interface Publicacion {
 
 export interface UsuarioEmitente {
     correo: string;
->>>>>>> 324d33fa21baacece5aba7c4a9342e358214edea
 }
 
 export interface ShareItineraryRequest {

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { UserPlus, MessageCircle, Heart, Bell } from "lucide-react";
+import { UserPlus, MessageCircle, Heart, Bell, Signpost, UserRoundCheck} from "lucide-react";
 import { useNotificationsC } from "@/context/NotificationContext";
 
 // 1. Mapeo simple de iconos según el TIPO que llega en tu JSON
@@ -11,13 +11,25 @@ const getIconAndColor = (type: string) => {
   const normalized = type?.toUpperCase() || "GENERIC";
 
   switch (normalized) {
+    case "NEW_POST":
+    case "NUEVA_PUBLICACION":
+      return {
+        icon: <Signpost size={16} className="text-white" />,
+        color: "bg-green-500",
+      };
     case "FRIEND_REQUEST":
     case "SOLICITUD":
       return {
         icon: <UserPlus size={16} className="text-white" />,
         color: "bg-indigo-600",
       };
+    case "FRIEND_ACCEPTED":
+      return{
+        icon: <UserRoundCheck size={16} className="text-white" />,
+        color: "bg-indigo-600",
+      }
     case "COMMENT":
+      
     case "COMENTARIO":
       return {
         icon: <MessageCircle size={16} className="text-white" />,
@@ -102,7 +114,7 @@ export const NotificationCard = ({ notification }: { notification: any }) => {
           className="relative shrink-0 cursor-pointer"
         >
           <Image
-            src={actor_avatar || "/img/angel.jpg"}
+            src={ "/img/angel.jpg"}
             alt={actor_nombre || "User"}
             width={48}
             height={48}
