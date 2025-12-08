@@ -328,6 +328,7 @@ export interface ApiRoutes {
   updateResena: (resenaId: number, body: UpdateResenaRequest) => Promise<Resena>;
   deleteResena: (resenaId: number) => Promise<Resena>;
   getResenasByPublicacion: (publicacionId: number) => Promise<Resena[]>;
+  
     // Reportes.
     createReport: (publicationId: number, reason: string) => Promise<CreateReportResponse>;
     getReports: () => Promise<Reporte[]>;
