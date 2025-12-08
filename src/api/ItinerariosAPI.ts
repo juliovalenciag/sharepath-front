@@ -24,6 +24,8 @@ import {
   ListRequest,
   ListFriend,
   Amigo,
+  RawNotification,
+  MarkAsReadResponse,
   FriendSuggestionResponse,
   ShareItineraryRequest,
   Publicacion,
@@ -37,8 +39,8 @@ import {
 export class ItinerariosAPI implements ApiRoutes {
   private static instance: ItinerariosAPI;
 
-  private HOST = "https://harol-lovers.up.railway.app";
-  //private HOST = "http://localhost:4000"
+  //private HOST = "https://harol-lovers.up.railway.app";
+  private HOST = "http://localhost:4000";
 
   private constructor() {}
 
@@ -51,7 +53,11 @@ export class ItinerariosAPI implements ApiRoutes {
 
   // ===== PETICIONES GENÉRICAS =====
 
-  private async post<T>(route: string, auth: boolean, body: object): Promise<T> {
+  private async post<T>(
+    route: string,
+    auth: boolean,
+    body: object
+  ): Promise<T> {
     const token = auth ? localStorage.getItem("authToken") : undefined;
     const request = await fetch(`${this.HOST}${route}`, {
       method: "POST",
@@ -104,6 +110,31 @@ export class ItinerariosAPI implements ApiRoutes {
       method: "PUT",
       body: formData,
       headers: {
+        ...(token && { token }),
+      },
+    });
+
+    const data = await request.json();
+
+    if (!request.ok) {
+      const { message } = data as ErrorResponse;
+      throw new Error(message);
+    }
+
+    return data as T;
+  }
+
+  private async patch<T>(
+    route: string,
+    auth: boolean,
+    body: object = {}
+  ): Promise<T> {
+    const token = auth ? localStorage.getItem("authToken") : undefined;
+    const request = await fetch(`${this.HOST}${route}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+      headers: {
+        "Content-Type": "application/json",
         ...(token && { token }),
       },
     });
@@ -422,5 +453,19 @@ export class ItinerariosAPI implements ApiRoutes {
 
   async getMyPublications(): Promise<Publicacion[]> {
     return await this.get<Publicacion[]>("/publicacion/", true);
+  }
+
+  // ===== NOTIFICACIONES =====
+  async markNotificationAsRead(
+    notificationId: string | number
+  ): Promise<MarkAsReadResponse> {
+    return await this.patch<MarkAsReadResponse>(
+      `/notificacion/read/${notificationId}`,
+      true
+    );
+  }
+
+  async getNotifications(): Promise<RawNotification[]> {
+    return await this.get<RawNotification[]>("/notificacion", true);
   }
 }

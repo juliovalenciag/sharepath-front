@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import Image from "next/image";
 import {
   MapPin,
@@ -20,6 +20,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  getCategoryName,
+  getDefaultImageForCategory,
+} from "@/lib/category-utils";
 
 // Tipos
 interface DiaDetalle {
@@ -103,17 +107,24 @@ function DayCard({
   const otherActivities = activities.slice(1);
   const hasMore = otherActivities.length > 2;
   const visibleOthers = otherActivities.slice(0, 2);
+  const [imageError, setImageError] = useState(false);
+
+  const imageUrl =
+    !imageError && mainActivity.urlImagen
+      ? mainActivity.urlImagen
+      : getDefaultImageForCategory(mainActivity.categoria);
 
   return (
     <div className="relative w-[280px] shrink-0 h-[300px] rounded-2xl overflow-hidden group select-none transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl border border-border/40 bg-card">
       {/* --- FONDO: IMAGEN PRINCIPAL (FULL CARD) --- */}
       <div className="absolute inset-0 z-0">
-        {mainActivity.urlImagen ? (
+        {imageUrl ? (
           <Image
-            src={mainActivity.urlImagen}
+            src={imageUrl}
             alt={mainActivity.titulo}
             fill
-            className="object-cover transition-transform duration-700 "
+            className="object-cover transition-transform duration-700"
+            onError={() => setImageError(true)}
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-muted to-muted/80 flex items-center justify-center">
@@ -142,8 +153,8 @@ function DayCard({
         {/* Actividad Principal (Hero Text) */}
         <div>
           <div className="flex items-center gap-2 mb-1.5 opacity-90">
-            <span className="text-[9px] font-bold uppercase tracking-widest text-amber-400">
-              {mainActivity.categoria || "Destacado"}
+            <span className="text-[9px] font-bold uppercase tracking-widest text-amber-400 line-clamp-1">
+              {getCategoryName(mainActivity.categoria) || "Destacado"}
             </span>
             {mainActivity.calificacion > 0 && (
               <span className="flex items-center gap-0.5 text-[9px] font-bold text-white/80">

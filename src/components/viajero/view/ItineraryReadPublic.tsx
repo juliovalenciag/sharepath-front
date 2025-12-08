@@ -50,6 +50,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
+import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 // --- TIPOS ---
 interface Lugar {
   id: string;
@@ -176,15 +177,17 @@ export default function ItineraryPublishView({ id }: { id: string }) {
       try {
         const token = localStorage.getItem("authToken");
         if (!token) throw new Error("No hay sesión activa");
-
+        
         const res = await fetch(
-          `https://harol-lovers.up.railway.app/itinerario/${id}`,
+          //`https://harol-lovers.up.railway.app/itinerario/${id}`,
+          `http://localhost:4000/itinerario/${id}`,
           { headers: { "Content-Type": "application/json", "token": token } }
         );
 
         if (!res.ok) throw new Error("Error al cargar datos");
 
         const data = await res.json();
+        console.log ("Itinerario cargado:", data);
         const actividadesOrdenadas = data.actividades?.sort(
           (a: any, b: any) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
         ) || [];
@@ -275,29 +278,28 @@ export default function ItineraryPublishView({ id }: { id: string }) {
     const toastId = toast.loading("Publicando viaje...");
 
     try {
-      const token = localStorage.getItem("authToken");
+      // Usamos la instancia de la API en lugar del fetch directo
+      const api = ItinerariosAPI.getInstance();
+
+      // Construimos el FormData aquí para asegurar que se envíe correctamente
       const formData = new FormData();
-      
       formData.append('descripcion', descripcion.trim());
-      formData.append('privacity_mode', privacityMode ? 'true' : 'false');
-      fotos.forEach((foto) => formData.append('fotos', foto));
+      formData.append('privacity_mode', String(privacityMode));
+      fotos.forEach(foto => {
+        formData.append('fotos', foto);
+      });
 
-      const response = await fetch(
-        `https://harol-lovers.up.railway.app/publicacion/share/${id}`,
-        {
-          method: "POST",
-          body: formData,
-          headers: { "token": token || "" },
-        }
-      );
-
-      if (!response.ok) throw new Error("Error en servidor");
+      // Pasamos el FormData directamente al método de la API.
+      // Asumimos que shareItinerary puede manejar un FormData.
+      await api.shareItinerary(Number(id), formData as any);
 
       toast.success("¡Viaje publicado!", { id: toastId });
       router.push('/viajero/itinerarios'); 
 
     } catch (error) {
-      toast.error("Error al publicar", { id: toastId });
+      console.error("Error al publicar:", error);
+      const errorMessage = error instanceof Error ? error.message : "No se pudo conectar con el servidor.";
+      toast.error("Error al publicar", { id: toastId, description: errorMessage });
     } finally {
       setPublishing(false);
     }

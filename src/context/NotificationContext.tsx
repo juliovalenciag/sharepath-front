@@ -32,8 +32,7 @@ export const NotificationProvider = ({
 
       try {
         // Asumimos que tu endpoint es /notificaciones y usa el mismo método de auth
-        const response = await fetch("https://harol-lovers.up.railway.app/notificacion", {
-        //const response = await fetch("http://localhost:4000/notificacion", {
+        const response = await fetch("http://localhost:4000/notificacion", {
           headers: {
             "Content-Type": "application/json",
             token: token,
@@ -65,7 +64,7 @@ export const NotificationProvider = ({
 
           // BD: n.emisor.foto_url -> UI: actor_avatar
           // ¡OJO! Si es null, usamos la imagen por defecto
-          actor_avatar: n.emisor?.foto_url || "/img/angel.jpg",
+          actor_avatar:  "/img/angel.jpg",
 
           // 4. RESTO DE DATOS
           fecha: n.createdAt,
