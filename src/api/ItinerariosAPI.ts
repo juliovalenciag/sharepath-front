@@ -419,9 +419,6 @@ export class ItinerariosAPI implements ApiRoutes {
   async getMyPublications(): Promise<Publicacion[]> {
     return await this.get<Publicacion[]>("/publicacion/", true);
   }
-    async getMyPublications(): Promise<Publicacion[]> {
-        return await this.get<Publicacion[]>("/publicacion/", true);
-    }
 
 
     // ===== REPORTES =====
