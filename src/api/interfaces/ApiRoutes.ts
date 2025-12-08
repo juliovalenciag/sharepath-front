@@ -328,6 +328,50 @@ export interface ApiRoutes {
   updateResena: (resenaId: number, body: UpdateResenaRequest) => Promise<Resena>;
   deleteResena: (resenaId: number) => Promise<Resena>;
   getResenasByPublicacion: (publicacionId: number) => Promise<Resena[]>;
+    // Reportes.
+    createReport: (publicationId: number, reason: string) => Promise<CreateReportResponse>;
+    getReports: () => Promise<Reporte[]>;
+    getReportById: (reportId: number) => Promise<Reporte>;
+    deleteReport: (reportId: number) => Promise<void>; // Manda error si no se puede eliminar
+}
+export interface CreateReportResponse {
+    description:      string;
+    publicacion:      Publicacion;
+    usuario_emitente: UsuarioEmitente;
+    id:               number;
+}
+export interface Reporte {
+    id:               number;
+    description:      string;
+    usuario_emitente: UsuarioEmitente;
+    historial:        Historial[];
+}
+
+export interface Historial {
+    id:                 number;
+    action_description: string;
+}
+
+export interface UsuarioEmitente {
+    correo:          string;
+    username:        string;
+    password:        string;
+    nombre_completo: string;
+    foto_url:        string;
+    role:            string;
+    account_status:  boolean;
+    privacity_mode:  boolean;
+}
+
+
+export interface Publicacion {
+    id:             number;
+    descripcion:    string;
+    privacity_mode: boolean;
+}
+
+export interface UsuarioEmitente {
+    correo: string;
 }
 
 export interface ShareItineraryRequest {

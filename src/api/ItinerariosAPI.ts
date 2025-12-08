@@ -1,57 +1,60 @@
 import {
-  ApiRoutes,
-  ErrorResponse,
-  LoginResponse,
-  RegisterRequest,
-  RegisterResponse,
-  Usuario,
-  CreateItinerarioRequest,
-  CreateItinerarioResponse,
-  ItinerarioListResponse,
-  ItinerarioData,
-  RecommendationRequest,
-  RecommendedLugar,
-  OptimizationRequest,
-  CreateLugarRequest,
-  LugarData,
-  LugaresListResponse,
-  UpdateUserRequest,
-  UpdatePasswordRequest,
-  VerifyPasswordRequest,
-  SearchUserResponse,
-  SendFriend,
-  RespondFriend,
-  ListRequest,
-  ListFriend,
-  Amigo,
-  FriendSuggestionResponse,
-  ShareItineraryRequest,
-  Publicacion,
-  AverageRatingResponse,
-  SearchFriend,
-  ListRecomen,
-  Block,
-  UnBlock,
-  CreateResenaRequest,
-  UpdateResenaRequest,
-  Resena,
-  PublicacionConResenas,
+    ApiRoutes,
+    ErrorResponse,
+    LoginResponse,
+    RegisterRequest,
+    RegisterResponse,
+    Usuario,
+    CreateItinerarioRequest,
+    CreateItinerarioResponse,
+    ItinerarioListResponse,
+    RecommendationRequest,
+    RecommendedLugar,
+    OptimizationRequest,
+    CreateLugarRequest,
+    LugarData,
+    LugaresListResponse,
+    UpdateUserRequest,
+    UpdatePasswordRequest,
+    VerifyPasswordRequest,
+    SearchUserResponse,
+    SendFriend,
+    RespondFriend,
+    ListRequest,
+    ListFriend,
+    Amigo,
+    FriendSuggestionResponse,
+    ShareItineraryRequest,
+    Publicacion,
+    AverageRatingResponse,
+    SearchFriend,
+    ListRecomen,
+    Block,
+    UnBlock,
+    CreateResenaRequest,
+    UpdateResenaRequest,
+    Resena,
+    PublicacionConResenas,
+    CreateReportResponse,
+    Reporte,
+    ItinerarioData
 } from "./interfaces/ApiRoutes";
 
 export class ItinerariosAPI implements ApiRoutes {
-  private static instance: ItinerariosAPI;
 
-  //private HOST = "https://harol-lovers.up.railway.app";
-   private HOST = "http://localhost:4000"
+    private static instance: ItinerariosAPI
+
+    private HOST = "https://harol-lovers.up.railway.app"
+    // private HOST = "http://localhost:4000"
+
 
   private constructor() {}
 
-  public static getInstance(): ItinerariosAPI {
-    if (!ItinerariosAPI.instance) {
-      ItinerariosAPI.instance = new ItinerariosAPI();
+    static getInstance(): ItinerariosAPI {
+        if (!ItinerariosAPI.instance)
+            this.instance = new ItinerariosAPI();
+        return this.instance;
     }
-    return ItinerariosAPI.instance;
-  }
 
   // ===== PETICIONES GENÉRICAS =====
 
@@ -163,27 +166,20 @@ export class ItinerariosAPI implements ApiRoutes {
     return data as T;
   }
 
-  // ===== AUTH =====
-  async doLogin(correo: string, password: string): Promise<Usuario> {
-    const { token, usuario } = await this.put<LoginResponse>("/auth", false, {
-      correo,
-      password,
-    });
+    // ===== AUTH =====
+    async doLogin(correo: string, password: string): Promise<Usuario> {
+
+        const { token, usuario } = await this.put<LoginResponse>("/auth", false, { correo, password });
 
     localStorage.setItem("authToken", token);
     localStorage.setItem("user", JSON.stringify(usuario));
 
-    return usuario;
-  }
-
-  async doRegister(body: RegisterRequest): Promise<RegisterResponse> {
-    const resp = await this.post<RegisterResponse>(
-      "/auth/register",
-      false,
-      body
-    );
-    return resp;
-  }
+        return usuario;
+    }
+    async doRegister(body: RegisterRequest): Promise<RegisterResponse> {
+        const resp = await this.post<RegisterResponse>("/auth/register", false, body);
+        return resp;
+    }
 
   // ===== ITINERARIOS =====
   async createItinerario(
@@ -435,6 +431,26 @@ export class ItinerariosAPI implements ApiRoutes {
   async deletePublication(publicacionId: number): Promise<{ message: string }> {
       return await this.delete<{ message: string }>(`/publicacion/${publicacionId}`);
   }
+
+    // ===== REPORTES =====
+    async createReport(publicationId: number, reason: string): Promise<CreateReportResponse> {
+        return await this.post<CreateReportResponse>("/reporte/registro", true, {
+            publicationId,
+            reason
+        });
+    }
+
+    async getReports(): Promise<Reporte[]> {
+        return await this.get<Reporte[]>("/reporte", true);
+    }
+
+    async getReportById(reportId: number): Promise<Reporte> {
+        return await this.get<Reporte>(`/reporte/${reportId}`, true);
+    }
+
+    async deleteReport(reportId: number): Promise<void> {
+        await this.delete<{ message: string }>(`/reporte/${reportId}`);
+    }
 
   // ===== RESEÑAS =====
 
