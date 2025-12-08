@@ -25,7 +25,7 @@ export default function MisItinerariosPage() {
       try {
         const api = ItinerariosAPI.getInstance();
         const response: any = await api.getMyItinerarios();
-
+        console.log("Itinerarios recibidos:", response);
         if (Array.isArray(response)) {
           const processed = response.map(transformarItinerario);
           // Ordenar: Más recientes (futuros) primero, luego pasados

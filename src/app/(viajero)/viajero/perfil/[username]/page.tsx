@@ -31,6 +31,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getInitials } from "@/lib/utils";
+import { ItinerariosAPI } from "@/api/ItinerariosAPI";
+import { Publicacione, UserInfoResponse } from "@/api/interfaces/ApiRoutes";
 
 // --- Tipos ---
 interface ApiUser {
@@ -85,115 +87,34 @@ interface UserItinerary {
   updatedAt: string;
 }
 
-const API_URL = "https://harol-lovers.up.railway.app";
+//const API_URL = "https://harol-lovers.up.railway.app";
+const API_URL = "https://localhost:4000/";
 
 export default function UserProfilePage() {
+
   const params = useParams();
   const router = useRouter();
   const usernameParam = params.username as string;
 
-  const [profile, setProfile] = useState<TravelerProfile | null>(null);
-  const [itineraries, setItineraries] = useState<UserItinerary[]>([]);
+  const [profile, setProfile] = useState<UserInfoResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  const api = ItinerariosAPI.getInstance();
+
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        setLoading(true);
-        const token = localStorage.getItem("authToken");
-        
-        // 1. Obtener datos del perfil
-        // Ajustamos la URL para buscar por username específico
-        // Nota: Si tu backend usa /user para "mi perfil", necesitarás un endpoint /user/[username] para ver otros.
-        // Aquí asumo que existe o que usarás /user/search o similar.
-        // Si solo tienes /user (mi perfil), esto solo funcionará para ti mismo.
-        // Para este ejemplo, simularé que podemos pedir el perfil de cualquiera.
-        
-        // IMPORTANTE: Cambia esta URL por la correcta de tu backend para obtener OTRO usuario.
-        // Ejemplo: `${API_URL}/user/${usernameParam}`
-        const res = await fetch(`${API_URL}/user/${usernameParam}`, {
-          headers: { token: token || "" },
-        });
-        
-        if (!res.ok) {
-            // Si falla (ej. 404), lanzamos error.
-            // En un caso real, si es 404 podrías mostrar "Usuario no encontrado".
-            // Si es tu API actual y no soporta ver otros perfiles, usa datos mock para probar el diseño.
-            throw new Error("No se pudo cargar el perfil");
-        }
-
-        const data = await res.json();
-
-        // Función auxiliar fecha
-        const formatCreatedAt = (iso?: string) => {
-          if (!iso) return undefined;
-          const d = new Date(iso);
-          if (Number.isNaN(d.getTime())) return undefined;
-          return d.toLocaleDateString("es-MX", { year: "numeric", month: "long" });
-        };
-
-        setProfile({
-          id: data.id || "0",
-          username: data.username,
-          name: data.nombre || data.username, // Fallback a username si no tiene nombre
-          email: data.correo,
-          avatar: data.foto_url,
-          bio: data.bio || "Explorando el mundo, un destino a la vez. 🌍✈️",
-          ciudad: data.ciudad,
-          pais: data.pais,
-          idiomas: data.idiomas || ["Español"],
-          intereses: data.intereses || ["Cultura", "Gastronomía"],
-          createdAtLabel: formatCreatedAt(data.created_at),
-          stats: {
-            itinerarios_publicos: data.stats?.itinerarios_publicos ?? 0,
-            lugares_visitados: data.stats?.lugares_visitados ?? 0,
-            amigos: data.stats?.amigos ?? 0,
-          },
-          is_friend: data.is_friend || false, // Asumir falso si no viene
-        });
-
-        // TODO: Fetch itinerarios reales del usuario
-        // setItineraries(...) 
-        // Por ahora usamos mock para que veas el diseño
-        setItineraries([
-            { id: 1, titulo: "Aventura en la Huasteca", fecha_inicio: "10 oct", fecha_fin: "15 oct", lugares_count: 8, likes: 24, updatedAt: "Hace 1 semana", cover_url: "https://images.unsplash.com/photo-1518105779142-d975f22f1b0a?q=80&w=2070&auto=format&fit=crop" },
-            { id: 2, titulo: "Ruta del Vino", fecha_inicio: "20 nov", fecha_fin: "22 nov", lugares_count: 5, likes: 12, updatedAt: "Hace 2 días" },
-        ]);
-
-        setErrorMsg(null);
-
-      } catch (error) {
-        console.error("Error cargando perfil:", error);
-        // FALLBACK MOCK DATA PARA DEMOSTRACIÓN SI LA API FALLA O NO EXISTE AÚN
-        // Elimina esto cuando tu API esté lista
-        setProfile({
-            id: "99",
-            username: usernameParam,
-            name: "Viajero Demo",
-            email: "demo@test.com",
-            avatar: null,
-            bio: "Amante de la fotografía y la comida callejera. Recorriendo México un taco a la vez. 🌮📷",
-            ciudad: "Ciudad de México",
-            pais: "México",
-            idiomas: ["Español", "Inglés"],
-            intereses: ["Fotografía", "Senderismo", "Historia"],
-            createdAtLabel: "enero 2024",
-            stats: { itinerarios_publicos: 5, lugares_visitados: 42, amigos: 128 },
-            is_friend: false,
-        });
-        setItineraries([
-            { id: 1, titulo: "Escapada a CDMX", fecha_inicio: "10 dic", fecha_fin: "15 dic", lugares_count: 12, likes: 45, updatedAt: "Hace 2 semanas", cover_url: "https://images.unsplash.com/photo-1518105779142-d975f22f1b0a?q=80&w=2070&auto=format&fit=crop" },
-        ]);
-        // setErrorMsg("No se pudo cargar el perfil.");
-      } finally {
+    setLoading(true);
+    api.getOtherUserInfo(usernameParam)
+      .then( (data) => {
+        setProfile(data);
+      })
+      .catch((error) => {
+        console.error("Error fetching user profile:", error);
+        setErrorMsg("Error al cargar el perfil del usuario.");
+      })
+      .finally(() => {
         setLoading(false);
-      }
-    };
-
-    if (usernameParam) {
-      fetchProfile();
-    }
+      });
   }, [usernameParam]);
 
   // --- Render Loading ---
@@ -241,21 +162,21 @@ export default function UserProfilePage() {
         <div className="relative -mt-16 mb-8 flex flex-col items-center sm:flex-row sm:items-end sm:gap-6">
           {/* Avatar */}
           <Avatar className="h-32 w-32 border-4 border-background shadow-xl sm:h-40 sm:w-40 bg-background">
-            <AvatarImage src={profile.avatar || undefined} alt={profile.name} className="object-cover" />
+            <AvatarImage src={profile.foto_url || undefined} alt={profile.username} className="object-cover" />
             <AvatarFallback className="text-4xl font-bold bg-primary/10 text-primary">
-              {getInitials(profile.name)}
+              {getInitials(profile.username)}
             </AvatarFallback>
           </Avatar>
 
           {/* Nombres y Datos Básicos */}
           <div className="mt-4 flex-1 text-center sm:mt-0 sm:mb-4 sm:text-left">
-            <h1 className="text-3xl font-bold leading-tight tracking-tight text-foreground">{profile.name}</h1>
+            <h1 className="text-3xl font-bold leading-tight tracking-tight text-foreground">{profile.nombre_completo}</h1>
             <p className="text-base text-muted-foreground font-medium">@{profile.username}</p>
           </div>
 
           {/* Acciones */}
           <div className="mt-4 flex gap-2 sm:mb-4 sm:mt-0">
-            {profile.is_friend ? (
+            {/* {profile.is_friend ? (
                <Button variant="outline" className="gap-2 border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800 shadow-sm">
                  <UserCheck className="h-4 w-4" /> Amigos
                </Button>
@@ -263,7 +184,7 @@ export default function UserProfilePage() {
                <Button className="gap-2 shadow-sm bg-primary hover:bg-primary/90">
                  <UserPlus className="h-4 w-4" /> Conectar
                </Button>
-            )}
+            )} */}
             <Button variant="default" size="icon" className="shadow-sm">
               <MessageCircle className="h-4 w-4" />
             </Button>
@@ -277,9 +198,9 @@ export default function UserProfilePage() {
           {/* BARRA LATERAL (Info & Stats) */}
           <aside className="space-y-6">
             {/* Biografía y Detalles */}
-            <Card className="overflow-hidden border-border/60 shadow-sm">
+            {/* <Card className="overflow-hidden border-border/60 shadow-sm">
                 <CardContent className="p-6 space-y-6">
-                    {/* Bio */}
+                    
                     <div>
                         <h3 className="text-sm font-semibold text-foreground mb-2">Acerca de</h3>
                         <p className="text-sm leading-relaxed text-muted-foreground">
@@ -289,7 +210,7 @@ export default function UserProfilePage() {
                     
                     <Separator />
 
-                    {/* Detalles con Iconos */}
+       
                     <div className="space-y-3 text-sm">
                         {(profile.ciudad || profile.pais) && (
                             <div className="flex items-center gap-3 text-muted-foreground">
@@ -313,7 +234,7 @@ export default function UserProfilePage() {
                         </div>
                     </div>
 
-                    {/* Intereses (Tags) */}
+                    
                     {profile.intereses.length > 0 && (
                         <div className="pt-2">
                             <div className="flex flex-wrap gap-2">
@@ -326,10 +247,10 @@ export default function UserProfilePage() {
                         </div>
                     )}
                 </CardContent>
-            </Card>
+            </Card> */}
 
             {/* Estadísticas (Diseño Tarjetas Pequeñas) */}
-            <div className="grid grid-cols-3 gap-2">
+            {/* <div className="grid grid-cols-3 gap-2">
                 <StatCard
                   label="Viajes"
                   value={profile.stats.itinerarios_publicos}
@@ -345,7 +266,7 @@ export default function UserProfilePage() {
                   value={profile.stats.amigos}
                   icon={Users}
                 />
-            </div>
+            </div> */}
           </aside>
 
           {/* CONTENIDO PRINCIPAL (Tabs) */}
@@ -366,12 +287,12 @@ export default function UserProfilePage() {
                 <TabsContent value="itinerarios" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div className="flex items-center justify-between">
                         <h3 className="text-lg font-semibold tracking-tight">Itinerarios Públicos</h3>
-                        <Badge variant="outline" className="font-normal">{itineraries.length} publicados</Badge>
+                        {/* <Badge variant="outline" className="font-normal">{itineraries.length} publicados</Badge> */}
                     </div>
 
-                    {itineraries.length > 0 ? (
+                    {profile.publicaciones.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                            {itineraries.map((itinerary) => (
+                            {profile.publicaciones.map((itinerary) => (
                                 <ItineraryCard key={itinerary.id} data={itinerary} />
                             ))}
                         </div>
@@ -435,40 +356,46 @@ function StatCard({ label, value, icon: Icon }: StatCardProps) {
   );
 }
 
-function ItineraryCard({ data }: { data: UserItinerary }) {
+function ItineraryCard({ data }: { data: Publicacione }) {
+  console.log(data.fotos);
+  
     return (
         <Link href={`/viajero/itinerarios/${data.id}`} className="group block h-full">
             <Card className="overflow-hidden border-border/60 bg-card transition-all hover:shadow-md hover:border-primary/40 h-full flex flex-col rounded-xl">
                 <div className="relative h-40 w-full bg-muted overflow-hidden">
-                    {data.cover_url ? (
-                        <Image 
-                            src={data.cover_url} 
-                            alt={data.titulo} 
-                            fill 
-                            className="object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
+                    {data.fotos.length > 0 ? (
+                        data.fotos.map( foto => (
+                        
+                            <Image
+                                key={foto.id}
+                                src={foto.foto_url}
+                                alt={data.descripcion || "Itinerario Foto"}
+                                fill
+                                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                        ))
                     ) : (
                         <div className="flex h-full items-center justify-center bg-gradient-to-br from-muted to-muted/80">
                             <MapIcon className="h-10 w-10 text-muted-foreground/20" />
                         </div>
                     )}
-                    <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm">
+                    {/* <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm">
                         {data.lugares_count} PARADAS
-                    </div>
+                    </div> */}
                 </div>
                 <CardHeader className="p-4 flex-1 space-y-2">
                     <CardTitle className="text-base font-bold line-clamp-2 leading-snug group-hover:text-primary transition-colors">
-                        {data.titulo}
+                        {data.itinerario.nombre}
                     </CardTitle>
                     <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
                         <div className="flex items-center gap-1.5">
                             <CalendarIcon className="h-3.5 w-3.5" />
-                            <span>{data.fecha_inicio}</span>
+                            <span>{data.id}</span>
                         </div>
-                        <div className="flex items-center gap-1">
+                        {/* <div className="flex items-center gap-1">
                             <Heart className="h-3 w-3 fill-current text-muted-foreground/50" />
                             <span>{data.likes}</span>
-                        </div>
+                        </div> */}
                     </div>
                 </CardHeader>
             </Card>
