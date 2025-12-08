@@ -52,18 +52,16 @@ export interface ItineraryViewMapProps {
   activities: ViewMapActivity[];
   className?: string;
   selectedPlaceId?: string | null;
-  // Hacemos la prop opcional en TS pero la validamos en JS
-  onSelectPlace?: (id: string | null) => void; 
+  onSelectPlace?: (id: string | null) => void;
 }
 
-// --- ICONOS PERSONALIZADOS (Lógica de Colores Solicitada) ---
+// --- ICONOS PERSONALIZADOS ---
 const createCustomIcon = (index: number, total: number, isActive: boolean) => {
   if (typeof window === "undefined") return undefined;
 
   const isStart = index === 0;
   const isEnd = index === total - 1;
 
-  // Lógica de colores estricta
   let bgColor = "bg-blue-600";
   let borderColor = "border-white";
   let size = isActive ? 44 : 32;
@@ -135,7 +133,7 @@ function TourNavigator({
             {currentIndex === -1 ? "Vista General" : `Parada ${currentIndex + 1} de ${total}`}
           </span>
           <span className="text-xs font-bold truncate leading-tight w-full block max-w-[150px]">
-            {currentIndex === -1 ? "Explorar Mapa" : currentName}
+            {currentIndex === -1 ? "Explorar Ruta" : currentName}
           </span>
         </div>
 
@@ -190,7 +188,7 @@ function MapController({
           });
         }
       } catch (e) {
-        console.error(e);
+        console.warn("Error bounds:", e);
       }
     }
     isFirstRun.current = false;
@@ -199,7 +197,7 @@ function MapController({
   return null;
 }
 
-// --- CAPA DE RUTAS (CON FIX DE REMOVELAYER) ---
+// --- CAPA DE RUTAS (FIX "removeLayer of null") ---
 function RoutingLayer({
   activities,
   onSummaryFound,
@@ -213,21 +211,29 @@ function RoutingLayer({
   useEffect(() => {
     if (!map || typeof window === "undefined") return;
 
-    const init = async () => {
-      // Import dinámico seguro
-      if (!L.Routing) { 
-        try { await import("leaflet-routing-machine"); } catch (e) { return; } 
+    // Función async para importar y configurar
+    const setupRouting = async () => {
+      try {
+        // Importación defensiva
+        if (!L.Routing) { 
+          const routingMachine = await import("leaflet-routing-machine");
+          if (!routingMachine) return;
+        }
+      } catch (e) {
+        console.warn("No se pudo cargar leaflet-routing-machine", e);
+        return;
       }
 
-      // LIMPIEZA SEGURA PREVIA
+      // Limpieza segura del control anterior si existe
       if (routingControlRef.current) {
         try {
-          // Verificamos si el mapa sigue vivo y tiene el control antes de removerlo
-          if (map && !map.listens('unload')) { // Check simple de existencia
+          // Verificamos si el mapa sigue teniendo el control antes de remover
+          // Esto evita el error "removeLayer of null" si el mapa ya se destruyó
+          if (map && !map.listens('unload')) { 
              map.removeControl(routingControlRef.current);
           }
         } catch (e) {
-           console.warn("Leaflet cleanup warning ignored");
+           // Ignoramos error de limpieza, es benigno en desmontaje
         }
         routingControlRef.current = null;
       }
@@ -247,7 +253,7 @@ function RoutingLayer({
             profile: "car",
           }),
           lineOptions: {
-            styles: [{ color: "#2563eb", opacity: 0.8, weight: 5 }],
+            styles: [{ color: "#2563eb", opacity: 0.8, weight: 6 }],
             extendToWaypoints: true,
             missingRouteTolerance: 100,
           },
@@ -267,16 +273,22 @@ function RoutingLayer({
 
         control.addTo(map);
         routingControlRef.current = control;
-      } catch (error) {}
+      } catch (error) {
+        console.error("Error creando ruta:", error);
+      }
     };
 
-    init();
+    setupRouting();
 
-    // LIMPIEZA AL DESMONTAR
+    // Cleanup function
     return () => {
       if (routingControlRef.current && map) {
         try {
-           map.removeControl(routingControlRef.current);
+           // Doble check de seguridad
+           const container = map.getContainer();
+           if (container) { 
+               map.removeControl(routingControlRef.current); 
+           }
         } catch (e) {}
       }
     };
@@ -297,7 +309,7 @@ export default function ItineraryViewMap({
   const [mapStyle, setMapStyle] = useState<"streets" | "satellite">("streets");
   const [stats, setStats] = useState({ totalDistance: 0, totalTime: 0 });
   
-  // Índice activo seguro
+  // Índice activo
   const activeIndex = useMemo(() => {
       if (!selectedPlaceId) return -1;
       return activities.findIndex(a => a.id === selectedPlaceId);
@@ -309,26 +321,18 @@ export default function ItineraryViewMap({
     return [19.4326, -99.1332];
   }, [activities]);
 
-  // Handlers con validación de onSelectPlace
-  const safeSelectPlace = (id: string | null) => {
-      if (onSelectPlace) {
-          onSelectPlace(id);
-      } else {
-          console.warn("onSelectPlace no fue proporcionado al mapa");
-      }
-  };
-
+  // Handlers seguros
   const handleNext = () => { 
       if (activeIndex < activities.length - 1) {
-          safeSelectPlace(activities[activeIndex + 1].id);
+          onSelectPlace?.(activities[activeIndex + 1].id);
       }
   };
   
   const handlePrev = () => {
     if (activeIndex > 0) {
-        safeSelectPlace(activities[activeIndex - 1].id);
+        onSelectPlace?.(activities[activeIndex - 1].id);
     } else {
-        safeSelectPlace(null);
+        onSelectPlace?.(null); // Volver a vista general
     }
   };
 
@@ -396,7 +400,7 @@ export default function ItineraryViewMap({
           size="icon"
           variant="secondary"
           className="h-9 w-9 rounded-xl shadow-md bg-background/90 backdrop-blur-md hover:bg-background border border-border/50"
-          onClick={() => safeSelectPlace(null)}
+          onClick={() => onSelectPlace?.(null)}
           title="Vista general"
         >
           <Target className="h-4 w-4 text-muted-foreground" />
@@ -414,11 +418,17 @@ export default function ItineraryViewMap({
         <ZoomControl position="bottomright" />
         <TileLayer attribution='&copy; CARTO' url={tiles[mapStyle]} />
 
-        {/* Línea Sólida */}
+        {/* Línea Sólida (Backup Visual) */}
         {activities.length > 1 && (
           <Polyline
             positions={activities.map((a) => [a.lat, a.lng])}
-            pathOptions={{ color: "#94a3b8", weight: 5, opacity: 0.8,dashArray: "5, 10", lineCap: "round", lineJoin: "round" }}
+            pathOptions={{
+              color: "#2563eb",
+              weight: 5,
+              opacity: 0.8,
+              lineCap: "round",
+              lineJoin: "round",
+            }}
           />
         )}
 
@@ -439,7 +449,9 @@ export default function ItineraryViewMap({
                 key={a.id} 
                 position={[a.lat, a.lng]} 
                 icon={icon}
-                eventHandlers={{ click: () => safeSelectPlace(a.id) }}
+                eventHandlers={{ 
+                    click: () => onSelectPlace?.(a.id) 
+                }}
             >
               <Tooltip
                 direction="top"
@@ -451,10 +463,14 @@ export default function ItineraryViewMap({
                   isActive ? "z-[1000]" : ""
                 )}
               >
-                <div className={cn(
+                <div
+                  className={cn(
                     "px-3 py-1.5 border rounded-lg shadow-sm whitespace-nowrap transition-colors",
-                    isActive ? "bg-amber-500 text-white border-amber-600 font-bold" : "bg-background text-foreground border-border/50 font-medium"
-                )}>
+                    isActive
+                      ? "bg-amber-500 text-white border-amber-600 font-bold"
+                      : "bg-background text-foreground border-border/50 font-medium"
+                  )}
+                >
                   <p className="text-[11px] leading-tight">{a.nombre}</p>
                 </div>
               </Tooltip>

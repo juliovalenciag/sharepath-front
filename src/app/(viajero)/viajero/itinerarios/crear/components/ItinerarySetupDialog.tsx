@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation"; // Importar useRouter
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,7 +17,7 @@ import { es } from "date-fns/locale";
 import { DateRange } from "react-day-picker";
 import { toast } from "sonner";
 
-// Iconos (Lucide para consistencia con el proyecto)
+// Iconos
 import {
   MapPin,
   Calendar as CalendarIcon,
@@ -68,7 +69,7 @@ import { cn } from "@/lib/utils";
 import { REGIONS_DATA, RegionKey } from "@/lib/constants/regions";
 import { useItineraryBuilderStore } from "@/lib/itinerary-builder-store";
 
-// --- 1. ESQUEMA DE VALIDACIÓN (Idéntico a tu original + Ajustes TS) ---
+// --- 1. ESQUEMA DE VALIDACIÓN ---
 const schema = z
   .object({
     nombre: z
@@ -79,7 +80,6 @@ const schema = z
     regions: z
       .array(z.string())
       .min(1, { message: "Selecciona al menos un destino" }),
-    // Validamos que existan, la lógica de negocio va en el refine
     start: z.date(),
     end: z.date(),
   })
@@ -89,12 +89,11 @@ const schema = z
       if (isAfter(v.start, v.end)) return false;
 
       const days = differenceInCalendarDays(v.end, v.start) + 1;
-      // Mantenemos tu validación original de 7 días (ajustable si deseas 15)
-      return days >= 1 && days <= 7;
+      return days >= 1 && days <= 15; // Ajustado a 15 días para flexibilidad
     },
     {
-      message: "Selecciona un rango válido (1 a 7 días).",
-      path: ["end"], // El error se asocia al campo final
+      message: "Selecciona un rango válido (1 a 15 días).",
+      path: ["end"],
     }
   );
 
@@ -109,15 +108,14 @@ export function ItinerarySetupDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const router = useRouter(); // Hook de navegación
   const { meta, setMeta } = useItineraryBuilderStore();
 
-  // Estados locales de UI
+  // Estados locales
   const [openRegionPopover, setOpenRegionPopover] = useState(false);
   const [showRegionAlert, setShowRegionAlert] = useState(false);
   const [pendingRegion, setPendingRegion] = useState<RegionKey | null>(null);
-  const [ack3Plus, setAck3Plus] = useState(false); // Aceptó la advertencia de 3+ estados
-
-  // Estado para el calendario visual
+  const [ack3Plus, setAck3Plus] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
   const form = useForm<FormValues>({
@@ -125,7 +123,7 @@ export function ItinerarySetupDialog({
     defaultValues: {
       nombre: "",
       regions: [],
-      // @ts-ignore: Undefined inicial para obligar selección
+      // @ts-ignore: Inicialización intencional
       start: undefined,
       end: undefined,
     },
@@ -138,7 +136,6 @@ export function ItinerarySetupDialog({
     formState: { errors },
   } = form;
 
-  // Observers
   const watchedRegions = watch("regions") as RegionKey[];
   const watchedStart = watch("start");
   const watchedEnd = watch("end");
@@ -146,7 +143,7 @@ export function ItinerarySetupDialog({
 
   // --- EFECTOS ---
 
-  // 1. Cargar datos si estamos editando (meta existe)
+  // 1. Cargar datos si es edición
   useEffect(() => {
     if (open && meta) {
       form.reset({
@@ -156,7 +153,6 @@ export function ItinerarySetupDialog({
         end: meta.end,
       });
       setDateRange({ from: meta.start, to: meta.end });
-      // Si ya tenía más de 2 regiones, asumimos que ya aceptó la complejidad
       if (meta.regions.length >= 2) setAck3Plus(true);
     } else if (open && !meta) {
       form.reset({ nombre: "", regions: [], start: undefined, end: undefined });
@@ -165,9 +161,8 @@ export function ItinerarySetupDialog({
     }
   }, [open, meta, form]);
 
-  // 2. Sugerir nombre automáticamente (Tu lógica original)
+  // 2. Sugerir nombre
   useEffect(() => {
-    // Si el usuario ya escribió algo manualmente o estamos editando un título existente, no sobrescribir agresivamente
     if (meta && meta.title === watchedNombre) return;
     if (watchedNombre?.trim().length > 0 && !watchedNombre.startsWith("Trip"))
       return;
@@ -188,10 +183,8 @@ export function ItinerarySetupDialog({
         : "";
 
     const sugerido = `Trip ${labelsStr}${rango ? ` (${rango})` : ""}`;
-
-    // Solo actualizamos si el campo está vacío o si ya tiene un nombre autogenerado
     setValue("nombre", sugerido, { shouldValidate: true });
-  }, [watchedRegions, watchedStart, watchedEnd]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [watchedRegions, watchedStart, watchedEnd]);
 
   // --- HANDLERS ---
 
@@ -208,18 +201,15 @@ export function ItinerarySetupDialog({
 
   function toggleRegion(val: RegionKey) {
     const current = form.getValues("regions") as RegionKey[];
-    const isSelected = current.includes(val);
-
-    if (isSelected) {
+    if (current.includes(val)) {
       actuallyToggleRegion(val);
       return;
     }
 
-    // Lógica de alerta para 3+ estados
     if (!ack3Plus && current.length >= 2) {
       setPendingRegion(val);
       setShowRegionAlert(true);
-      setOpenRegionPopover(false); // Cerramos el combo para mostrar la alerta
+      setOpenRegionPopover(false);
       return;
     }
     actuallyToggleRegion(val);
@@ -233,19 +223,13 @@ export function ItinerarySetupDialog({
       return;
     }
 
-    let from = range.from;
-    let to = range.to;
-
-    // Tu lógica original de auto-corrección de rango
+    let { from, to } = range;
     if (from && to) {
       const diff = differenceInCalendarDays(to, from) + 1;
-      if (diff > 7) {
-        to = addDays(from, 6);
-        toast.info("Ajustado a 7 días máximo", {
-          description: "El rango seleccionado excedía el límite permitido.",
-        });
-      }
-      if (diff < 1) {
+      if (diff > 15) {
+        to = addDays(from, 14);
+        toast.info("Ajustado a 15 días máximo");
+      } else if (diff < 1) {
         to = from;
       }
     }
@@ -269,41 +253,37 @@ export function ItinerarySetupDialog({
     });
 
     onOpenChange(false);
-    toast.success(meta ? "Itinerario actualizado" : "¡Comencemos a planear!");
+    toast.success(meta ? "Configuración actualizada" : "¡A planear!");
   };
 
-  // Prevenir cierre si es obligatorio
+  // --- LÓGICA DE CIERRE / REDIRECCIÓN ---
   const handleOpenChange = (val: boolean) => {
-    if (!meta && !val) return;
+    // Si se intenta cerrar (val === false) y NO existe meta (no se ha creado el itinerario)
+    if (!val && !meta) {
+      router.push("/viajero"); // Redirigir a la lista
+      return;
+    }
     onOpenChange(val);
   };
 
   return (
     <>
-      {/* Alerta de 3+ estados (Fuera del Dialog principal para evitar z-index issues) */}
       <AlertDialog open={showRegionAlert} onOpenChange={setShowRegionAlert}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-amber-500" />
-              Has elegido varios destinos
+              Varios destinos
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <span className="block">
-                Con <b>3 o más estados</b> habrá que considerar <b>traslados</b>
-                , tráfico y tiempos de llegada.
-              </span>
-              <span className="block">
-                ¿Prefieres mantenerte en 1–2 o continuar igualmente?
-              </span>
+            <AlertDialogDescription>
+              Con 3 o más estados considera tiempos de traslado.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setPendingRegion(null)}>
-              Elegir menos
+              Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
-              className="bg-primary text-primary-foreground hover:opacity-90"
               onClick={() => {
                 setAck3Plus(true);
                 setShowRegionAlert(false);
@@ -313,21 +293,16 @@ export function ItinerarySetupDialog({
                 }
               }}
             >
-              Continuar igualmente
+              Continuar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* MODAL PRINCIPAL */}
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent
-          className="sm:max-w-[500px] p-0 overflow-hidden gap-0"
-          onPointerDownOutside={(e) => !meta && e.preventDefault()}
-          onEscapeKeyDown={(e) => !meta && e.preventDefault()}
-        >
+        <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden gap-0 dark:bg-zinc-950 dark:border-zinc-800">
           <DialogHeader className="px-6 pt-6 pb-2">
-            <DialogTitle className="text-xl font-extrabold tracking-tight dark:text-white">
+            <DialogTitle className="text-xl font-extrabold tracking-tight">
               {meta ? "Editar Configuración" : "Crea tu Itinerario"}
             </DialogTitle>
             <DialogDescription>
@@ -339,19 +314,16 @@ export function ItinerarySetupDialog({
             onSubmit={form.handleSubmit(onSubmit)}
             className="space-y-6 px-6 py-4"
           >
-            {/* 1. NOMBRE */}
+            {/* NOMBRE */}
             <div className="space-y-2">
-              <Label
-                htmlFor="nombre"
-                className="font-semibold text-sm dark:text-white"
-              >
+              <Label htmlFor="nombre" className="font-semibold text-sm">
                 Nombre del viaje
               </Label>
               <Input
                 id="nombre"
-                placeholder="p. ej. Mi primera visita en CDMX"
+                placeholder="Ej. Mi primera visita en CDMX"
                 maxLength={50}
-                className="h-11 bg-background border-input text-foreground placeholder:text-muted-foreground focus-visible:ring-primary"
+                className="h-11"
                 {...form.register("nombre")}
               />
               {errors.nombre && (
@@ -361,12 +333,10 @@ export function ItinerarySetupDialog({
               )}
             </div>
 
-            {/* 2. REGIONES (Multi-select) */}
+            {/* DESTINOS */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label className="font-semibold text-sm dark:text-white">
-                  Destinos
-                </Label>
+                <Label className="font-semibold text-sm">Destinos</Label>
                 <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
                   {watchedRegions.length} Seleccionados
                 </span>
@@ -387,19 +357,19 @@ export function ItinerarySetupDialog({
                   >
                     <div className="flex flex-wrap gap-1.5">
                       {watchedRegions.length === 0 ? (
-                        <span className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 opacity-50" />
+                        <span className="flex items-center gap-2 opacity-50">
+                          <MapPin className="h-4 w-4" />
                           Selecciona estados...
                         </span>
                       ) : (
                         watchedRegions.map((val) => (
                           <span
                             key={val}
-                            className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs font-medium text-secondary-foreground ring-1 ring-inset ring-black/5 dark:ring-white/10"
+                            className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-1 text-xs font-medium text-secondary-foreground ring-1 ring-inset ring-black/5 dark:ring-white/10"
                           >
                             {REGIONS_DATA[val]?.short || val}
                             <span
-                              className="cursor-pointer ml-1 opacity-50 hover:opacity-100"
+                              className="cursor-pointer ml-1 opacity-50 hover:opacity-100 p-0.5"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 actuallyToggleRegion(val);
@@ -432,10 +402,10 @@ export function ItinerarySetupDialog({
                               <div className="flex items-center gap-2">
                                 <div
                                   className={cn(
-                                    "flex h-4 w-4 items-center justify-center rounded border border-primary/50",
+                                    "flex h-4 w-4 items-center justify-center rounded border",
                                     isSelected
                                       ? "bg-primary text-primary-foreground border-primary"
-                                      : "opacity-50"
+                                      : "border-primary/30 opacity-50"
                                   )}
                                 >
                                   {isSelected && <Check className="h-3 w-3" />}
@@ -453,7 +423,6 @@ export function ItinerarySetupDialog({
                   </Command>
                 </PopoverContent>
               </Popover>
-
               {errors.regions && (
                 <p className="text-xs text-red-500 font-medium">
                   {errors.regions.message}
@@ -461,14 +430,12 @@ export function ItinerarySetupDialog({
               )}
             </div>
 
-            {/* 3. FECHAS */}
+            {/* FECHAS */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label className="font-semibold text-sm dark:text-white">
-                  Fechas
-                </Label>
+                <Label className="font-semibold text-sm">Fechas</Label>
                 {dateRange?.from && dateRange?.to && (
-                  <span className="text-[10px] text-muted-foreground dark:text-white">
+                  <span className="text-[10px] text-muted-foreground">
                     {differenceInCalendarDays(dateRange.to, dateRange.from) + 1}{" "}
                     días
                   </span>
@@ -480,12 +447,11 @@ export function ItinerarySetupDialog({
                   <Button
                     variant={"outline"}
                     className={cn(
-                      "w-full justify-start text-left font-normal h-11 dark:text-white",
-                      !dateRange?.from &&
-                        "text-muted-foreground dark:text-white"
+                      "w-full justify-start text-left font-normal h-11",
+                      !dateRange?.from && "text-muted-foreground"
                     )}
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4 opacity-70 dark:text-white" />
+                    <CalendarIcon className="mr-2 h-4 w-4 opacity-70" />
                     {dateRange?.from ? (
                       dateRange.to ? (
                         <>
@@ -496,9 +462,7 @@ export function ItinerarySetupDialog({
                         format(dateRange.from, "d MMM yyyy", { locale: es })
                       )
                     ) : (
-                      <span className="dark:text-white">
-                        Selecciona un rango (máx. 7 días)
-                      </span>
+                      <span>Selecciona un rango (máx. 15 días)</span>
                     )}
                   </Button>
                 </PopoverTrigger>

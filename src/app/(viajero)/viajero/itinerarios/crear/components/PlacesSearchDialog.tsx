@@ -19,11 +19,13 @@ import {
   ListTodo,
   ChevronUp,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   X,
   Map as MapIcon,
   Trash2,
   AlertCircle,
-  Sparkles, // Importado correctamente ahora
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -58,7 +60,7 @@ import { cn } from "@/lib/utils";
 import {
   getCategoryStyle,
   getDefaultImageForCategory,
-  CATEGORY_MAP, // Asegúrate de haber exportado esto en category-utils.ts
+  CATEGORY_MAP,
 } from "@/lib/category-utils";
 
 import type { DayInfo } from "./CinematicMap";
@@ -66,7 +68,6 @@ import type { DayInfo } from "./CinematicMap";
 // --- CONSTANTES ---
 const MAX_PLACES_PER_DAY = 5;
 
-// Generar opciones dinámicamente desde tu mapa de categorías
 const DYNAMIC_CATEGORY_OPTIONS = Object.entries(CATEGORY_MAP)
   .map(([key, val]) => ({
     value: key,
@@ -120,6 +121,8 @@ const StarRating = ({
 type PlaceSearchDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  allDays: DayInfo[];
+  onSelectDay: (dayKey: string) => void;
   currentDay: DayInfo | null;
   onAddLugarToDay: (lugar: LugarData) => void;
   defaultState?: string;
@@ -128,6 +131,8 @@ type PlaceSearchDialogProps = {
 export function PlaceSearchDialog({
   open,
   onOpenChange,
+  allDays,
+  onSelectDay,
   currentDay,
   onAddLugarToDay,
 }: PlaceSearchDialogProps) {
@@ -155,7 +160,7 @@ export function PlaceSearchDialog({
   const [showDailyPreview, setShowDailyPreview] = useState(true);
   const [justAddedId, setJustAddedId] = useState<string | null>(null);
 
-  // Regiones disponibles (Solo las del itinerario)
+  // Regiones disponibles
   const availableRegions = useMemo(() => {
     if (!meta?.regions) return [];
     return meta.regions.map((r) => ({
@@ -280,6 +285,26 @@ export function PlaceSearchDialog({
   const isAdded = (id_place: string) =>
     currentDayActivities.some((a) => a.lugar.id_api_place === id_place);
 
+  const { dayIndex, canGoNext, canGoPrev } = useMemo(() => {
+    if (!currentDay || !allDays || allDays.length === 0) {
+      return { dayIndex: -1, canGoNext: false, canGoPrev: false };
+    }
+    const idx = allDays.findIndex((d) => d.key === currentDay.key);
+    return {
+      dayIndex: idx,
+      canGoNext: idx < allDays.length - 1,
+      canGoPrev: idx > 0,
+    };
+  }, [currentDay, allDays]);
+
+  const handleDayChange = (direction: "next" | "prev") => {
+    if (direction === "next" && canGoNext) {
+      onSelectDay(allDays[dayIndex + 1].key);
+    } else if (direction === "prev" && canGoPrev) {
+      onSelectDay(allDays[dayIndex - 1].key);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex h-[95vh] w-[98vw] max-w-[98vw] flex-col gap-0 overflow-hidden rounded-xl border-border/50 p-0 shadow-2xl sm:max-w-[95vw] md:max-w-[90vw] lg:max-w-[1300px] bg-background">
@@ -290,17 +315,37 @@ export function PlaceSearchDialog({
               <Search className="h-5 w-5 text-primary" />
               Explorar Lugares
             </DialogTitle>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <span>{results.length} resultados</span>
               <span>•</span>
-              <span>{currentDay?.label || "Sin día seleccionado"}</span>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 rounded-full"
+                  onClick={() => handleDayChange("prev")}
+                  disabled={!canGoPrev}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="font-medium text-foreground">{currentDay?.label || "Sin día"}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 rounded-full"
+                  onClick={() => handleDayChange("next")}
+                  disabled={!canGoNext}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
 
           <div className="flex items-center gap-4">
             {currentDay && (
               <Badge
-                variant={isFull ? "destructive" : "secondary"}
+                variant={isFull ? "destructive" : "default"}
                 className="h-8 px-3 gap-2 text-xs font-medium border hidden sm:flex"
               >
                 <ListTodo className="h-3.5 w-3.5" />
@@ -336,7 +381,7 @@ export function PlaceSearchDialog({
 
               <div className="flex gap-2">
                 <Select value={activeState} onValueChange={setActiveState}>
-                  <SelectTrigger className="h-8 text-xs flex-1 bg-background">
+                  <SelectTrigger className="h-8 text-xs flex-1 bg-background truncate">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -353,9 +398,9 @@ export function PlaceSearchDialog({
                   value={activeCategory}
                   onValueChange={setActiveCategory}
                 >
-                  <SelectTrigger className="h-8 text-xs flex-1 bg-background">
+                  <SelectTrigger className="h-8 text-xs flex-1 bg-background truncate">
                     <div className="flex items-center gap-2 truncate">
-                      <Filter className="h-3 w-3 opacity-50" />
+                      <Filter className="h-3 w-3 opacity-50 shrink-0" />
                       <SelectValue placeholder="Categoría" />
                     </div>
                   </SelectTrigger>
@@ -379,29 +424,36 @@ export function PlaceSearchDialog({
               </div>
 
               <div className="flex items-center gap-3 px-1">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground w-12">
+                <span className="text-[10px] uppercase font-bold text-muted-foreground w-12 shrink-0">
                   Rating
                 </span>
-                <div className="flex-1 flex items-center gap-2 bg-muted/30 p-1 rounded-lg border border-border/50">
+                <div className="flex-1 flex items-center gap-2 bg-muted/30 p-1 rounded-lg border border-border/50 overflow-x-auto no-scrollbar">
                   {[0, 3, 4, 4.5].map((r) => (
                     <button
                       key={r}
                       onClick={() => setMinRating(r)}
                       className={cn(
-                        "flex-1 text-[10px] py-1 rounded-md transition-all font-medium",
+                        "flex-1 flex items-center justify-center gap-1 text-[10px] py-1.5 px-2 rounded-md transition-all font-medium whitespace-nowrap",
                         minRating === r
                           ? "bg-primary text-primary-foreground shadow-sm"
                           : "hover:bg-background/80 text-muted-foreground"
                       )}
                     >
-                      {r === 0 ? "Todos" : `${r}+`}
+                      {r === 0 ? (
+                        "Todos"
+                      ) : (
+                        <>
+                          <span className="font-bold">{r}</span>
+                          <Star className="h-3 w-3 fill-current" />
+                        </>
+                      )}
                     </button>
                   ))}
                 </div>
               </div>
             </div>
 
-            {/* LISTA DE RESULTADOS (Scroll Fix: flex-1 y overflow-hidden) */}
+            {/* LISTA DE RESULTADOS */}
             <div className="flex-1 overflow-hidden relative bg-muted/5">
               <ScrollArea className="h-full">
                 <div className="p-3 space-y-2 pb-32">
@@ -441,13 +493,13 @@ export function PlaceSearchDialog({
                         key={place.id_api_place}
                         onClick={() => setSelectedPlace(place)}
                         className={cn(
-                          "group relative flex gap-3 p-2.5 rounded-xl border cursor-pointer transition-all duration-200",
+                          "group relative flex gap-2 p-2.5 rounded-xl w-120 border cursor-pointer transition-all duration-200 overflow-hidden",
                           isSelected
                             ? "bg-primary/5 border-primary/40 shadow-[0_0_0_1px_rgba(var(--primary),0.2)]"
                             : "bg-card border-border/60 hover:border-primary/20 hover:shadow-sm"
                         )}
                       >
-                        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted border border-border/50">
+                        <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-muted border border-border/50">
                           <Image
                             src={
                               place.foto_url ||
@@ -456,7 +508,7 @@ export function PlaceSearchDialog({
                             alt={place.nombre}
                             fill
                             className="object-cover transition-transform group-hover:scale-110"
-                            sizes="64px"
+                            sizes="80px"
                           />
                           {alreadyAdded && (
                             <div className="absolute inset-0 bg-background/60 backdrop-blur-[1px] flex items-center justify-center animate-in fade-in">
@@ -467,11 +519,12 @@ export function PlaceSearchDialog({
                           )}
                         </div>
 
+                        {/* FIX: min-w-0 para truncar correctamente en flex */}
                         <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
                           <div className="flex justify-between items-start gap-2">
                             <h4
                               className={cn(
-                                "font-semibold text-sm leading-tight truncate",
+                                "font-semibold text-sm leading-tight truncate pr-1",
                                 isSelected ? "text-primary" : "text-foreground"
                               )}
                             >
@@ -481,7 +534,7 @@ export function PlaceSearchDialog({
                               place.google_score >= 4.6 && (
                                 <Badge
                                   variant="secondary"
-                                  className="h-4 px-1 text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+                                  className="h-4 px-1 text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border-amber-200 dark:border-amber-800 shrink-0"
                                 >
                                   TOP
                                 </Badge>
@@ -489,10 +542,15 @@ export function PlaceSearchDialog({
                           </div>
 
                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <span className={cn("font-medium", style.color)}>
+                            <span
+                              className={cn(
+                                "font-medium truncate max-w-[100px]",
+                                style.color
+                              )}
+                            >
                               {style.name}
                             </span>
-                            <span>•</span>
+                            <span className="shrink-0">•</span>
                             <span className="truncate max-w-[80px]">
                               {place.mexican_state}
                             </span>
@@ -558,7 +616,7 @@ export function PlaceSearchDialog({
                             className="flex items-center justify-between p-2 rounded-lg bg-muted/30 border border-transparent hover:border-border hover:bg-muted/50 transition-colors group"
                           >
                             <div className="flex items-center gap-2 overflow-hidden">
-                              <span className="text-[10px] font-mono text-muted-foreground w-3">
+                              <span className="text-[10px] font-mono text-muted-foreground w-3 shrink-0 text-center">
                                 {i + 1}
                               </span>
                               <span className="text-xs font-medium truncate">
@@ -570,7 +628,7 @@ export function PlaceSearchDialog({
                                 e.stopPropagation();
                                 handleRemove(act.lugar.id_api_place);
                               }}
-                              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 hover:text-red-600 rounded transition-all"
+                              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 hover:text-red-600 rounded transition-all shrink-0"
                             >
                               <Trash2 className="h-3 w-3" />
                             </button>
@@ -584,7 +642,7 @@ export function PlaceSearchDialog({
             </div>
           </div>
 
-          {/* COLUMNA DERECHA */}
+          {/* COLUMNA DERECHA: DETALLES */}
           <div
             className={cn(
               "relative flex-1 flex-col bg-background transition-all duration-300 h-full overflow-hidden border-l",
@@ -599,11 +657,11 @@ export function PlaceSearchDialog({
                 <div className="md:hidden absolute top-4 left-4 z-50">
                   <Button
                     size="icon"
-                    variant="secondary"
+                    variant="outline"
                     className="rounded-full shadow-lg h-10 w-10 bg-background/80 backdrop-blur-md"
                     onClick={() => setSelectedPlace(null)}
                   >
-                    <ArrowLeft className="h-5 w-5" />
+                    <ArrowLeft className="h-5 w-5 " />
                   </Button>
                 </div>
 

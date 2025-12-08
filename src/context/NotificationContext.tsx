@@ -1,26 +1,41 @@
 "use client";
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { useSocket } from "@/context/socketContext"; // <--- El socket de tu compañero
+import { ItinerariosAPI } from "@/api/ItinerariosAPI";
+import { RawNotification } from "@/api/interfaces/ApiRoutes";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
-
-// ... (Tus interfaces de Notification siguen igual) ...
-interface Notification {
-  id: number;
-  tipo: string;
-  mensaje: string;
-  linkId?: number;
-  preview?: any;
-  leido: boolean;
-  fecha: string;
-}
-
+// Definimos el tipo básico (puedes ajustarlo si usas TS estricto)
 interface NotificationContextType {
-  notifications: Notification[];
+  notifications: any[];
+  setNotifications: React.Dispatch<React.SetStateAction<any[]>>;
+  markAsRead: (notificationId: string | number) => Promise<void>;
   unreadCount: number;
 }
 
-const NotificationContext = createContext<NotificationContextType>({
-  notifications: [],
-  unreadCount: 0,
+const NotificationContext = createContext<NotificationContextType | null>(null);
+
+// --- FUNCIÓN HELPER PARA FORMATEAR ---
+// Centraliza la lógica de transformación de datos del backend a la UI.
+const formatNotification = (n: RawNotification) => ({
+  id: n.id,
+
+  // 1. TIPO: La tarjeta espera 'tipo', no 'type'.
+  tipo: n.type,
+
+  // 2. MENSAJE: Tu BD manda 'previewText', la tarjeta espera 'preview.mensaje'
+  preview: {
+    mensaje: n.previewText || "Nueva notificación",
+  },
+
+  // 3. ACTOR (Mapeo crítico)
+  actor_nombre: n.emisor?.nombre_completo || n.emisor?.username || "Usuario",
+  actor_username: n.emisor?.username || "user",
+  actor_avatar: n.emisor?.foto_url || "/img/angel.jpg",
+
+  // 4. RESTO DE DATOS
+  fecha: n.createdAt,
+  leido: n.isRead,
+  linkId: n.resourceId,
 });
 
 export const NotificationProvider = ({
@@ -28,76 +43,96 @@ export const NotificationProvider = ({
 }: {
   children: React.ReactNode;
 }) => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const { socket, isConnected } = useSocket(); // Obtenemos la conexión existente
+  const [notifications, setNotifications] = useState<any[]>([]);
+
+  // 1. Cargar historial de notificaciones desde la base de datos al iniciar
   useEffect(() => {
-    // 1. Obtener email del Storage
-    const storedData = localStorage.getItem("user"); // OJO: Tu llave real
-    if (!storedData) return;
-
-    const parsed = JSON.parse(storedData);
-    const email = parsed.correo; // OJO: Tu estructura real
-
-    if (!email) return;
-
-    // --- PARTE A: CARGAR HISTORIAL (Lo nuevo) ---
     const fetchHistory = async () => {
       try {
-        console.log("📥 Cargando historial para:", email);
-        const res = await fetch(
-          `http://localhost:3001/notificaciones?userId=${encodeURIComponent(
-            email
-          )}`
-        );
-        console.log ("respuesta", res);
-        if (res.ok) {
-          const history = await res.json();
-
-          // Actualizamos la lista
-          setNotifications(history);
-          const sinLeer = history.filter((n) => !n.leido).length;
-          setUnreadCount(sinLeer);
-        }
+        const api = ItinerariosAPI.getInstance();
+        const dataDB = await api.getNotifications();
+        const historialFormateado = dataDB.map(formatNotification);
+        console.log("✅ Historial formateado para UI:", historialFormateado);
+        setNotifications(historialFormateado);
       } catch (error) {
-        console.error("Error cargando historial:", error);
+        console.error("Error al cargar el historial de notificaciones:", error);
       }
     };
 
-    fetchHistory(); // Ejecutamos la carga inicial
+    fetchHistory();
+  }, []); // Se ejecuta solo una vez al montar el componente
 
-    // --- PARTE B: CONECTAR TIEMPO REAL (Lo que ya tenías) ---
-    console.log("🔌 Iniciando conexión SSE...");
-    const url = `http://localhost:3001/sse/sistema?userId=${encodeURIComponent(
-      email
-    )}`;
-    console.log ("url que se esta mandando", url);
-    const eventSource = new EventSource(url);
+  // 2. ESCUCHAR TIEMPO REAL (Lo importante)
+  useEffect(() => {
+    if (!socket || !isConnected) return;
 
-    eventSource.onmessage = (event) => {
-      if (event.data.includes("keep-alive") || event.data.includes("Conectado"))
-        return;
+    const handleReceiveNotification = (payload: any) => {
+      console.log("🔔 Socket: Nueva notificación recibida:", payload);
 
-      try {
-        const newNotification = JSON.parse(event.data);
-        console.log("🔔 Nueva Notificación en vivo:", newNotification);
+      const notificacionFormateada = formatNotification(payload);
+      // Agregamos la nueva notificación AL INICIO del array
+      setNotifications((prev) => [notificacionFormateada, ...prev]);
 
-        // Agregamos la nueva AL PRINCIPIO de la lista existente
-        setNotifications((prev) => [newNotification, ...prev]);
-        setUnreadCount((prev) => prev + 1);
-      } catch (e) {
-        console.error("Error leyendo SSE", e);
-      }
+      // Opcional: Sonido de notificación
+      // const audio = new Audio('/notification.mp3');
+      // audio.play().catch(e => console.log(e));
     };
 
+    // Nos suscribimos al evento
+    socket.on("receive notification", handleReceiveNotification);
+
+    // Limpieza al desmontar
     return () => {
-      eventSource.close();
+      socket.off("receive notification", handleReceiveNotification);
     };
-  }, []);
+  }, [socket, isConnected]);
+
+  // Calculamos no leídas para la campanita
+  const unreadCount = notifications.filter((n) => !n.leido).length;
+
+  const markAsRead = async (notificationId: string | number) => {
+    // Actualización optimista: cambia el estado en la UI al instante.
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === notificationId ? { ...n, leido: true } : n))
+    );
+
+    try {
+      // Usamos la instancia de la API en lugar de fetch directo
+      const api = ItinerariosAPI.getInstance();
+      await api.markNotificationAsRead(notificationId);
+      console.log(
+        `✅ Notificación ${notificationId} marcada como leída en el servidor.`
+      );
+    } catch (error) {
+      console.error("Error al marcar como leída, revirtiendo cambio:", error);
+      // Si falla, revierte el cambio en la UI para mantener la consistencia.
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notificationId ? { ...n, leido: false } : n))
+      );
+    }
+  };
+
   return (
-    <NotificationContext.Provider value={{ notifications, unreadCount }}>
+    <NotificationContext.Provider
+      value={{
+        notifications,
+        setNotifications,
+        unreadCount,
+        markAsRead,
+      }}
+    >
       {children}
     </NotificationContext.Provider>
   );
 };
 
-export const useNotificationsC = () => useContext(NotificationContext);
+export const useNotificationsC = () => {
+  const context = useContext(NotificationContext);
+  if (!context) {
+    throw new Error(
+      "useNotificationsC debe usarse dentro de un NotificationProvider"
+    );
+  }
+  return context;
+};

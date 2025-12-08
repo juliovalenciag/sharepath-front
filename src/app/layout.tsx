@@ -84,12 +84,12 @@ export default async function RootLayout({
             enableColorScheme
           >
             <ActiveThemeProvider initialTheme={activeThemeValue}>
-              <NotificationProvider>
               <SocketProvider>
               <StyleGlideProvider />
+              <NotificationProvider>
               {children}
+               </NotificationProvider>
               </SocketProvider>
-              </NotificationProvider>
             </ActiveThemeProvider>
           </ThemeProvider>
 

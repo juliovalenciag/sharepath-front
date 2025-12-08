@@ -8,7 +8,6 @@ import {
   CreateItinerarioRequest,
   CreateItinerarioResponse,
   ItinerarioListResponse,
-  ItinerarioData,
   RecommendationRequest,
   RecommendedLugar,
   OptimizationRequest,
@@ -24,6 +23,8 @@ import {
   ListRequest,
   ListFriend,
   Amigo,
+  RawNotification,
+  MarkAsReadResponse,
   FriendSuggestionResponse,
   ShareItineraryRequest,
   Publicacion,
@@ -32,21 +33,28 @@ import {
   ListRecomen,
   Block,
   UnBlock,
+  CreateReportResponse,
+  Reporte,
+  ItinerarioData,
+  UserInfoResponse
 } from "./interfaces/ApiRoutes";
 
 export class ItinerariosAPI implements ApiRoutes {
-  private static instance: ItinerariosAPI;
+
+  private static instance: ItinerariosAPI
 
   private HOST = "https://harol-lovers.up.railway.app";
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): ItinerariosAPI {
-    if (!ItinerariosAPI.instance) this.instance = new ItinerariosAPI();
+    if (!ItinerariosAPI.instance)
+      this.instance = new ItinerariosAPI();
     return this.instance;
   }
 
   // ===== PETICIONES GENÉRICAS =====
+
   private async post<T>(
     route: string,
     auth: boolean,
@@ -83,7 +91,6 @@ export class ItinerariosAPI implements ApiRoutes {
       },
     });
     console.log("Hice la petición");
-
     console.log(request);
 
     const data = await request.json();
@@ -105,6 +112,31 @@ export class ItinerariosAPI implements ApiRoutes {
       method: "PUT",
       body: formData,
       headers: {
+        ...(token && { token }),
+      },
+    });
+
+    const data = await request.json();
+
+    if (!request.ok) {
+      const { message } = data as ErrorResponse;
+      throw new Error(message);
+    }
+
+    return data as T;
+  }
+
+  private async patch<T>(
+    route: string,
+    auth: boolean,
+    body: object = {}
+  ): Promise<T> {
+    const token = auth ? localStorage.getItem("authToken") : undefined;
+    const request = await fetch(`${this.HOST}${route}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+      headers: {
+        "Content-Type": "application/json",
         ...(token && { token }),
       },
     });
@@ -153,7 +185,6 @@ export class ItinerariosAPI implements ApiRoutes {
 
     if (!request.ok) {
       console.log(data);
-
       const { message } = data as ErrorResponse;
       throw new Error(message);
     }
@@ -163,10 +194,8 @@ export class ItinerariosAPI implements ApiRoutes {
 
   // ===== AUTH =====
   async doLogin(correo: string, password: string): Promise<Usuario> {
-    const { token, usuario } = await this.put<LoginResponse>("/auth", false, {
-      correo,
-      password,
-    });
+
+    const { token, usuario } = await this.put<LoginResponse>("/auth", false, { correo, password });
 
     localStorage.setItem("authToken", token);
     localStorage.setItem("user", JSON.stringify(usuario));
@@ -175,11 +204,7 @@ export class ItinerariosAPI implements ApiRoutes {
     return usuario;
   }
   async doRegister(body: RegisterRequest): Promise<RegisterResponse> {
-    const resp = await this.post<RegisterResponse>(
-      "/auth/register",
-      false,
-      body
-    );
+    const resp = await this.post<RegisterResponse>("/auth/register", false, body);
     return resp;
   }
 
@@ -264,6 +289,13 @@ export class ItinerariosAPI implements ApiRoutes {
   // ===== USUARIO =====
   async getUser(): Promise<Usuario> {
     return await this.get<Usuario>("/user", true);
+  }
+
+  async getUserProfile(query: string): Promise<Usuario> {
+    return await this.get<Usuario>(
+      `/user/profile?q=${encodeURIComponent(query)}`,
+      true
+    );
   }
 
   async updateUser(body: UpdateUserRequest): Promise<Usuario> {
@@ -418,4 +450,44 @@ export class ItinerariosAPI implements ApiRoutes {
   async getMyPublications(): Promise<Publicacion[]> {
     return await this.get<Publicacion[]>("/publicacion/", true);
   }
+
+  // ===== NOTIFICACIONES =====
+  async markNotificationAsRead(
+    notificationId: string | number
+  ): Promise<MarkAsReadResponse> {
+    return await this.patch<MarkAsReadResponse>(
+      `/notificacion/read/${notificationId}`,
+      true
+    );
+  }
+
+  async getNotifications(): Promise<RawNotification[]> {
+    return await this.get<RawNotification[]>("/notificacion", true);
+  }
+
+    // ===== REPORTES =====
+    async createReport(publicationId: number, reason: string): Promise<CreateReportResponse> {
+        return await this.post<CreateReportResponse>("/reports", true, {
+            entity_id: publicationId,
+            description: reason
+        });
+    }
+
+  async getReports(): Promise<Reporte[]> {
+    return await this.get<Reporte[]>("/reporte", true);
+  }
+
+  async getReportById(reportId: number): Promise<Reporte> {
+    return await this.get<Reporte>(`/reporte/${reportId}`, true);
+  }
+
+  async deleteReport(reportId: number): Promise<void> {
+    await this.delete<{ message: string }>(`/reporte/${reportId}`);
+  }
+  async getOtherUserInfo(username: string): Promise<UserInfoResponse> {
+    return await this.get<UserInfoResponse>(`/user/profile/${encodeURIComponent(username)}`, true);
+  }
 }
+
+
+

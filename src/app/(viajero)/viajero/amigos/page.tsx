@@ -17,24 +17,26 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Link from "next/link";
 import { getInitials } from "@/lib/utils";
 
-const API_URL = "https://harol-lovers.up.railway.app";
+//const API_URL = "https://harol-lovers.up.railway.app";
+const API_URL = "http://localhost:4000";
+
+import { ItinerariosAPI } from "@/api/ItinerariosAPI";
+
+const api = ItinerariosAPI.getInstance();
 
 // Estados posibles para responder a una solicitud de amistad
 enum FriendRequestState {
   PENDING = 0,
-  FRIEND = 1,   // ACEPTAR
+  FRIEND = 1, // ACEPTAR
   REJECTED = 2, // RECHAZAR
 }
 
-// Función para llamar al endpoint 
+// Función para llamar al endpoint
 async function respondToRequest(requestId: string | number, state: number) {
   const token = localStorage.getItem("authToken");
   if (!token) throw new Error("No hay sesión");
@@ -44,8 +46,9 @@ async function respondToRequest(requestId: string | number, state: number) {
     headers: {
       "Content-Type": "application/json",
       token: token,
+      Authorization: `Bearer ${token}`,
     },
-    
+
     body: JSON.stringify({ Id: Number(requestId), state: state }),
   });
 
@@ -93,6 +96,7 @@ interface ApiFriendSuggestion {
 type Friend = {
   id: string;
   username: string;
+  correo: string;
   name: string;
   avatar: string;
   city?: string;
@@ -100,14 +104,19 @@ type Friend = {
   mutualCount: number;
   isOnline: boolean;
 };
-
+type PendingRequest = {
+  id: string | number;
+  dateLabel?: string;
+  status: number;
+};
 type FriendRequest = {
-  id: string;
-  username: string;
+  id: string | number;
   name: string;
+  username: string;
   avatar: string;
   message?: string;
   dateLabel?: string;
+  status: number;
 };
 
 type FriendSuggestion = {
@@ -132,142 +141,227 @@ export default function FriendsPage() {
 
   // --- DATOS ESTÁTICOS PARA PRUEBA VISUAL ---
   const mockRequest: FriendRequest = {
-    id: "99999", // ID alto para diferenciar
+    id: "99999",
     username: "test_design",
     name: "Diseño Estático",
-    avatar: "https://github.com/shadcn.png", // Avatar de ejemplo
-
+    avatar: "https://github.com/shadcn.png",
     dateLabel: "Hace un momento",
+    status: 0, // PENDIENTE
+    message: undefined, // opcional
   };
+  async function respondToRequest(requestId: string | number, state: number) {
+    const token = localStorage.getItem("authToken");
+    if (!token) throw new Error("No hay sesión activa");
 
-  const handleRespond = async (id: number, state: number) => { 
+    const response = await fetch(`${API_URL}/amigo/respond`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        token,
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ Id: Number(requestId), state }),
+    });
+
+    if (!response.ok) throw new Error("Error al responder la solicitud");
+
+    return await response.json();
+  }
+
+  const handleRespond = async (id: number, state: number) => {
     try {
-      // Si es la solicitud falsa, solo la borramos visualmente (sin llamar al back)
-      if (id === 99999) {
-         setRequests((prev) => prev.filter((req) => Number(req.id) !== id));
-         console.log("Solicitud falsa respondida localmente");
-         return;
-      }
-
       await respondToRequest(id, state);
+
+      // Eliminar solicitud de la lista visual
       setRequests((prev) => prev.filter((req) => Number(req.id) !== id));
 
-      if (state === FriendRequestState.FRIEND) {
-        console.log("¡Amigo agregado!");
-      }
+      console.log(
+        state === FriendRequestState.FRIEND
+          ? "Solicitud aceptada"
+          : "Solicitud rechazada"
+      );
     } catch (error) {
       console.error(error);
       alert("Hubo un error al procesar la solicitud");
     }
   };
+  async function fetchFriendsAPI() {
+    const token = localStorage.getItem("authToken");
+    if (!token) throw new Error("No hay sesión activa");
 
-  useEffect(() => {
-    const fetchFriendsData = async () => {
-      try {
-        const token =
-          typeof window !== "undefined"
-            ? localStorage.getItem("authToken")
-            : null;
+    const res = await fetch(`${API_URL}/amigo`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        token,
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-        const commonHeaders: HeadersInit = {
+    if (!res.ok) throw new Error("Error al cargar lista de amigos");
+
+    return await res.json();
+  }
+
+  async function deleteFriend(correo: string) {
+    const token = localStorage.getItem("authToken");
+    if (!token) throw new Error("No hay sesión activa");
+
+    const response = await fetch(`${API_URL}/amigo/${correo}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        token,
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) throw new Error("Error al eliminar amigo");
+
+    return await response.json();
+  }
+
+  async function handleDelete(correo: string) {
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) throw new Error("No hay sesión activa");
+      console.log("correo de: ", correo);
+      const res = await fetch(`${API_URL}/amigo/${correo}`, {
+        method: "DELETE",
+        headers: {
           "Content-Type": "application/json",
-          token: token || "",
-        };
+          token,
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-        const [friendsRes, requestsRes, suggestionsRes] = await Promise.all([
-          fetch("https://harol-lovers.up.railway.app/friends", {
-            method: "GET",
-            headers: commonHeaders,
-          }),
-          fetch("https://harol-lovers.up.railway.app/friends/requests", {
-            method: "GET",
-            headers: commonHeaders,
-          }),
-          fetch("https://harol-lovers.up.railway.app/friends/suggestions", {
-            method: "GET",
-            headers: commonHeaders,
-          }),
-        ]);
+      if (!res.ok) throw new Error("Error al eliminar amigo");
 
-        // Manejo de errores silencioso para cargar lo que se pueda
-        if (!friendsRes.ok && friendsRes.status !== 404) console.warn("Error friends");
-        if (!requestsRes.ok && requestsRes.status !== 404) console.warn("Error requests");
-        if (!suggestionsRes.ok && suggestionsRes.status !== 404) console.warn("Error suggestions");
+      setFriends((prev) => prev.filter((f) => f.correo !== correo));
+    } catch (error) {
+      console.error(error);
+      alert("No se pudo eliminar al amigo");
+    }
+  }
 
-        // Amigos
-        if (friendsRes.ok) {
-          const friendsData: ApiFriend[] = await friendsRes.json();
-          setFriends(
-            friendsData.map((f) => ({
-              id: f.id,
-              username: f.username,
-              name: f.nombre ?? f.username,
-              avatar: f.foto_url ?? "",
-              city: f.ciudad,
-              country: f.pais,
-              mutualCount: f.mutuos ?? 0,
-              isOnline: Boolean(f.conectado),
-            }))
-          );
-        } else {
-          setFriends([]);
+  // Cargar solicitudes pendientes
+  useEffect(() => {
+    const fetchRequests = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        if (!token) throw new Error("No hay sesión activa");
+
+        const res = await fetch(`${API_URL}/amigo/pendiente`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            token,
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) {
+          setRequests([]); 
+        return; 
         }
+         
 
-        // Solicitudes
-        if (requestsRes.ok) {
-          const reqData: ApiFriendRequest[] = await requestsRes.json();
-          const mappedRequests = reqData.map((r) => ({
-            id: r.id,
-            username: r.username,
-            name: r.nombre ?? r.username,
-            avatar: r.foto_url ?? "",
-            message: r.mensaje,
-            dateLabel: r.fecha
-              ? new Date(r.fecha).toLocaleDateString("es-MX", {
-                  day: "2-digit",
-                  month: "short",
-                })
-              : undefined,
-          }));
+        const json = await res.json(); 
+        const rawRequests: {
+          id: number;
+          fecha_amistad: string;
+          status: number;
+        }[] = json.data;
 
-          // AQUÍ AGREGAMOS LA SOLICITUD ESTÁTICA JUNTO CON LAS REALES
-          setRequests([mockRequest, ...mappedRequests]);
-        } else {
-          // Si falla la API, mostramos al menos la estática
-          setRequests([mockRequest]);
-        }
+        const mappedRequests: FriendRequest[] = rawRequests.map((r) => ({
+          id: r.id,
+          name: "Usuario desconocido",
+          username: "desconocido",
+          avatar: "", // placeholder
+          dateLabel: r.fecha_amistad
+            ? new Date(r.fecha_amistad).toLocaleDateString("es-MX", {
+                day: "2-digit",
+                month: "short",
+              })
+            : undefined,
+          status: r.status,
+          message: undefined,
+        }));
 
-        // Sugerencias
-        if (suggestionsRes.ok) {
-          const sugData: ApiFriendSuggestion[] = await suggestionsRes.json();
-          setSuggestions(
-            sugData.map((s) => ({
-              id: s.id,
-              username: s.username,
-              name: s.nombre ?? s.username,
-              avatar: s.foto_url ?? "",
-              city: s.ciudad,
-              country: s.pais,
-              mutualCount: s.mutuos ?? 0,
-              interests: s.intereses ?? [],
-            }))
-          );
-        } else {
-          setSuggestions([]);
-        }
-
-        setErrorMsg(null);
+        setRequests(mappedRequests);
       } catch (error) {
-        console.error("Error cargando datos de amigos:", error);
-        // Incluso si hay error global, mostramos la estática para que veas el diseño
-        setRequests([mockRequest]);
+        console.error("Error cargando solicitudes pendientes:", error);
+        setRequests([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchFriendsData();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    fetchRequests();
+
+    const loadFriends = async () => {
+      try {
+        const json = await fetchFriendsAPI();
+
+        console.log("Amigos recibidos:", json);
+
+        const rawFriends = Array.isArray(json) ? json : [];
+
+        const mapped: Friend[] = rawFriends.map((f) => {
+          const me = JSON.parse(localStorage.getItem("user") || "{}").username;
+
+          const user =
+            f.requesting_user?.username !== me
+              ? f.requesting_user
+              : f.receiving_user;
+
+          return {
+            id: f.id,
+            username: user.username,
+            name: user.nombre || user.username,
+            avatar: user.foto_url || "",
+            correo: user.correo,
+            city: user.ciudad,
+            country: user.pais,
+            mutualCount: 0,
+            isOnline: false,
+          };
+        });
+
+        setFriends(mapped);
+      } catch (err) {
+        console.error("Error cargando amigos:", err);
+        setFriends([]);
+      }
+    };
+
+    loadFriends();
+
+    // Cargar sugerencias de amigos
+    const loadSuggestions = async () => {
+      try {
+        const resp = await api.getFriendSuggestions();
+        const list = Array.isArray(resp?.data) ? resp.data : [];
+        const mapped: FriendSuggestion[] = list.map((s: any) => ({
+          id: s.username || String(s.id || ""),
+          username: s.username,
+          name: s.nombre_completo || s.username,
+          avatar: s.foto_url || "",
+          city: s.ciudad,
+          country: s.pais,
+          mutualCount: s.mutuos || 0,
+          interests: s.intereses || [],
+        }));
+
+        setSuggestions(mapped);
+      } catch (err) {
+        console.warn("No se pudieron cargar sugerencias:", err);
+        setSuggestions([]);
+      }
+    };
+
+    loadSuggestions();
+  }, []);
 
   const totalFriends = friends.length;
   const totalRequests = requests.length;
@@ -402,7 +496,11 @@ export default function FriendsPage() {
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
               {friends.map((friend) => (
-                <FriendCard key={friend.id} friend={friend} />
+                <FriendCard
+                  key={friend.id}
+                  friend={friend}
+                  onDelete={handleDelete}
+                />
               ))}
             </div>
           )}
@@ -421,7 +519,11 @@ export default function FriendsPage() {
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {requests.map((req) => (
-                <FriendRequestCard key={req.id} request={req} onRespond={handleRespond} />
+                <FriendRequestCard
+                  key={req.id}
+                  request={req}
+                  onRespond={handleRespond}
+                />
               ))}
             </div>
           )}
@@ -492,7 +594,14 @@ function SummaryCard({
   );
 }
 
-function FriendCard({ friend }: { friend: Friend }) {
+// function FriendCard({ friend }: { friend: Friend }) {
+function FriendCard({
+  friend,
+  onDelete,
+}: {
+  friend: Friend;
+  onDelete: (correo: string) => void;
+}) {
   return (
     <Card className="group flex flex-col justify-between overflow-hidden transition-all hover:border-primary/30 hover:shadow-md">
       <CardContent className="flex flex-col gap-4 p-4">
@@ -522,13 +631,15 @@ function FriendCard({ friend }: { friend: Friend }) {
               )}
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-foreground"
-          >
-            <MessageCircle className="h-4 w-4" />
-          </Button>
+          <Link href={`/viajero/chats?username=${friend.username}`}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            >
+              <MessageCircle className="h-4 w-4" />
+            </Button>
+          </Link>
         </div>
 
         <div className="space-y-2 rounded-lg bg-muted/40 p-2.5 text-xs text-muted-foreground">
@@ -553,6 +664,7 @@ function FriendCard({ friend }: { friend: Friend }) {
           variant="ghost"
           size="sm"
           className="w-full justify-start text-xs text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+          onClick={() => onDelete(friend.correo)}
         >
           <UserMinus className="mr-2 h-3.5 w-3.5" />
           Dejar de seguir
@@ -573,9 +685,9 @@ function FriendRequestCard({
 
   const handleAction = async (state: number) => {
     setLoading(true);
-    
+
     await onRespond(Number(request.id), state);
-    
+
     setLoading(false);
   };
 

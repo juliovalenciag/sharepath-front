@@ -82,6 +82,7 @@ export interface CreateLugarRequest {
   foto_url: string;
   google_score: number;
   total_reviews: number;
+  descripcion: string;
 }
 
 export interface LugarData {
@@ -91,10 +92,10 @@ export interface LugarData {
   nombre: string;
   latitud: number;
   longitud: number;
-  descripcion: string;
   foto_url: string;
   google_score: number;
   total_reviews: number;
+  descripcion: string;
 }
 
 export interface LugaresListResponse {
@@ -210,6 +211,8 @@ export interface ApiRoutes {
   ) => Promise<CreateItinerarioResponse>;
   getMyItinerarios: () => Promise<ItinerarioListResponse>;
   deleteItinerario: (id: number | string) => Promise<{ message: string }>;
+
+  // Agregados por el equipo (main):
   getItinerarioById: (id: number | string) => Promise<ItinerarioData>;
   updateItinerario: (
     id: number | string,
@@ -246,6 +249,10 @@ export interface ApiRoutes {
     body: VerifyPasswordRequest
   ) => Promise<{ message: boolean }>;
   searchUsers: (query: string) => Promise<SearchUserResponse>;
+
+  // TU AGREGADO (Vital para el perfil):
+  getUserProfile: (query: string) => Promise<Usuario>;
+
   deleteUser: () => Promise<{ message: string }>;
 
   // Amigo
@@ -270,6 +277,98 @@ export interface ApiRoutes {
     body: ShareItineraryRequest
   ) => Promise<Publicacion>;
   getMyPublications: () => Promise<Publicacion[]>;
+
+  // Notificaciones
+  getNotifications: () => Promise<RawNotification[]>;
+}
+
+export interface MarkAsReadResponse {
+  msg: string;
+}
+
+export interface RawNotification {
+  id: string | number;
+  type: "FRIEND_REQUEST" | "POST" | "LIKE" | "COMMENT" | "DEFAULT";
+  previewText: string;
+  createdAt: string;
+  isRead: boolean;
+  resourceId?: string | number;
+  emisor: Usuario;
+  // Reportes.
+  createReport: (publicationId: number, reason: string) => Promise<CreateReportResponse>;
+  getReports: () => Promise<Reporte[]>;
+  getReportById: (reportId: number) => Promise<Reporte>;
+  deleteReport: (reportId: number) => Promise<void>; // Manda error si no se puede eliminar
+
+  // Obtener informacion de otro usuario.
+  getOtherUserInfo: (username: string) => Promise<UserInfoResponse>;
+}
+export interface UserInfoResponse {
+  correo:          string;
+  username:        string;
+  nombre_completo: string;
+  foto_url:        string;
+  privacity_mode:  boolean;
+  role:            string;
+  publicaciones:   Publicacione[];
+}
+
+export interface Publicacione {
+  id:             number;
+  descripcion:    string;
+  privacity_mode: boolean;
+  fotos:          Foto[];
+  itinerario:     Itinerario;
+}
+
+export interface Foto {
+  id:       number;
+  foto_url: string;
+}
+
+export interface Itinerario {
+  id:     number;
+  nombre: string;
+}
+
+export interface CreateReportResponse {
+    description:      string;
+    publicacion:      Publicacion;
+    usuario_emitente: UsuarioEmitente;
+    id:               number;
+}
+export interface Reporte {
+    id:               number;
+    description:      string;
+    usuario_emitente: UsuarioEmitente;
+    historial:        Historial[];
+}
+
+export interface Historial {
+    id:                 number;
+    action_description: string;
+}
+
+export interface UsuarioEmitente {
+    correo:          string;
+    username:        string;
+    password:        string;
+    nombre_completo: string;
+    foto_url:        string;
+    role:            string;
+    account_status:  boolean;
+    privacity_mode:  boolean;
+}
+
+
+export interface Publicacion {
+    id:             number;
+    descripcion:    string;
+    privacity_mode: boolean;
+}
+
+export interface UsuarioEmitente {
+    correo: string;
 }
 
 export interface ShareItineraryRequest {
@@ -278,12 +377,18 @@ export interface ShareItineraryRequest {
   fotos: File[];
 }
 
+export interface Foto {
+  id: number;
+  foto_url: string;
+}
+
 export interface Publicacion {
   id: number;
   descripcion: string;
   privacity_mode: boolean;
-  itinerario: any;
-  user_shared: Usuario;
+  itinerario: { id: number; nombre: string } | null;
+  fotos: Foto[]; // <-- AGREGADO: Array de fotos
+  user_shared?: Usuario; // Lo dejamos opcional para evitar ciclos
 }
 
 export interface AverageRatingResponse {
