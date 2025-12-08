@@ -423,9 +423,9 @@ export class ItinerariosAPI implements ApiRoutes {
 
     // ===== REPORTES =====
     async createReport(publicationId: number, reason: string): Promise<CreateReportResponse> {
-        return await this.post<CreateReportResponse>("/reporte/registro", true, {
-            publicationId,
-            reason
+        return await this.post<CreateReportResponse>("/reports", true, {
+            entity_id: publicationId,
+            description: reason
         });
     }
 
