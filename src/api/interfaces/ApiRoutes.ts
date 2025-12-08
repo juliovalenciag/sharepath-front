@@ -271,6 +271,7 @@ export interface ApiRoutes {
   // Sugerencias de amigos
   getFriendSuggestions: () => Promise<FriendSuggestionResponse>;
 
+<<<<<<< HEAD
   getAverageRating: (publicationId: number) => Promise<AverageRatingResponse>;
   shareItinerary: (
     itinerarioId: number,
@@ -294,6 +295,83 @@ export interface RawNotification {
   isRead: boolean;
   resourceId?: string | number;
   emisor: Usuario;
+=======
+  // Reportes.
+  createReport: (publicationId: number, reason: string) => Promise<CreateReportResponse>;
+  getReports: () => Promise<Reporte[]>;
+  getReportById: (reportId: number) => Promise<Reporte>;
+  deleteReport: (reportId: number) => Promise<void>; // Manda error si no se puede eliminar
+
+  // Obtener informacion de otro usuario.
+  getOtherUserInfo: (username: string) => Promise<UserInfoResponse>;
+}
+export interface UserInfoResponse {
+  correo:          string;
+  username:        string;
+  nombre_completo: string;
+  foto_url:        string;
+  privacity_mode:  boolean;
+  role:            string;
+  publicaciones:   Publicacione[];
+}
+
+export interface Publicacione {
+  id:             number;
+  descripcion:    string;
+  privacity_mode: boolean;
+  fotos:          Foto[];
+  itinerario:     Itinerario;
+}
+
+export interface Foto {
+  id:       number;
+  foto_url: string;
+}
+
+export interface Itinerario {
+  id:     number;
+  nombre: string;
+}
+
+export interface CreateReportResponse {
+    description:      string;
+    publicacion:      Publicacion;
+    usuario_emitente: UsuarioEmitente;
+    id:               number;
+}
+export interface Reporte {
+    id:               number;
+    description:      string;
+    usuario_emitente: UsuarioEmitente;
+    historial:        Historial[];
+}
+
+export interface Historial {
+    id:                 number;
+    action_description: string;
+}
+
+export interface UsuarioEmitente {
+    correo:          string;
+    username:        string;
+    password:        string;
+    nombre_completo: string;
+    foto_url:        string;
+    role:            string;
+    account_status:  boolean;
+    privacity_mode:  boolean;
+}
+
+
+export interface Publicacion {
+    id:             number;
+    descripcion:    string;
+    privacity_mode: boolean;
+}
+
+export interface UsuarioEmitente {
+    correo: string;
+>>>>>>> 324d33fa21baacece5aba7c4a9342e358214edea
 }
 
 export interface ShareItineraryRequest {

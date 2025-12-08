@@ -8,7 +8,6 @@ import {
   CreateItinerarioRequest,
   CreateItinerarioResponse,
   ItinerarioListResponse,
-  ItinerarioData,
   RecommendationRequest,
   RecommendedLugar,
   OptimizationRequest,
@@ -34,21 +33,31 @@ import {
   ListRecomen,
   Block,
   UnBlock,
+  CreateReportResponse,
+  Reporte,
+  ItinerarioData,
+  UserInfoResponse
 } from "./interfaces/ApiRoutes";
 
 export class ItinerariosAPI implements ApiRoutes {
-  private static instance: ItinerariosAPI;
 
+<<<<<<< HEAD
   //private HOST = "https://harol-lovers.up.railway.app";
   private HOST = "http://localhost:4000";
+=======
+  private static instance: ItinerariosAPI
+>>>>>>> 324d33fa21baacece5aba7c4a9342e358214edea
 
-  private constructor() {}
+  private HOST = "https://harol-lovers.up.railway.app"
+  // private HOST = "http://localhost:4000"
 
-  public static getInstance(): ItinerariosAPI {
-    if (!ItinerariosAPI.instance) {
-      ItinerariosAPI.instance = new ItinerariosAPI();
-    }
-    return ItinerariosAPI.instance;
+
+  private constructor() { }
+
+  static getInstance(): ItinerariosAPI {
+    if (!ItinerariosAPI.instance)
+      this.instance = new ItinerariosAPI();
+    return this.instance;
   }
 
   // ===== PETICIONES GENÉRICAS =====
@@ -192,23 +201,16 @@ export class ItinerariosAPI implements ApiRoutes {
 
   // ===== AUTH =====
   async doLogin(correo: string, password: string): Promise<Usuario> {
-    const { token, usuario } = await this.put<LoginResponse>("/auth", false, {
-      correo,
-      password,
-    });
+
+    const { token, usuario } = await this.put<LoginResponse>("/auth", false, { correo, password });
 
     localStorage.setItem("authToken", token);
     localStorage.setItem("user", JSON.stringify(usuario));
 
     return usuario;
   }
-
   async doRegister(body: RegisterRequest): Promise<RegisterResponse> {
-    const resp = await this.post<RegisterResponse>(
-      "/auth/register",
-      false,
-      body
-    );
+    const resp = await this.post<RegisterResponse>("/auth/register", false, body);
     return resp;
   }
 
@@ -455,6 +457,7 @@ export class ItinerariosAPI implements ApiRoutes {
     return await this.get<Publicacion[]>("/publicacion/", true);
   }
 
+<<<<<<< HEAD
   // ===== NOTIFICACIONES =====
   async markNotificationAsRead(
     notificationId: string | number
@@ -469,3 +472,29 @@ export class ItinerariosAPI implements ApiRoutes {
     return await this.get<RawNotification[]>("/notificacion", true);
   }
 }
+=======
+
+  // ===== REPORTES =====
+  async createReport(publicationId: number, reason: string): Promise<CreateReportResponse> {
+    return await this.post<CreateReportResponse>("/reporte/registro", true, {
+      publicationId,
+      reason
+    });
+  }
+
+  async getReports(): Promise<Reporte[]> {
+    return await this.get<Reporte[]>("/reporte", true);
+  }
+
+  async getReportById(reportId: number): Promise<Reporte> {
+    return await this.get<Reporte>(`/reporte/${reportId}`, true);
+  }
+
+  async deleteReport(reportId: number): Promise<void> {
+    await this.delete<{ message: string }>(`/reporte/${reportId}`);
+  }
+  async getOtherUserInfo(username: string): Promise<UserInfoResponse> {
+    return await this.get<UserInfoResponse>(`/user/profile/${encodeURIComponent(username)}`, true);
+  }
+}
+>>>>>>> 324d33fa21baacece5aba7c4a9342e358214edea

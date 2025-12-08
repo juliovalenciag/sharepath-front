@@ -18,6 +18,10 @@ const nextConfig: NextConfig = {
         hostname: "res.cloudinary.com",
         protocol: "https",
       },
+      {
+        hostname: "harol-lovers.up.railway.app",
+        protocol: "https"
+      }
     ],
   },
 };
