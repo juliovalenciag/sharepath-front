@@ -67,7 +67,7 @@ export default function SignInPage() {
         let redirectPath = '/viajero';
 
         if (userRole === 'admin') {
-          redirectPath = '/admin-dashboard';
+          redirectPath = '/admin';
         }
         router.push(redirectPath)
         return `¡Bienvenido de vuelta ${data.username}`;
