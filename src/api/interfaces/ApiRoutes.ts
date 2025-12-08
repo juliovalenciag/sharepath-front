@@ -200,6 +200,48 @@ export interface FriendSuggestionResponse {
   data: FriendSuggestion[];
 }
 
+export interface CreateResenaRequest {
+    score: number;
+    commentario?: string;
+}
+
+export interface UpdateResenaRequest {
+    score?: number;
+    commentario?: string;
+}
+
+export interface Resena {
+    id: number;
+    score: number;
+    commentario: string | null;
+    usuario: {
+        username: string;
+        nombre_completo: string;
+        foto_url: string | null;
+    };
+}
+
+export interface PublicacionConResenas {
+    id: number;
+    descripcion: string;
+    privacity_mode: boolean;
+    itinerario: {
+        id: number;
+        title: string;
+    } | null;
+    user_shared: {
+        username: string;
+        nombre_completo: string;
+        foto_url: string | null;
+        correo: string;
+    };
+    fotos: Array<{
+        id: number;
+        foto_url: string;
+    }>;
+    reseñas: Resena[];
+}
+
 export interface ApiRoutes {
   // Auth
   doLogin: (correo: string, password: string) => Promise<Usuario>;
@@ -278,6 +320,21 @@ export interface ApiRoutes {
   ) => Promise<Publicacion>;
   getMyPublications: () => Promise<Publicacion[]>;
 
+  getPublicationWithResenas: (publicacionId: number) => Promise<PublicacionConResenas>;
+  deletePublication: (publicacionId: number) => Promise<{ message: string }>;
+  
+  // Reseñas
+  createResena: (publicacionId: number, body: CreateResenaRequest) => Promise<Resena>;
+  updateResena: (resenaId: number, body: UpdateResenaRequest) => Promise<Resena>;
+  deleteResena: (resenaId: number) => Promise<Resena>;
+  getResenasByPublicacion: (publicacionId: number) => Promise<Resena[]>;
+  
+    // Reportes.
+    createReport: (publicationId: number, reason: string) => Promise<CreateReportResponse>;
+    getReports: () => Promise<Reporte[]>;
+    getReportById: (reportId: number) => Promise<Reporte>;
+    deleteReport: (reportId: number) => Promise<void>; // Manda error si no se puede eliminar
+
   // Notificaciones
   getNotifications: () => Promise<RawNotification[]>;
 }
@@ -294,15 +351,8 @@ export interface RawNotification {
   isRead: boolean;
   resourceId?: string | number;
   emisor: Usuario;
-  // Reportes.
-  createReport: (publicationId: number, reason: string) => Promise<CreateReportResponse>;
-  getReports: () => Promise<Reporte[]>;
-  getReportById: (reportId: number) => Promise<Reporte>;
-  deleteReport: (reportId: number) => Promise<void>; // Manda error si no se puede eliminar
-
-  // Obtener informacion de otro usuario.
-  getOtherUserInfo: (username: string) => Promise<UserInfoResponse>;
 }
+
 export interface UserInfoResponse {
   correo:          string;
   username:        string;
