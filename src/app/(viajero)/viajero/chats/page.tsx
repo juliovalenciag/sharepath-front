@@ -7,7 +7,7 @@ export default function ViajeroChatsPage() {
   return (
     // <div className="min-h-[calc(100dvh-64px)] bg-background">
     <div className="min-h-100dvh bg-background">
-      <ChatLayout />
+      <ChatLayout/>
     </div>
   );
 }

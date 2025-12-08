@@ -37,7 +37,7 @@ import {
 export class ItinerariosAPI implements ApiRoutes {
   private static instance: ItinerariosAPI;
 
-  private HOST = "";
+  private HOST = "https://harol-lovers.up.railway.app";
 
   private constructor() {}
 
@@ -170,6 +170,7 @@ export class ItinerariosAPI implements ApiRoutes {
 
     localStorage.setItem("authToken", token);
     localStorage.setItem("user", JSON.stringify(usuario));
+    window.dispatchEvent(new Event("storage")); //Para que se muestren los mensajes de la otra cuenta
 
     return usuario;
   }

@@ -32,10 +32,22 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
   const recargarUsuario = () => {
     const storedUser = localStorage.getItem("user");
+    const token = localStorage.getItem("authToken");
+
+    if(!token){
+      // console.log("recargarUsuario: No hay token, no se generara socket");
+      return;
+    }
+    // console.log("Ya hay token, generando socket");
+
     if(storedUser) {
       const datosUsuario = JSON.parse(storedUser);
       setUserID(datosUsuario.correo);
       setUsername(datosUsuario.username);
+    }
+    else{
+      setUserID(null);
+      setUsername(null);
     }
   };
 
@@ -44,19 +56,46 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    //console.log("Iniciando configuracion de SocketConext...");
-    // if(loadingUser) return;
-    if(socket) return;
+    const handleUserChange = () => {
+      const storedUser = localStorage.getItem("user");
+      if(!storedUser) return;
 
-    const intentarConectar = () => {
-      const token = localStorage.getItem("authToken");
-      const sessionID = localStorage.getItem("sessionID");
+      const datosUsuario = JSON.parse(storedUser);
+
+      if(datosUsuario.correo !== userID){
+        // console.log("Usuario cambio. Reiniciando socket...");
+
+        setIsConnected(false);
+        if(socket){
+          socket.disconnect();
+        }
+        setSocket(null);
+
+        localStorage.removeItem("sessionID");
+
+        recargarUsuario();
+      }
+    };
+
+    window.addEventListener("storage", handleUserChange);
+
+    return () => window.removeEventListener("storage", handleUserChange);
+  }, [socket, userID]);
+
+  /*Socket cuando cambia el userID*/
+  useEffect(() => {
+    //console.log("Iniciando configuracion de SocketConext...");
+    if(!userID) return;
+
+    // console.log("Generando socket para usuario...", userID);
+
+    const token = localStorage.getItem("authToken");
+    const sessionID = localStorage.getItem("sessionID");
 
       if(!token){
         // console.log("Buscando token...");
-        return false;
+        return;
       }
-
       // console.log("Token encontrado. Generando Socket...");
 
       const newSocket = io("https://harol-lovers.up.railway.app", {
@@ -66,13 +105,15 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         // reconnection: true,
       });
 
+      newSocket.connect();
+      setSocket(newSocket);
       newSocket.on("connect", () => {
           // console.log("Socket Conectado!");
           setIsConnected(true);
       });
 
       newSocket.on("session", ({ sessionID, userID, username }) => {
-        // console.log("Sesion valida, actualizando datos...");
+        //console.log("Sesion valida, actualizando datos...");
         localStorage.setItem("sessionID", sessionID);
         newSocket.auth = { sessionID, token };
         setUserID(userID);
@@ -83,9 +124,9 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         newSocket.emit("get friends list");
       });
 
-      newSocket.on("users", (users) => {
+      // newSocket.on("users", (users) => {
         // console.log("Contexto: Recibida lista de amigos: ", users.length);
-      });
+      // });
 
       newSocket.on("disconnect", () => setIsConnected(false));
       // newSocket.off("session");
@@ -94,28 +135,14 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       // newSocket.off("disconnect");
       //Se pueden poner los .off aqui?
 
-      setSocket(newSocket);
-      return true; //Se encontro el token y se conecto el Socket
-    }
-
-    const exito = intentarConectar();
-    
-    let intervalo: NodeJS.Timeout;
-    if (!exito) {
-        console.log("Token no listo. Esperando token...");
-        intervalo = setInterval(() => {
-            const conecto = intentarConectar();
-            if (conecto) {
-                clearInterval(intervalo); //Si conecta, se deja de buscar
-            }
-        }, 500); //Revisa cada medio segundo
-    }
-
     return () => {
       //console.log("SocketContext: Desconectando usuario...")
-      if (intervalo) clearInterval(intervalo);
+      newSocket.off("connect");
+      newSocket.off("session");
+      newSocket.off("disconnect"),
+      newSocket.disconnect();
     };
-  }, [socket]);
+  }, [userID]);
 
   return (
     <SocketContext.Provider value={{ socket, isConnected, userID, username, recargarUsuario }}>

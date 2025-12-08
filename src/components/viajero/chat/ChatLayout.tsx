@@ -106,14 +106,14 @@ export function ChatLayout() {
         // console.log("Forzando actualización de lista...");
         
         if (socket.connected && userID) {
-            // Intento 1: Pedir lista
+            //Intento 1: Pedir lista
             socket.emit("get friends list", { userID });
         } else {
-            // Intento 2: Si no conectó, forzar reconexión
+            //Intento 2: Si no conecta, forzar reconexion
             socket.disconnect();
             socket.connect();
         }
-    }, 1000); // 1000ms = 1 segundo de retraso
+    }, 500); //medio segundo de retraso
 
     // clearTimeout(timera);
     
@@ -167,7 +167,7 @@ export function ChatLayout() {
         }
         else
         {
-          //Si es nuevo, lo agregamos
+          //Si es nuevo, se agrega
           return [...prev, { ...user, connected: true, messages: [], hasNewMessages: false }];
         }
       });
@@ -179,7 +179,6 @@ export function ChatLayout() {
       
       setSocketUsers((prev) => {
         return prev.map((u) => {
-          // Convertimos ambos a String para asegurar que "5" sea igual a 5
           if (u.userID === disconnectedID) {
               // console.log(`Desconectando a: ${u.username}`);
               return { ...u, connected: false };
