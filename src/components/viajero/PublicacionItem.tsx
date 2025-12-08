@@ -17,23 +17,6 @@ import {
   ExternalLink,
 } from "lucide-react";
 
-// Definición de tipos
-interface Comentario {
-  id: number;
-  usuario: {
-    nombre: string;
-    fotoPerfil: string;
-  };
-  texto: string;
-}
-
-interface ItinerarioItem {
-  id: number;
-  dia: number;
-  url: string;
-  ubicacion: string;
-}
-
 interface Publicacion {
   id: number;
   titulo: string;
@@ -43,7 +26,10 @@ interface Publicacion {
     fotoPerfil: string;
   };
   descripcion?: string;
-  itinerario: ItinerarioItem[];
+  itinerario: Array<{
+    id: number;
+    url: string;
+  }>;
 }
 
 interface PublicacionItemProps {
@@ -89,7 +75,7 @@ export default function PublicacionItem({ publicacion }: PublicacionItemProps) {
   const [newComment, setNewComment] = useState("");
 
   // Datos de ejemplo para comentarios
-  const [comentarios, setComentarios] = useState<Comentario[]>([
+  const [comentarios, setComentarios] = useState([
     {
       id: 1,
       usuario: {
@@ -112,7 +98,7 @@ export default function PublicacionItem({ publicacion }: PublicacionItemProps) {
     e.preventDefault();
     if (!newComment.trim()) return;
     
-    const newCommentObj: Comentario = {
+    const newCommentObj = {
       id: comentarios.length + 1,
       usuario: {
         nombre: "Tú",
@@ -133,7 +119,7 @@ export default function PublicacionItem({ publicacion }: PublicacionItemProps) {
     <article className="rounded-xl shadow-lg mb-8 overflow-hidden border">
       <div className="flex flex-col lg:flex-row">
         {/* Columna izquierda - Carrusel */}
-        <div className="lg:w-1/2 relative group">
+        <div className="lg:w-3/4 relative group">
           <Carousel
             opts={{ align: "start", loop: true }}
             className="w-full"
