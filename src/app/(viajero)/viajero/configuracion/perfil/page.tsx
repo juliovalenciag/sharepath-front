@@ -77,7 +77,7 @@ export default function ViajeroProfilePage() {
             ? localStorage.getItem("authToken")
             : null;
 
-        //const res = await fetch("https://harol-lovers.up.railway.app/user", {
+        //const res = await fetchhttps://harol-lovers.up.railway.apppp/user", {
         const res = await fetch("https://localhost:4000/user", {
           method: "GET",
           headers: {

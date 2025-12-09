@@ -6,6 +6,8 @@ import Cookies from "js-cookie";
 import { BadgeCheck, Bell, Edit, LogOut, User } from "lucide-react";
 import Link from "next/link";
 
+import { useSocket } from "@/context/socketContext"; // <--- Importar esto
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -43,11 +45,20 @@ export function AccountSwitcher({ type = "viajero" }: AccountSwitcherProps) {
 
   //Rutas dinamicas segun usuario
   const profileRoute = type === "admin" ? "/admin/configuracion/cuenta" : "/viajero/configuracion/cuenta";
+
+  const { recargarUsuario } = useSocket();
+
   const handleLogout = () => {
     Cookies.remove("auth_token");
     localStorage.removeItem("authToken");
+    localStorage.removeItem("user");
+    localStorage.removeItem("sessionID");
+
+    recargarUsuario();
+
     router.push("/sign-in");
     router.refresh();
+    console.log("Sesion cerrada");
   };
   const [activeUser, setActiveUser] = useState<ActiveUser | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);

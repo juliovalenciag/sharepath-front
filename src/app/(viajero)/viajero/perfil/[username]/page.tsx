@@ -85,7 +85,7 @@ interface UserItinerary {
   lugares_count: number;
   likes: number;
   updatedAt: string;
-}
+}https://harol-lovers.up.railway.app
 
 //const API_URL = "https://harol-lovers.up.railway.app";
 const API_URL = "https://localhost:4000/";

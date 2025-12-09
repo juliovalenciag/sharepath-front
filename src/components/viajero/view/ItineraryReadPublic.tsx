@@ -180,7 +180,7 @@ export default function ItineraryPublishView({ id }: { id: string }) {
         
         const res = await fetch(
           //`https://harol-lovers.up.railway.app/itinerario/${id}`,
-          `http://localhost:4000/itinerario/${id}`,
+          `https://harol-lovers.up.railway.app/itinerario/${id}`,
           { headers: { "Content-Type": "application/json", "token": token } }
         );
 

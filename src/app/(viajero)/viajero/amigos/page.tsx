@@ -23,7 +23,7 @@ import Link from "next/link";
 import { getInitials } from "@/lib/utils";
 
 //const API_URL = "https://harol-lovers.up.railway.app";
-const API_URL = "http://localhost:4000";
+const API_URL = "https://harol-lovers.up.railway.app";
 
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 
