@@ -33,9 +33,14 @@ import {
   ListRecomen,
   Block,
   UnBlock,
+  CreateResenaRequest,
+  UpdateResenaRequest,
+  Resena,
+  PublicacionConResenas,
   CreateReportResponse,
   Reporte,
   ItinerarioData,
+  DashboardStatsResponse,
   UserInfoResponse
 } from "./interfaces/ApiRoutes";
 
@@ -43,7 +48,9 @@ export class ItinerariosAPI implements ApiRoutes {
 
   private static instance: ItinerariosAPI
 
-  private HOST = "https://harol-lovers.up.railway.app";
+  private HOST = "https://harol-lovers.up.railway.app"
+  //private HOST = "http://localhost:4000"
+
 
   private constructor() { }
 
@@ -451,6 +458,14 @@ export class ItinerariosAPI implements ApiRoutes {
     return await this.get<Publicacion[]>("/publicacion/", true);
   }
 
+  async getPublicationWithResenas(publicacionId: number): Promise<PublicacionConResenas> {
+      return await this.get<PublicacionConResenas>(`/publicacion/${publicacionId}`, true);
+  }
+
+  async deletePublication(publicacionId: number): Promise<{ message: string }> {
+      return await this.delete<{ message: string }>(`/publicacion/${publicacionId}`);
+  }
+
   // ===== NOTIFICACIONES =====
   async markNotificationAsRead(
     notificationId: string | number
@@ -481,12 +496,59 @@ export class ItinerariosAPI implements ApiRoutes {
     return await this.get<Reporte>(`/reporte/${reportId}`, true);
   }
 
-  async deleteReport(reportId: number): Promise<void> {
-    await this.delete<{ message: string }>(`/reporte/${reportId}`);
+    async deleteReport(reportId: number): Promise<void> {
+        await this.delete<{ message: string }>(`/reporte/${reportId}`);
+    }
+
+  // ===== RESEÑAS =====
+
+  async createResena(publicacionId: number, body: CreateResenaRequest): Promise<Resena> {
+      return await this.post<Resena>(`/resena/publicacion/${publicacionId}`, true, body);
   }
+
+  async updateResena(resenaId: number, body: UpdateResenaRequest): Promise<Resena> {
+      return await this.put<Resena>(`/resena/${resenaId}`, true, body);
+  }
+
+  async deleteResena(resenaId: number): Promise<Resena> {
+      return await this.delete<Resena>(`/resena/${resenaId}`);
+  }
+
+  async getResenasByPublicacion(publicacionId: number): Promise<Resena[]> {
+      return await this.get<Resena[]>(`/resena/publicacion/${publicacionId}`, true);
+  }
+  
   async getOtherUserInfo(username: string): Promise<UserInfoResponse> {
     return await this.get<UserInfoResponse>(`/user/profile/${encodeURIComponent(username)}`, true);
   }
+  
+  /**
+   * Obtiene las estadísticas para el dashboard de administrador.
+   * Ruta Back: GET /admin/dashboard/stats
+   */
+  async getAdminStats(): Promise<DashboardStatsResponse> {
+      return await this.get<DashboardStatsResponse>("/admin/dashboard/stats", true);
+    }
+
+    /**
+     * Ejecuta la acción de Baneo basada en un reporte.
+     * Ruta Back: POST /admin/ban/id
+     * Nota: el id es el del reporte
+     */
+    async banPublication(reportId: number): Promise<{ message: string }> {
+      // Enviamos un objeto vacío {} porque es un POST pero no requiere body, solo el ID en params
+      return await this.post<{ message: string }>(`/admin/ban/${reportId}`, true, {});
+    }
+
+    /**
+     * Obtiene el detalle extendido de un reporte para el admin.
+     * Ruta Back: GET /admin/detail/id
+     * Nota: el id es el del reporte
+     */
+    async getAdminReportDetail(reportId: number): Promise<Reporte> {
+      return await this.get<Reporte>(`/admin/detail/${reportId}`, true);
+    }
+
 }
 
 

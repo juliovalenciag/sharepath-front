@@ -98,19 +98,34 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       }
       // console.log("Token encontrado. Generando Socket...");
 
-      const newSocket = io("https://harol-lovers.up.railway.app", {
-        path: "/socket.io/",
-        auth: { sessionID, token },
-        autoConnect: false,
-        // reconnection: true,
-      });
+    const newSocket = io("https://harol-lovers.up.railway.app", {
+    //const newSocket = io("http://localhost:4000", {
+      //withCredentials: true,
+      path: "/socket.io/",
+      autoConnect: false,
+      auth: {
+        sessionID: sessionID,
+        token: token
+      },
+    });
 
-      newSocket.connect();
-      setSocket(newSocket);
-      newSocket.on("connect", () => {
-          // console.log("Socket Conectado!");
-          setIsConnected(true);
-      });
+    // newSocket.auth = { 
+    //     sessionID: sessionID,
+    //     token: token 
+    // };
+
+    newSocket.on("session", ({ sessionID, userID, username }) => {
+      //console.log(`Evento session - SocketContext: Sesión recibida. ID: ${userID}, Nombre: ${username}, Sesion ID: ${sessionID}`);
+      newSocket.auth = { sessionID, token }; 
+      localStorage.setItem("sessionID", sessionID);
+      setUserID(userID);
+      setUsername(username);//Guarda el username en el navegador y estado de react
+    });
+
+    newSocket.on("connect", () => {
+      //console.log("SocketContext: Conectado al servidor");
+      setIsConnected(true);
+    });
 
       newSocket.on("session", ({ sessionID, userID, username }) => {
         //console.log("Sesion valida, actualizando datos...");

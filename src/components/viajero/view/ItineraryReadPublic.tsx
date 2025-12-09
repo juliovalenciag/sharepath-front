@@ -179,8 +179,8 @@ export default function ItineraryPublishView({ id }: { id: string }) {
         if (!token) throw new Error("No hay sesión activa");
         
         const res = await fetch(
-          //`https://harol-lovers.up.railway.app/itinerario/${id}`,
           `https://harol-lovers.up.railway.app/itinerario/${id}`,
+          //`http://localhost:4000/itinerario/${id}`,
           { headers: { "Content-Type": "application/json", "token": token } }
         );
 

@@ -22,8 +22,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Link from "next/link";
 import { getInitials } from "@/lib/utils";
 
-//const API_URL = "https://harol-lovers.up.railway.app";
 const API_URL = "https://harol-lovers.up.railway.app";
+//const API_URL = "http://localhost:4000";
 
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 

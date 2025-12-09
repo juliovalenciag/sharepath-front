@@ -67,13 +67,12 @@ export const NotificationCard = ({ notification }: { notification: any }) => {
 
   // Determinamos el estilo visual
   const { icon, color } = getIconAndColor(tipo);
-  // Normalizamos el tipo a mayúsculas para que la comparación sea consistente
+
   const isRequest =
     tipo?.toUpperCase() === "FRIEND_REQUEST" ||
     tipo?.toUpperCase() === "SOLICITUD";
   const bgClass = leido ? "bg-white" : "bg-blue-50/60";
 
-  // Función para eliminar visualmente al aceptar/rechazar
   const removeNotification = () => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
@@ -86,18 +85,15 @@ export const NotificationCard = ({ notification }: { notification: any }) => {
     // Aquí harías tu fetch al backend...
     // await fetch(...)
 
-    removeNotification(); // La quitamos de la lista
+    removeNotification(); 
   };
 
-  // Función para marcar como leída al hacer clic
   const handleNotificationClick = () => {
-    // Solo marcamos como leída si no lo está ya
     if (!leido) {
       markAsRead(id);
     }
   };
 
-  // URL destino: Si es solicitud va al perfil, si no, va al post/itinerario
   const destination = isRequest
     ? `/perfil/${actor_username}`
     : `/itinerario/${linkId}`;
