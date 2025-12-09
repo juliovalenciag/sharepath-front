@@ -47,7 +47,7 @@ export default function ViajeroLanding() {
         setError(null);
         const api = ItinerariosAPI.getInstance();
         const data = await api.getMyPublications();
-        
+        console.log ("Publicaciones obtenidas del API:", data);
         if (data && Array.isArray(data)) {
           const publicacionesTransformadas = data.map(transformarPublicacion);
           setPublicaciones(publicacionesTransformadas);
