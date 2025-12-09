@@ -243,6 +243,10 @@ export interface PublicacionConResenas {
 }
 
 export interface ApiRoutes {
+  // ===== ADMIN / DASHBOARD =====
+  getAdminStats: () => Promise<DashboardStatsResponse>;
+  banPublication: (reportId: number) => Promise<{ message: string }>;
+  getAdminReportDetail: (reportId: number) => Promise<Reporte>;
   // Auth
   doLogin: (correo: string, password: string) => Promise<Usuario>;
   doRegister: (body: RegisterRequest) => Promise<RegisterResponse>;
@@ -464,4 +468,18 @@ export interface CreateItinerarioRequest {
   end_date?: string;
   regions?: string[];
   visibility?: "private" | "friends" | "public";
+}
+
+export interface DashboardStatsResponse {
+  usuarios: {
+    total: number;
+    nuevosEsteMes: number; // Por ahora vendrá en 0
+    crecimiento: string;   // Por ahora vendrá en "0%"
+  };
+  metricasGenerales: {
+    totalLugares: number;
+    totalItinerarios: number;
+    reportesPendientes: number;
+  };
+  timestamp: string;
 }

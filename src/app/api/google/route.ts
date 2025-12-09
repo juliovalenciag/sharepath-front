@@ -3,45 +3,70 @@ export const CLIENT_ID ="934272342967-it58ahq1jmjt347vm7t1mopi7hnql9dl.apps.goog
 import { OAuth2Client } from "google-auth-library"; //-- libreria para verificar el token
 import { NextResponse } from "next/server";
 
+interface GooglePayload {
+  email: string;
+  name?: string;
+  picture?: string;
+  sub: string;
+}
+
 export async function POST(request: Request) {
   const body = await request.json();
-  const client = new OAuth2Client(CLIENT_ID);
-  if (!body) {
-    const response = NextResponse.json(
-      {
-        message: "body no existe",
-      },
-      {
-        status: 400,
-      }
-    );
-    return response;
-  }
 
-  async function verify(body: any) {
-    const ticket = await client.verifyIdToken({ //verifica servidores token de google
+  if (!body?.token) {
+    const response = NextResponse.json({ message: "Token no enviado"}, { status: 400});
+    
+  }
+  const client = new OAuth2Client(CLIENT_ID);
+
+  try {
+    // 1. Verificar token con Google
+    const ticket = await client.verifyIdToken({
       idToken: body.token,
       audience: CLIENT_ID,
     });
 
-    const payload = ticket.getPayload();
-    return payload;
-  }
+    const payload = ticket.getPayload() as GooglePayload;
 
-  try {
-    const payload = await verify(body);
-    return NextResponse.json(payload);
+    if (!payload?.email) {
+      return NextResponse.json({
+        message: "Google no retornó correo",
+      }, { status: 400 });
+    }
+
+    // 2. Consultar a tu backend
+    const backendRes = await fetch("https://harol-lovers.up.railway.app/auth/google", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ correo: payload.email }),
+    });
+
+    const data = await backendRes.json();
+
+    if (!backendRes.ok) {
+      return NextResponse.json({
+        registered: false,
+        message: "Cuenta no registrada",
+      }, { status: 404 });
+    }
+
+    // 3. Login correcto
+    return NextResponse.json({
+      ok: true,
+      email: payload.email,
+      nombre: payload.name,
+      username: data.usuario.username,
+      token: data.token,
+      role: data.usuario.role,
+    });
+
   } catch (error) {
-    const response = NextResponse.json(
+    return NextResponse.json(
       {
         code: 400,
-        message: error instanceof Error ? error.message : "Desconocido",
+        message: error instanceof Error ? error.message : "Error desconocido",
       },
-      {
-        status: 400,
-      }
+      { status: 400 }
     );
-    return response;
   }
 }
-
