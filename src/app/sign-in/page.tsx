@@ -19,6 +19,9 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from "@/component
 
 const formSchema = z.object({
   correo: z.string()
+    .refine((email) => email.includes("@"), {
+      message: "Falta agregar la arroba",
+    })
     .refine((email) => {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
       return emailRegex.test(email);
@@ -118,8 +121,8 @@ export default function SignInPage() {
                     name="correo"
                     render={({ field }) => (
                       <FormItem>
-                        <FormControl>
-                          <Input type="email"
+                          <FormControl>
+                          <Input type="text"
                             placeholder="Correo (ejemplo: usuario@dominio.com)" {...field}
                             className="py-6"
                             disabled={isLoading}

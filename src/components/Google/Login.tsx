@@ -1,4 +1,3 @@
-
 "use client";
 import { CredentialResponse, GoogleLogin } from "@react-oauth/google";
 import { useState } from "react";
@@ -19,11 +18,9 @@ export default function Login() {
       // console.log("payload credential", payload);
       // setEmail(payload.email);
       const response = await fetch("/api/google", {
-        //la peticion del POST al endpoint
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          //verificar token, extraer datos
           token: credentialResponse.credential,
         }),
       });
@@ -38,10 +35,10 @@ export default function Login() {
         return;
       }
 
-      if (response.ok && json.email) {
+      if (response.ok && json.username) {
         setEmail(json.email);
-        localStorage.setItem("authToken", json.token); // si tu API retorna token
-      toast.success(`¡Bienvenido de vuelta! , ${json.email}`);
+        localStorage.setItem("authToken", json.token); 
+      toast.success(`¡Bienvenido de vuelta!, ${json.username}`);
 
         const redirect = json.role === "admin" ? "/admin-dashboard" : "/viajero";
         
@@ -66,7 +63,7 @@ export default function Login() {
         <GoogleLogin
           onSuccess={handleSuccess}
           onError={handleError}
-          useOneTap
+          //useOneTap
         />
       )}
     </div>
