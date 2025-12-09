@@ -12,6 +12,7 @@ import {
   Search,
   Sparkles,
   UserMinus,
+  Ban,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -21,6 +22,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Link from "next/link";
 import { getInitials } from "@/lib/utils";
+import { toast } from "sonner";
 
 const API_URL = "https://harol-lovers.up.railway.app";
 //const API_URL = "http://localhost:4000";
@@ -243,6 +245,19 @@ export default function FriendsPage() {
       alert("No se pudo eliminar al amigo");
     }
   }
+
+  const handleBlock = async (username: string) => {
+    toast.promise(api.block(username), {
+      loading: "Bloqueando usuario",
+      success: () => {
+        setFriends((prev) => prev.filter((f) => f.username !== username));
+        return `@${username} bloqueado`;
+      },
+      error: (err) => {
+        return "Error al bloquear usuario";
+      },
+    });
+  };
 
   // Cargar solicitudes pendientes
   useEffect(() => {
@@ -500,6 +515,7 @@ export default function FriendsPage() {
                   key={friend.id}
                   friend={friend}
                   onDelete={handleDelete}
+                  onBlock={handleBlock}
                 />
               ))}
             </div>
@@ -598,10 +614,27 @@ function SummaryCard({
 function FriendCard({
   friend,
   onDelete,
+  onBlock,
 }: {
   friend: Friend;
   onDelete: (correo: string) => void;
+  onBlock: (username: string) => void;
 }) {
+  const confirmBlock = () => {
+    toast(`¿Estás seguro de bloquear a @${friend.username}?`, {
+      description: "Ya no aparecera en tu lista de amigos",
+      action: {
+        label: "Bloquear",
+        onClick: () => onBlock(friend.username),
+      },
+      cancel: {
+        label: "Cancelar",
+        onClick: () => {},
+      },
+      actionButtonStyle: { backgroundColor: "var(--destructive)", color: "white" },
+    });
+  };
+
   return (
     <Card className="group flex flex-col justify-between overflow-hidden transition-all hover:border-primary/30 hover:shadow-md">
       <CardContent className="flex flex-col gap-4 p-4">
@@ -659,15 +692,23 @@ function FriendCard({
           )}
         </div>
       </CardContent>
-      <div className="border-t bg-muted/10 p-2">
+      <div className="grid grid-cols-2 border-t">
         <Button
           variant="ghost"
-          size="sm"
-          className="w-full justify-start text-xs text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+          className="w-full rounded-none h-10 text-xs text-muted-foreground hover:bg-muted hover:text-foreground border-r"
           onClick={() => onDelete(friend.correo)}
         >
           <UserMinus className="mr-2 h-3.5 w-3.5" />
           Dejar de seguir
+        </Button>
+
+        <Button
+          variant="ghost"
+          className="w-full rounded-none h-10 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+          onClick={confirmBlock}
+          >
+          <Ban className="mr-2 h-3.5 w-3.5" />
+          Bloquear
         </Button>
       </div>
     </Card>
