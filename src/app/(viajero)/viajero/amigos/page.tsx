@@ -1,121 +1,81 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
 import {
-  Loader2,
+  ArrowLeft,
+  Search,
   UserPlus,
   Users,
+  Sparkles,
   UserCheck,
-  UserX,
+  Loader2,
   MapPin,
   MessageCircle,
   Search,
   Sparkles,
   UserMinus,
   Ban,
+  ChevronRight,
 } from "lucide-react";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { ItinerariosAPI } from "@/api/ItinerariosAPI";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import Link from "next/link";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { getInitials } from "@/lib/utils";
 import { toast } from "sonner";
 
-// 1. IMPORTAR LA API
-import { ItinerariosAPI } from "@/api/ItinerariosAPI";
+// ===== Tipos =====
 
-// 2. INSTANCIAR LA API
-const api = ItinerariosAPI.getInstance();
-
-// Estados posibles
-enum FriendRequestState {
-  PENDING = 0,
-  FRIEND = 1,
-  REJECTED = 2,
+interface ViajeroData {
+  id: number;
+  nombre_completo: string;
+  username: string;
+  foto_url: string | null;
+  amigos_en_comun: number;
+  ciudad?: string;
+  status?: number; // 0: pending, 1: unknown, 2: friend
 }
 
-// ===== Tipos =====
-type Friend = {
-  id: string;
+// Tipo de sugerencia proveniente del backend
+interface FriendSuggestionApi {
   username: string;
-  correo: string;
-  name: string;
-  avatar: string;
-  city?: string;
-  country?: string;
-  mutualCount: number;
-  isOnline: boolean;
-};
+  nombre_completo: string;
+  correo?: string;
+  foto_url?: string | null;
+}
 
-type FriendRequest = {
-  id: string | number;
-  name: string;
-  username: string;
-  avatar: string;
-  message?: string;
-  dateLabel?: string;
-  status: number;
-};
+const API_URL = "https://harol-lovers.up.railway.app";
 
-type FriendSuggestion = {
-  id: string;
-  username: string;
-  name: string;
-  avatar: string;
-  city?: string;
-  country?: string;
-  mutualCount: number;
-  interests: string[];
-};
+// API instance
+const api = ItinerariosAPI.getInstance();
 
-// ===== Página Principal =====
+async function sendFriendRequest(receiving: string) {
+  return await api.sendFriendRequest(receiving);
+}
 
-export default function FriendsPage() {
-  const [friends, setFriends] = useState<Friend[]>([]);
-  const [requests, setRequests] = useState<FriendRequest[]>([]);
-  const [suggestions, setSuggestions] = useState<FriendSuggestion[]>([]);
-  const [loading, setLoading] = useState(true);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+// ===== Componentes Internos =====
 
-  // --- ACCIONES DEL USUARIO (Usando API) ---
+function ViajeroCard({
+  data,
+  onSent,
+}: {
+  data: ViajeroData;
+  onSent?: (username: string) => void;
+}) {
+  const [status, setStatus] = useState<number | undefined>(data.status);
+  const [isSending, setIsSending] = useState(false);
 
-  const handleRespond = async (id: number, state: number) => {
-    try {
-      // USANDO LA API: respondFriendRequest
-      await api.respondFriendRequest(id, state);
+  useEffect(() => {
+    setStatus(data.status);
+  }, [data.status]);
 
-      // Actualizar UI: Quitamos la solicitud de la lista
-      setRequests((prev) => prev.filter((req) => Number(req.id) !== id));
-
-      if (state === FriendRequestState.FRIEND) {
-        // Recargar amigos para ver al nuevo
-        loadFriendsData();
-      }
-    } catch (error) {
-      console.error(error);
-      alert("Hubo un error al procesar la solicitud");
-    }
-  };
-
-  const handleDelete = async (correo: string) => {
-    try {
-      // USANDO LA API: deleteFriend
-      if ("deleteFriend" in api) {
-        await (api as any).deleteFriend(correo);
-      } else {
-        console.warn("Falta agregar deleteFriend a ItinerariosAPI");
-      }
-
-      setFriends((prev) => prev.filter((f) => f.correo !== correo));
-    } catch (error) {
-      console.error(error);
-      alert("No se pudo eliminar al amigo");
-    }
-  };
 
   const handleBlock = async (username: string) => {
     toast.promise(api.block(username), {
@@ -131,219 +91,58 @@ export default function FriendsPage() {
   };
 
   // --- FUNCIONES DE CARGA DE DATOS ---
+  const handleAdd = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
 
-  const loadFriendsData = async () => {
+    // No hacer nada si ya está pendiente o es amigo
+    if (isSending || status === 0 || status === 2) return;
+
     try {
-      const json = await api.getFriends();
-      const rawFriends = Array.isArray(json) ? json : [];
-
-      const meJson = localStorage.getItem("user");
-      const me = meJson ? JSON.parse(meJson).username : "";
-
-      const mapped: Friend[] = rawFriends.map((f: any) => {
-        // Lógica para determinar quién es el amigo
-        const user =
-          f.requesting_user?.username !== me
-            ? f.requesting_user
-            : f.receiving_user;
-
-        return {
-          id: f.id,
-          username: user?.username || "desconocido",
-          name:
-            user?.nombre_completo ||
-            user?.nombre ||
-            user?.username ||
-            "Usuario",
-          avatar: user?.foto_url || "",
-          correo: user?.correo,
-          city: user?.ciudad,
-          country: user?.pais,
-          mutualCount: 0,
-          isOnline: false,
-        };
-      });
-      setFriends(mapped);
-    } catch (err) {
-      console.error("Error cargando amigos:", err);
-      setFriends([]);
-    }
-  };
-
-  const loadRequestsData = async () => {
-    try {
-      const res = await api.getRequests();
-      const json = res as any;
-
-      // Aseguramos que sea un array
-      const rawRequests = Array.isArray(json.data)
-        ? json.data
-        : Array.isArray(json)
-        ? json
-        : [];
-
-      const mappedRequests: FriendRequest[] = rawRequests.map((r: any) => {
-        // Intentar leer usuario si el backend ya lo manda
-        const sender = r.requesting_user || {};
-        return {
-          id: r.id,
-          name:
-            sender.nombre_completo || sender.nombre || "Usuario desconocido",
-          username: sender.username || "desconocido",
-          avatar: sender.foto_url || "",
-          dateLabel: r.fecha_amistad
-            ? new Date(r.fecha_amistad).toLocaleDateString("es-MX", {
-                day: "2-digit",
-                month: "short",
-              })
-            : undefined,
-          status: r.status,
-          message: undefined,
-        };
-      });
-
-      // Guardamos SOLO las reales
-      setRequests(mappedRequests);
+      setIsSending(true);
+      console.log("este es el username: ", data.username);
+      const response = await sendFriendRequest(data.username);
+      toast.success("Solicitud enviada correctamente");
+      console.log("Respuesta del backend:", response);
+      setStatus(0); // Cambiar a pendiente
+      if (onSent) onSent(data.username);
     } catch (error) {
-      console.error("Error cargando solicitudes:", error);
-      setRequests([]);
+      console.error("No se pudo enviar la solicitud:", error);
+      toast.error("No se pudo enviar la solicitud");
+    } finally {
+      setIsSending(false);
     }
   };
-
-  const loadSuggestionsData = async () => {
-    try {
-      let list = [];
-      if ("getFriendSuggestions" in api) {
-        const res = await (api as any).getFriendSuggestions();
-        list = Array.isArray(res?.data) ? res.data : [];
-      }
-
-      const mapped: FriendSuggestion[] = list.map((s: any) => ({
-        id: s.username || String(s.id || ""),
-        username: s.username,
-        name: s.nombre_completo || s.username,
-        avatar: s.foto_url || "",
-        city: s.ciudad,
-        country: s.pais,
-        mutualCount: s.mutuos || 0,
-        interests: s.intereses || [],
-      }));
-      setSuggestions(mapped);
-    } catch (err) {
-      console.warn("Error cargando sugerencias:", err);
-      setSuggestions([]);
-    }
-  };
-
-  // --- EFECTO INICIAL ---
-  useEffect(() => {
-    const init = async () => {
-      setLoading(true);
-      await Promise.all([
-        loadFriendsData(),
-        loadRequestsData(),
-        loadSuggestionsData(),
-      ]);
-      setLoading(false);
-    };
-    init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const totalFriends = friends.length;
-  const totalRequests = requests.length;
-  const totalSuggestions = suggestions.length;
-
-  if (loading) {
-    return (
-      <div className="flex min-h-[300px] w-full flex-col items-center justify-center gap-2">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-sm text-muted-foreground">Cargando tu red...</p>
-      </div>
-    );
-  }
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-8 px-4 py-8 lg:px-8">
-      {/* Header Section */}
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">
-            Amigos y Conexiones
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Gestiona tu red de viajeros y descubre nuevas aventuras juntos.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" asChild className="h-9">
-            <Link href="/viajero/amigos/buscar-viajero">
-              <Search className="mr-2 h-4 w-4" />
-              Buscar
-            </Link>
-          </Button>
-          <Button size="sm" className="h-9">
-            <UserPlus className="mr-2 h-4 w-4" />
-            Invitar
-          </Button>
-        </div>
-      </div>
+    <Link href={`/viajero/perfil/${data.username}`} className="block group">
+      <Card className="overflow-hidden border-border/50 transition-all duration-200 hover:border-primary/40 hover:shadow-md hover:bg-muted/20">
+        <CardContent className="flex items-center justify-between p-4">
+          <div className="flex items-center gap-4 overflow-hidden">
+            {/* Avatar */}
+            <Avatar className="h-14 w-14 border-2 border-background shadow-sm transition-transform group-hover:scale-105">
+              <AvatarImage
+                src={data.foto_url || undefined}
+                alt={data.nombre_completo}
+              />
+              <AvatarFallback className="bg-primary/10 text-primary font-bold text-lg">
+                {getInitials(data.nombre_completo)}
+              </AvatarFallback>
+            </Avatar>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <SummaryCard
-          label="Total Amigos"
-          value={totalFriends}
-          icon={Users}
-          active
-        />
-        <SummaryCard
-          label="Solicitudes"
-          value={totalRequests}
-          icon={UserCheck}
-          intent={totalRequests > 0 ? "warning" : "default"}
-        />
-        <SummaryCard
-          label="Sugerencias"
-          value={totalSuggestions}
-          icon={Sparkles}
-          intent="info"
-        />
-      </div>
-
-      {/* Main Content Tabs */}
-      <Tabs defaultValue="friends" className="w-full space-y-6">
-        <div className="flex items-center justify-between">
-          <TabsList className="h-9 w-full justify-start rounded-lg bg-muted p-1 sm:w-auto">
-            <TabsTrigger value="friends" className="px-4 text-xs sm:text-sm">
-              Amigos
-              <Badge
-                variant="default"
-                className="ml-2 h-5 px-1.5 text-[10px] font-normal"
-              >
-                {totalFriends}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger value="requests" className="px-4 text-xs sm:text-sm">
-              Solicitudes
-              {totalRequests > 0 && (
+            {/* Info */}
+            <div className="flex flex-col gap-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <h4 className="font-semibold text-base leading-none truncate group-hover:text-primary transition-colors">
+                  {data.nombre_completo}
+                </h4>
                 <Badge
-                  variant="destructive"
-                  className="ml-2 h-5 px-1.5 text-[10px] font-normal"
+                  variant="secondary"
+                  className="text-[10px] font-normal text-muted-foreground h-5 px-1.5"
                 >
-                  {totalRequests}
+                  @{data.username}
                 </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger
-              value="suggestions"
-              className="px-4 text-xs sm:text-sm"
-            >
-              Sugerencias
-            </TabsTrigger>
-          </TabsList>
-        </div>
-
+              </div>
         <TabsContent
           value="friends"
           className="animate-in fade-in-50 slide-in-from-bottom-2"
@@ -366,93 +165,120 @@ export default function FriendsPage() {
                   onBlock={handleBlock}
                 />
               ))}
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                {data.ciudad && (
+                  <span className="flex items-center gap-1 shrink-0">
+                    <MapPin className="h-3 w-3" /> {data.ciudad}
+                  </span>
+                )}
+                <span className="flex items-center gap-1 shrink-0">
+                  <Users className="h-3 w-3" /> {data.amigos_en_comun || 0} en
+                  común
+                </span>
+              </div>
             </div>
-          )}
-        </TabsContent>
+          </div>
 
-        <TabsContent
-          value="requests"
-          className="animate-in fade-in-50 slide-in-from-bottom-2"
-        >
-          {requests.length === 0 ? (
-            <EmptyState
-              icon={UserCheck}
-              title="Todo al día"
-              description="No tienes solicitudes de amistad pendientes en este momento."
-            />
-          ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {requests.map((req) => (
-                <FriendRequestCard
-                  key={req.id}
-                  request={req}
-                  onRespond={handleRespond}
-                />
-              ))}
-            </div>
-          )}
-        </TabsContent>
+          {/* Acciones */}
+          <div className="flex items-center gap-3 pl-2">
+            {/* Botón Agregar con lógica aislada */}
+            <Button
+              size="sm"
+              variant={status === 0 || status === 2 ? "secondary" : "default"}
+              className={`h-8 px-3 text-xs font-medium transition-all ${
+                status === 0 || status === 2
+                  ? "text-muted-foreground bg-muted"
+                  : "shadow-sm"
+              }`}
+              onClick={handleAdd}
+              disabled={status === 0 || status === 2 || isSending}
+            >
+              {isSending ? (
+                <>
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />{" "}
+                  Enviando
+                </>
+              ) : status === 2 ? (
+                <>
+                  <UserCheck className="mr-1.5 h-3.5 w-3.5" /> Amigo
+                </>
+              ) : status === 0 ? (
+                <>
+                  <UserCheck className="mr-1.5 h-3.5 w-3.5" /> Enviada
+                </>
+              ) : (
+                <>
+                  <UserPlus className="mr-1.5 h-3.5 w-3.5" /> Agregar
+                </>
+              )}
+            </Button>
 
-        <TabsContent
-          value="suggestions"
-          className="animate-in fade-in-50 slide-in-from-bottom-2"
-        >
-          {suggestions.length === 0 ? (
-            <EmptyState
-              icon={Sparkles}
-              title="Sin sugerencias nuevas"
-              description="Vuelve más tarde o interactúa más con la plataforma para recibir recomendaciones personalizadas."
-            />
-          ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {suggestions.map((s) => (
-                <FriendSuggestionCard key={s.id} suggestion={s} />
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
-    </div>
+            {/* Icono de navegación sutil */}
+            <ChevronRight className="h-5 w-5 text-muted-foreground/30 group-hover:text-primary/50 transition-colors" />
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
 
-// ===== Componentes Auxiliares =====
-
-function SummaryCard({
-  label,
-  value,
-  icon: Icon,
-  active = false,
-  intent = "default",
+function SugerenciaCard({
+  nombre,
+  username, // Asumimos que tienes el username para el link
+  status,
+  amigosComun = 12,
+  foto_url,
+  onConnect,
 }: {
-  label: string;
-  value: number;
-  icon: any;
-  active?: boolean;
-  intent?: "default" | "warning" | "info";
+  nombre: string;
+  username?: string; // Hacer opcional si el mock no lo tiene, pero ideal tenerlo
+  status: "Agregar" | "Solicitud enviada";
+  amigosComun?: number;
+  foto_url?: string;
+  onConnect?: (username?: string) => void | Promise<void>;
 }) {
-  const colors = {
-    default: "bg-primary/10 text-primary",
-    warning: "bg-orange-500/10 text-orange-600",
-    info: "bg-blue-500/10 text-blue-600",
-  };
+  // Fallback username for mock data
+  const safeUsername = username || nombre.toLowerCase().replace(/\s+/g, "");
 
   return (
-    <Card
-      className={`overflow-hidden transition-all hover:shadow-md ${
-        active ? "border-primary/50 ring-1 ring-primary/20" : ""
-      }`}
-    >
-      <CardContent className="flex items-center gap-4 p-4">
-        <div
-          className={`flex h-10 w-10 items-center justify-center rounded-lg ${colors[intent]}`}
+    <Card className="w-[160px] shrink-0 overflow-hidden transition-all hover:border-primary/40 hover:shadow-md group relative">
+      {/* Toda la tarjeta es clickeable excepto el botón */}
+      <Link
+        href={`/viajero/perfil/${safeUsername}`}
+        className="absolute inset-0 z-0"
+      />
+
+      <CardContent className="relative z-10 flex flex-col items-center gap-3 p-4 text-center">
+        <Avatar className="h-16 w-16 border-2 border-background shadow-sm group-hover:scale-105 transition-transform">
+          {foto_url && <AvatarImage src={foto_url} />}
+          <AvatarFallback className="bg-muted text-muted-foreground text-lg font-medium">
+            {getInitials(nombre)}
+          </AvatarFallback>
+        </Avatar>
+
+        <div className="space-y-1 w-full">
+          <p
+            className="text-sm font-semibold leading-none truncate w-full group-hover:text-primary transition-colors"
+            title={nombre}
+          >
+            {nombre}
+          </p>
+          <p className="text-[10px] text-muted-foreground">
+            {amigosComun} amigos en común
+          </p>
+        </div>
+
+        <Button
+          className="w-full h-8 text-xs z-20" // z-20 para estar encima del Link absoluto
+          variant={status === "Solicitud enviada" ? "secondary" : "outline"}
+          disabled={status === "Solicitud enviada"}
+          onClick={(e) => {
+            e.preventDefault();
+            if (onConnect) onConnect(username);
+          }}
         >
-          <Icon className="h-5 w-5" />
-        </div>
-        <div>
-          <p className="text-sm font-medium text-muted-foreground">{label}</p>
-          <p className="text-2xl font-bold tracking-tight">{value}</p>
-        </div>
+          {status === "Solicitud enviada" ? "Pendiente" : "Conectar"}
+        </Button>
       </CardContent>
     </Card>
   );
@@ -482,45 +308,22 @@ function FriendCard({
     });
   };
 
+function EmptySearchState() {
   return (
-    <Card className="group flex flex-col justify-between overflow-hidden transition-all hover:border-primary/30 hover:shadow-md">
-      <CardContent className="flex flex-col gap-4 p-4">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex gap-3">
-            <Avatar className="h-12 w-12 border-2 border-background shadow-sm">
-              <AvatarImage src={friend.avatar} alt={friend.name} />
-              <AvatarFallback className="bg-primary/5 font-medium text-primary">
-                {getInitials(friend.name)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="space-y-1">
-              <h4 className="font-semibold leading-none">{friend.name}</h4>
-              <p className="text-xs text-muted-foreground">
-                @{friend.username}
-              </p>
-              {friend.isOnline && (
-                <div className="flex items-center gap-1.5 pt-1">
-                  <span className="relative flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
-                  </span>
-                  <span className="text-[10px] font-medium text-emerald-600">
-                    En línea
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-          <Link href={`/viajero/chats?username=${friend.username}`}>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
-            >
-              <MessageCircle className="h-4 w-4" />
-            </Button>
-          </Link>
-        </div>
+    <div className="flex flex-col items-center justify-center py-16 text-center animate-in fade-in zoom-in-95 duration-300">
+      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary/5 to-primary/10 mb-6">
+        <Search className="h-10 w-10 text-primary/60" />
+      </div>
+      <h3 className="text-xl font-bold text-foreground">
+        Encuentra compañeros de viaje
+      </h3>
+      <p className="text-sm text-muted-foreground max-w-xs mt-2 mb-8 leading-relaxed">
+        Busca por nombre de usuario o nombre completo para conectar, ver sus
+        perfiles y planear juntos.
+      </p>
+    </div>
+  );
+}
 
         <div className="space-y-2 rounded-lg bg-muted/40 p-2.5 text-xs text-muted-foreground">
           {(friend.city || friend.country) && (
@@ -557,170 +360,303 @@ function FriendCard({
           <Ban className="mr-2 h-3.5 w-3.5" />
           Bloquear
         </Button>
+function NoResultsState({ term }: { term: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 text-center">
+      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted/50 mb-4">
+        <Users className="h-8 w-8 text-muted-foreground/40" />
       </div>
-    </Card>
+      <p className="text-base font-medium text-foreground">
+        No encontramos a nadie
+      </p>
+      <p className="text-sm text-muted-foreground mt-1">
+        No hay resultados para{" "}
+        <span className="font-semibold text-foreground">"{term}"</span>.
+      </p>
+    </div>
   );
 }
 
-function FriendRequestCard({
-  request,
-  onRespond,
-}: {
-  request: FriendRequest;
-  onRespond: (id: number, state: number) => Promise<void>;
-}) {
-  const [loading, setLoading] = useState(false);
+// ===== Página Principal =====
 
-  const handleAction = async (state: number) => {
+export default function BuscarViajeroPage() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [viajeros, setViajeros] = useState<ViajeroData[]>([]);
+  const [sugerenciasApi, setSugerenciasApi] = useState<FriendSuggestionApi[]>(
+    []
+  );
+  const [pendingSugerencias, setPendingSugerencias] = useState<Set<string>>(
+    new Set()
+  );
+  const [loading, setLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+
+  // Función para buscar viajeros
+  const handleSearch = async (term: string) => {
+    if (term.trim() === "") {
+      setViajeros([]);
+      setHasSearched(false);
+      return;
+    }
+
     setLoading(true);
-    await onRespond(Number(request.id), state);
-    setLoading(false);
+    setHasSearched(true);
+
+    try {
+      // 1) Buscar usuarios usando la capa de API
+      const searchResp = await api.searchUsers(term);
+      // Puede venir como { users: [...] } o como arreglo directo
+      let users: any[] = [];
+      if (Array.isArray((searchResp as any).users))
+        users = (searchResp as any).users;
+      else if (Array.isArray((searchResp as any).data))
+        users = (searchResp as any).data;
+      else if (Array.isArray(searchResp)) users = searchResp as any[];
+
+      // 2) Obtener solicitudes pendientes (status === 0) y amigos (status === 2)
+      const userStatus = new Map<string, number>(); // username -> status
+      const myUserJson = localStorage.getItem("user");
+      const myUsername = myUserJson ? JSON.parse(myUserJson).username : null;
+
+      // Obtener mis amigos actuales
+      try {
+        const friendsResp = await api.getFriends();
+        const friends = Array.isArray(friendsResp) ? friendsResp : [];
+        friends.forEach((friend: any) => {
+          const friendUsername =
+            friend.receiving_user?.username === myUsername
+              ? friend.requesting_user?.username
+              : friend.receiving_user?.username;
+          if (friendUsername) {
+            userStatus.set(friendUsername, 2); // status 2 = friend
+          }
+        });
+      } catch (err) {
+        console.warn("No se pudieron obtener amigos:", err);
+      }
+
+      // Obtener solicitudes pendientes (status === 0)
+      try {
+        const requests = await api.getRequests();
+        if (requests && Array.isArray((requests as any).data) && myUsername) {
+          (requests as any).data.forEach((req: any) => {
+            const isPending = req.status === 0 || req.status === "0";
+            if (!isPending) return;
+            // Si yo soy quien solicitó, marcar al receiving como pendiente
+            if (
+              req.requesting_user?.username === myUsername &&
+              req.receiving_user?.username
+            ) {
+              userStatus.set(req.receiving_user.username, 0); // status 0 = pending
+            }
+            // Si yo soy quien recibe, marcar al requesting como pendiente también
+            if (
+              req.receiving_user?.username === myUsername &&
+              req.requesting_user?.username
+            ) {
+              userStatus.set(req.requesting_user.username, 0); // status 0 = pending
+            }
+          });
+        }
+      } catch (err) {
+        console.warn("No se pudieron obtener solicitudes pendientes:", err);
+      }
+
+      const mapped: ViajeroData[] = users
+        .map((u: any, idx: number) => ({
+          id: u.id ?? idx,
+          nombre_completo: u.nombre_completo || u.nombre || u.username,
+          username: u.username,
+          foto_url: u.foto_url || null,
+          amigos_en_comun: u.amigos_en_comun || 0,
+          ciudad: u.ciudad,
+          status: userStatus.get(u.username) ?? 1, // 1 = unknown/can add
+        }))
+        .filter((v) => v.username !== myUsername); // No mostrar al usuario mismo
+
+      setViajeros(mapped);
+    } catch (error) {
+      console.error(error);
+      setViajeros([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  return (
-    <Card className="overflow-hidden transition-all hover:shadow-md">
-      <CardContent className="p-4">
-        <div className="flex gap-3">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={request.avatar} alt={request.name} />
-            <AvatarFallback>{getInitials(request.name)}</AvatarFallback>
-          </Avatar>
+  // Debounce para búsqueda
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (searchTerm) handleSearch(searchTerm);
+      else {
+        setViajeros([]);
+        setHasSearched(false);
+      }
+    }, 500);
+    return () => clearTimeout(timeout);
+  }, [searchTerm]);
 
-          <div className="flex-1 space-y-1">
-            <div className="flex justify-between">
-              <h4 className="font-medium text-sm">{request.name}</h4>
-              {request.dateLabel && (
-                <span className="text-[10px] text-muted-foreground">
-                  {request.dateLabel}
-                </span>
+  // Cargar sugerencias desde el backend
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await api.getFriendSuggestions();
+        const list = Array.isArray(res?.data) ? res.data : [];
+        if (!mounted) return;
+        setSugerenciasApi(list);
+      } catch (err) {
+        console.warn("No se pudieron cargar sugerencias:", err);
+        if (!mounted) return;
+        setSugerenciasApi([]);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  return (
+    <div className="flex min-h-screen flex-col bg-background">
+      {/* Header Simplificado Sticky */}
+      <header className="sticky top-0 z-20 border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
+        <div className="mx-auto flex h-16 max-w-3xl items-center gap-4 px-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            asChild
+            className="-ml-2 hover:bg-muted/50 rounded-full"
+          >
+            <Link href="/viajero/amigos">
+              <ArrowLeft className="h-5 w-5" />
+              <span className="sr-only">Volver</span>
+            </Link>
+          </Button>
+          <div className="flex-1">
+            <div className="relative group">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
+              <Input
+                type="search"
+                placeholder="Buscar viajeros por nombre o usuario..."
+                className="h-10 w-full bg-muted/50 pl-10 pr-4 border-transparent focus:border-primary/20 focus:bg-background focus:shadow-sm transition-all rounded-full"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                autoFocus
+              />
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 space-y-8">
+        {/* Sección de Resultados */}
+        <section>
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-3 animate-in fade-in">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm font-medium text-muted-foreground">
+                Buscando perfiles...
+              </p>
+            </div>
+          ) : hasSearched ? (
+            viajeros.length > 0 ? (
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex items-center justify-between px-1">
+                  <h2 className="text-sm font-bold text-foreground uppercase tracking-wider">
+                    Resultados
+                  </h2>
+                  <Badge
+                    variant="outline"
+                    className="h-5 px-2 text-[10px] font-medium"
+                  >
+                    {viajeros.length} encontrados
+                  </Badge>
+                </div>
+                <div className="space-y-3">
+                  {viajeros.map((viajero) => (
+                    <ViajeroCard
+                      key={viajero.id}
+                      data={viajero}
+                      onSent={(username) => {
+                        // Actualizar el array de viajeros para mantener estado 'Enviada' (status 0)
+                        setViajeros((prev) =>
+                          prev.map((v) =>
+                            v.username === username ? { ...v, status: 0 } : v
+                          )
+                        );
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <NoResultsState term={searchTerm} />
+            )
+          ) : (
+            <EmptySearchState />
+          )}
+        </section>
+
+        <Separator className="bg-border/60" />
+
+        {/* Sección de Sugerencias */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 px-1">
+            <div className="p-1.5 rounded-md bg-amber-500/10">
+              <Sparkles className="h-4 w-4 text-amber-500" />
+            </div>
+            <h2 className="text-base font-bold">Sugerencias para ti</h2>
+          </div>
+
+          <ScrollArea className="w-full whitespace-nowrap pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
+            <div className="flex gap-4 py-1">
+              {sugerenciasApi.length === 0 ? (
+                // MENSAJE CUANDO NO HAY SUGERENCIAS
+                <div className="flex w-full flex-col items-center justify-center py-6 text-center text-muted-foreground">
+                  <div className="mb-2 rounded-full bg-muted p-3">
+                    <Users className="h-6 w-6 opacity-50" />
+                  </div>
+                  <p className="text-sm font-medium">
+                    No tienes sugerencias aún
+                  </p>
+                  <p className="text-xs">
+                    Agrega amigos para conectar con más personas.
+                  </p>
+                </div>
+              ) : (
+                sugerenciasApi.map((s) => (
+                  <SugerenciaCard
+                    key={s.username}
+                    nombre={s.nombre_completo}
+                    username={s.username}
+                    foto_url={s.foto_url || undefined}
+                    status={
+                      pendingSugerencias.has(s.username)
+                        ? "Solicitud enviada"
+                        : "Agregar"
+                    }
+                    onConnect={async (u?: string) => {
+                      if (!u) return;
+                      try {
+                        await sendFriendRequest(u);
+                        toast.success("Solicitud enviada");
+                        setPendingSugerencias((prev) => new Set(prev).add(u));
+                      } catch (err) {
+                        console.error(
+                          "Error enviando solicitud desde sugerencias:",
+                          err
+                        );
+                        toast.error("No se pudo enviar la solicitud");
+                      }
+                    }}
+                  />
+                ))
               )}
             </div>
-            <p className="text-xs text-muted-foreground">@{request.username}</p>
-            {request.message && (
-              <div className="mt-2 rounded-md bg-muted p-2 text-xs italic text-muted-foreground">
-                &quot;{request.message}&quot;
-              </div>
-            )}
-          </div>
-        </div>
-      </CardContent>
-
-      <div className="grid grid-cols-2 gap-px bg-border border-t">
-        <Button
-          variant="ghost"
-          className="rounded-none bg-card hover:bg-primary/5 hover:text-primary h-10 text-xs font-medium disabled:opacity-50"
-          onClick={() => handleAction(FriendRequestState.FRIEND)}
-          disabled={loading}
-        >
-          {loading ? (
-            <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <UserCheck className="mr-2 h-3.5 w-3.5" />
-          )}
-          Aceptar
-        </Button>
-
-        <Button
-          variant="ghost"
-          className="rounded-none bg-card hover:bg-destructive/5 hover:text-destructive h-10 text-xs font-medium disabled:opacity-50"
-          onClick={() => handleAction(FriendRequestState.REJECTED)}
-          disabled={loading}
-        >
-          {loading ? (
-            <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <UserX className="mr-2 h-3.5 w-3.5" />
-          )}
-          Rechazar
-        </Button>
-      </div>
-    </Card>
-  );
-}
-
-function FriendSuggestionCard({
-  suggestion,
-}: {
-  suggestion: FriendSuggestion;
-}) {
-  return (
-    <Card className="flex flex-col justify-between transition-all hover:border-primary/40">
-      <CardContent className="p-4">
-        <div className="flex items-center gap-3 mb-3">
-          <Avatar className="h-12 w-12">
-            <AvatarImage src={suggestion.avatar} alt={suggestion.name} />
-            <AvatarFallback>{getInitials(suggestion.name)}</AvatarFallback>
-          </Avatar>
-          <div>
-            <h4 className="font-medium text-sm">{suggestion.name}</h4>
-            <p className="text-xs text-muted-foreground">
-              @{suggestion.username}
-            </p>
-            {suggestion.mutualCount > 0 && (
-              <p className="text-[10px] text-muted-foreground mt-0.5">
-                {suggestion.mutualCount} amigos en común
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-1.5 min-h-[24px]">
-          {suggestion.interests.slice(0, 3).map((tag) => (
-            <Badge
-              key={tag}
-              variant="secondary"
-              className="rounded-md px-1.5 py-0 text-[10px] font-normal"
-            >
-              {tag}
-            </Badge>
-          ))}
-          {suggestion.interests.length > 3 && (
-            <Badge
-              variant="outline"
-              className="rounded-md px-1.5 py-0 text-[10px] font-normal"
-            >
-              +{suggestion.interests.length - 3}
-            </Badge>
-          )}
-        </div>
-      </CardContent>
-      <div className="p-3 pt-0 mt-auto">
-        <Button className="w-full h-8 text-xs" variant="outline">
-          <UserPlus className="mr-2 h-3.5 w-3.5" />
-          Conectar
-        </Button>
-      </div>
-    </Card>
-  );
-}
-
-function EmptyState({
-  icon: Icon,
-  title,
-  description,
-  actionLabel,
-  actionHref,
-}: {
-  icon: any;
-  title: string;
-  description: string;
-  actionLabel?: string;
-  actionHref?: string;
-}) {
-  return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed bg-muted/20 p-8 text-center animate-in zoom-in-95 duration-300">
-      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
-        <Icon className="h-7 w-7 text-muted-foreground/50" />
-      </div>
-      <h3 className="mt-4 text-base font-semibold">{title}</h3>
-      <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-        {description}
-      </p>
-      {actionLabel && actionHref && (
-        <Button className="mt-6" size="sm" asChild>
-          <Link href={actionHref}>{actionLabel}</Link>
-        </Button>
-      )}
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
+        </section>
+      </main>
     </div>
   );
 }

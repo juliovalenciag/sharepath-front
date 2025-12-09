@@ -68,7 +68,7 @@ export const NotificationProvider = ({
       console.log("✅ Notificación formateada para UI:", notificacionFormateada);
       setNotifications((prev) => [notificacionFormateada, ...prev]);
 
-       const audio = new Audio('/notification.mp3');
+       const audio = new Audio('/audio/notification.mp3');
        audio.play().catch(e => console.log(e));
     };
 
