@@ -33,6 +33,10 @@ import {
   ListRecomen,
   Block,
   UnBlock,
+  CreateResenaRequest,
+  UpdateResenaRequest,
+  Resena,
+  PublicacionConResenas,
   CreateReportResponse,
   Reporte,
   ItinerarioData,
@@ -452,6 +456,14 @@ export class ItinerariosAPI implements ApiRoutes {
     return await this.get<Publicacion[]>("/publicacion/", true);
   }
 
+  async getPublicationWithResenas(publicacionId: number): Promise<PublicacionConResenas> {
+      return await this.get<PublicacionConResenas>(`/publicacion/${publicacionId}`, true);
+  }
+
+  async deletePublication(publicacionId: number): Promise<{ message: string }> {
+      return await this.delete<{ message: string }>(`/publicacion/${publicacionId}`);
+  }
+
   // ===== NOTIFICACIONES =====
   async markNotificationAsRead(
     notificationId: string | number
@@ -482,9 +494,28 @@ export class ItinerariosAPI implements ApiRoutes {
     return await this.get<Reporte>(`/reporte/${reportId}`, true);
   }
 
-  async deleteReport(reportId: number): Promise<void> {
-    await this.delete<{ message: string }>(`/reporte/${reportId}`);
+    async deleteReport(reportId: number): Promise<void> {
+        await this.delete<{ message: string }>(`/reporte/${reportId}`);
+    }
+
+  // ===== RESEÑAS =====
+
+  async createResena(publicacionId: number, body: CreateResenaRequest): Promise<Resena> {
+      return await this.post<Resena>(`/resena/publicacion/${publicacionId}`, true, body);
   }
+
+  async updateResena(resenaId: number, body: UpdateResenaRequest): Promise<Resena> {
+      return await this.put<Resena>(`/resena/${resenaId}`, true, body);
+  }
+
+  async deleteResena(resenaId: number): Promise<Resena> {
+      return await this.delete<Resena>(`/resena/${resenaId}`);
+  }
+
+  async getResenasByPublicacion(publicacionId: number): Promise<Resena[]> {
+      return await this.get<Resena[]>(`/resena/publicacion/${publicacionId}`, true);
+  }
+  
   async getOtherUserInfo(username: string): Promise<UserInfoResponse> {
     return await this.get<UserInfoResponse>(`/user/profile/${encodeURIComponent(username)}`, true);
   }
