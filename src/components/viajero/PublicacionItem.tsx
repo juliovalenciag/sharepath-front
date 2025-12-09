@@ -54,10 +54,10 @@ function RatingStars({
           type="button"
           onClick={() => interactive && onRate?.(star)}
           disabled={!interactive}
-          className="w-6 h-6 hover:scale-110 transition-transform cursor-pointer"
+          className="w-6 h-6 transition-transform cursor-pointer"
         >
           <Star
-            className={`${
+            className={`w-5 h-5 ${
               star <= rating
                 ? 'fill-current'
                 : 'fill-gray-200'
@@ -69,21 +69,32 @@ function RatingStars({
   );
 }
 
-export default function PublicacionItem({ publicacion }: PublicacionItemProps) {
-  console.log ("PublicacionItem renderizado con datos:", publicacion);
-  const [view, setView] = useState<'main' | 'rating' | 'comments'>('main');
-  const [userRating, setUserRating] = useState(0);
-  const [newComment, setNewComment] = useState("");
+// Interfaz para reseñas
+interface Resena {
+  id: number;
+  usuario: {
+    nombre: string;
+    fotoPerfil: string;
+  };
+  calificacion: number;
+  comentario?: string;
+}
 
-  // Datos de ejemplo para comentarios
-  const [comentarios, setComentarios] = useState([
+export default function PublicacionItem({ publicacion }: PublicacionItemProps) {
+  const [view, setView] = useState<'main' | 'resenas'>('main');
+  const [userRating, setUserRating] = useState(0);
+  const [userComment, setUserComment] = useState("");
+
+  // Datos de ejemplo para reseñas
+  const [resenas, setResenas] = useState<Resena[]>([
     {
       id: 1,
       usuario: {
         nombre: "María García",
         fotoPerfil: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100",
       },
-      texto: "Perfecta organización de tiempo",
+      calificacion: 5,
+      comentario: "Perfecta organización de tiempo, lo recomiendo mucho.",
     },
     {
       id: 2,
@@ -91,25 +102,56 @@ export default function PublicacionItem({ publicacion }: PublicacionItemProps) {
         nombre: "Carlos López",
         fotoPerfil: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100",
       },
-      texto: "Segui este itinerario al pie de la letra",
+      calificacion: 4,
+      comentario: "Segui este itinerario al pie de la letra y fue increíble.",
+    },
+    {
+      id: 3,
+      usuario: {
+        nombre: "Ana Martínez",
+        fotoPerfil: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+      },
+      calificacion: 5,
+      comentario: "Las fotos no le hacen justicia, es mucho mejor en persona.",
+    },
+    {
+      id: 4,
+      usuario: {
+        nombre: "Pedro Sánchez",
+        fotoPerfil: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100",
+      },
+      calificacion: 4,
+      comentario: "Excelente ruta, solo recomiendo llevar agua suficiente.",
+    },
+    {
+      id: 5,
+      usuario: {
+        nombre: "Laura Gómez",
+        fotoPerfil: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100",
+      },
+      calificacion: 5,
+      comentario: "Lo hice con mi familia y todos quedamos encantados.",
     },
   ]);
 
-  const handleAddComment = (e: React.FormEvent) => {
+  const handleSubmitResena = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim()) return;
     
-    const newCommentObj = {
-      id: comentarios.length + 1,
+    if (userRating === 0) return;
+    
+    const newResena: Resena = {
+      id: resenas.length + 1,
       usuario: {
         nombre: "Tú",
         fotoPerfil: "https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=100",
       },
-      texto: newComment,
+      calificacion: userRating,
+      comentario: userComment.trim() || undefined,
     };
 
-    setComentarios([...comentarios, newCommentObj]);
-    setNewComment("");
+    setResenas([newResena, ...resenas]);
+    setUserRating(0);
+    setUserComment("");
   };
 
   const handleVerDetalles = () => {
@@ -117,18 +159,18 @@ export default function PublicacionItem({ publicacion }: PublicacionItemProps) {
   };
 
   return (
-    <article className="rounded-xl shadow-lg mb-8 overflow-hidden border">
-      <div className="flex flex-col lg:flex-row">
+    <article className="rounded-xl shadow-lg mb-8 overflow-hidden border h-[500px]">
+      <div className="flex flex-col lg:flex-row h-full">
         {/* Columna izquierda - Carrusel */}
-        <div className="lg:w-3/4 relative group">
+        <div className="lg:w-3/5 relative group h-full">
           <Carousel
             opts={{ align: "start", loop: true }}
-            className="w-full"
+            className="w-full h-full"
           >
-            <CarouselContent>
+            <CarouselContent className="h-full">
               {publicacion.itinerario.map((foto, index) => (
-                <CarouselItem key={index}>
-                  <div className="aspect-square lg:aspect-[4/3]">
+                <CarouselItem key={index} className="h-full">
+                  <div className="h-full">
                     <img
                       src={foto.url}
                       alt={`Actividad ${index + 1}`}
@@ -139,160 +181,159 @@ export default function PublicacionItem({ publicacion }: PublicacionItemProps) {
               ))}
             </CarouselContent>
             
-            {/* Flechas solo visibles en hover */}
             <CarouselPrevious className="absolute left-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 h-10 w-10 rounded-full shadow-lg border" />
             <CarouselNext className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 h-10 w-10 rounded-full shadow-lg border" />
           </Carousel>
         </div>
 
         {/* Columna derecha - Contenido */}
-        <div className="lg:w-1/2 p-6 lg:p-8">
-          {/* Header con foto y nombre */}
-          <div className="flex items-center gap-3 mb-6">
-            <img
-              src={publicacion.usuario.fotoPerfil}
-              alt={publicacion.usuario.nombre}
-              className="w-12 h-12 rounded-full object-cover border"
-            />
-            <div>
-              <h3 className="font-bold">{publicacion.usuario.nombre}</h3>
-            </div>
-          </div>
-
-          {/* Contenido según la vista */}
+        <div className="lg:w-2/5 p-6 lg:p-8 h-full flex flex-col">
           {view === 'main' ? (
             <>
-              {/* Título */}
-              <h2 className="text-2xl font-bold mb-3">{publicacion.titulo}</h2>
-              
-              {/* Descripción */}
-              {publicacion.descripcion && (
-                <div className="mb-6">
-                  <p className="leading-relaxed">{publicacion.descripcion}</p>
+              {/* Header con foto y nombre */}
+              <div className="flex items-center gap-3 mb-4">
+                <img
+                  src={publicacion.usuario.fotoPerfil}
+                  alt={publicacion.usuario.nombre}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+                <div>
+                  <h3 className="font-semibold">{publicacion.usuario.nombre}</h3>
+                  <p>Viajero</p>
                 </div>
-              )}
-              
-              {/* Calificación del itinerario */}
-              <div className="flex items-center gap-3 mb-8">
-                <RatingStars rating={publicacion.calificacion} />
-                <span className="text-lg font-bold">
-                  {publicacion.calificacion.toFixed(1)}
-                </span>
+              </div>
+
+              {/* Título y descripción */}
+              <div className="flex-grow">
+                <h2 className="text-xl font-bold mb-3">
+                  {publicacion.titulo}
+                </h2>
+                
+                {publicacion.descripcion && (
+                  <div className="mb-6">
+                    <p className="leading-relaxed line-clamp-4">
+                      {publicacion.descripcion}
+                    </p>
+                  </div>
+                )}
+                
+                {/* Calificación promedio */}
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-1">
+                    <RatingStars rating={publicacion.calificacion} />
+                    <span className="font-bold">
+                      {publicacion.calificacion.toFixed(1)}
+                    </span>
+                    <span>
+                      • {resenas.length} reseñas
+                    </span>
+                  </div>
+                  <p>
+                    Calificación promedio
+                  </p>
+                </div>
               </div>
               
               {/* Botones */}
-              <div className="flex items-center gap-4 pt-6 border-t">
-                <button
-                  onClick={() => setView('rating')}
-                  className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg transition-colors"
+              <div className="flex items-center gap-4 pt-4 border-t">
+                <Button
+                  onClick={() => setView('resenas')}
+                  variant="outline"
+                  className="flex-1 flex items-center justify-center gap-2 py-3"
                 >
-                  <Star className="w-5 h-5" />
-                  <span>Calificar</span>
-                </button>
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Reseña</span>
+                </Button>
                 
-                <button
-                  onClick={() => setView('comments')}
-                  className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg transition-colors"
-                >
-                  <MessageCircle className="w-5 h-5" />
-                  <span>Comentar</span>
-                </button>
-                
-                <button
+                <Button
                   onClick={handleVerDetalles}
-                  className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 py-3"
                 >
-                  <ExternalLink className="w-5 h-5" />
+                  <ExternalLink className="w-4 h-4" />
                   <span>Ver detalles</span>
-                </button>
+                </Button>
               </div>
             </>
-          ) : view === 'rating' ? (
-            <div className="space-y-6">
-              <div className="flex items-center gap-2">
+          ) : (
+            /* Vista de reseñas */
+            <div className="flex flex-col h-full">
+              {/* Header de reseñas */}
+              <div className="flex items-center gap-2 mb-4">
                 <button
                   onClick={() => setView('main')}
                   className="p-1 hover:bg-gray-50 rounded-full transition-colors"
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
-                <h3 className="font-semibold">Calificar itinerario</h3>
+                <div>
+                  <h3 className="font-semibold">Reseñas</h3>
+                  <p>
+                    {resenas.length} reseñas • {publicacion.calificacion.toFixed(1)} promedio
+                  </p>
+                </div>
               </div>
-              
-              <div className="flex flex-col items-center justify-center py-8">
-                <RatingStars 
-                  rating={userRating} 
-                  onRate={setUserRating} 
-                  interactive 
+
+              {/* Formulario para nueva reseña - COMPACTO */}
+              <div className="mb-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <RatingStars 
+                    rating={userRating} 
+                    onRate={setUserRating} 
+                    interactive 
+                  />
+                  <Button 
+                    onClick={handleSubmitResena}
+                    disabled={userRating === 0}
+                    className="py-1 px-3 text-sm"
+                  >
+                    Publicar
+                  </Button>
+                </div>
+                <Input
+                  type="text"
+                  placeholder="Comentario (opcional)"
+                  value={userComment}
+                  onChange={(e) => setUserComment(e.target.value)}
+                  className="w-full text-sm py-1"
                 />
-                <p className="mt-4">
-                  {userRating === 0 
-                    ? "Selecciona las estrellas para calificar" 
-                    : `Tu calificación: ${userRating}.0`}
-                </p>
-                <Button 
-                  onClick={() => {
-                    console.log(`Calificación enviada: ${userRating}`);
-                    setView('main');
-                  }}
-                  disabled={userRating === 0}
-                  className="mt-6"
-                >
-                  Enviar calificación
-                </Button>
               </div>
-            </div>
-          ) : view === 'comments' ? (
-            <div className="space-y-6">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setView('main')}
-                  className="p-1 hover:bg-gray-50 rounded-full transition-colors"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <h3 className="font-semibold">Comentarios</h3>
-              </div>
-              
-              {/* Lista de comentarios */}
-              <div className="space-y-4 max-h-[300px] overflow-y-auto">
-                {comentarios.map((comentario) => (
-                  <div key={comentario.id} className="flex gap-3">
-                    <img
-                      src={comentario.usuario.fotoPerfil}
-                      alt={comentario.usuario.nombre}
-                      className="w-8 h-8 rounded-full flex-shrink-0"
-                    />
-                    <div>
-                      <div className="font-semibold text-sm">
-                        {comentario.usuario.nombre}
+
+              {/* Lista de reseñas con scroll */}
+              <div className="flex-grow overflow-y-auto pr-2">
+                {resenas.map((resena) => (
+                  <div key={resena.id} className="mb-3 pb-3 border-b last:border-b-0 last:mb-0 last:pb-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <img
+                        src={resena.usuario.fotoPerfil}
+                        alt={resena.usuario.nombre}
+                        className="w-8 h-8 rounded-full"
+                      />
+                      <div>
+                        <div className="font-medium text-sm">
+                          {resena.usuario.nombre}
+                        </div>
+                        <RatingStars rating={resena.calificacion} />
                       </div>
-                      <p className="text-sm">{comentario.texto}</p>
                     </div>
+                    {resena.comentario && (
+                      <p className="text-sm">
+                        {resena.comentario}
+                      </p>
+                    )}
                   </div>
                 ))}
+                
+                {resenas.length === 0 && (
+                  <div className="text-center py-8">
+                    <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-sm">
+                      Sé el primero en dejar una reseña
+                    </p>
+                  </div>
+                )}
               </div>
-              
-              {/* Formulario para nuevo comentario */}
-              <form onSubmit={handleAddComment} className="pt-4 border-t">
-                <div className="mb-3">
-                  <Input
-                    type="text"
-                    placeholder="Escribe tu comentario..."
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    className="w-full"
-                  />
-                </div>
-                <Button 
-                  type="submit"
-                  disabled={!newComment.trim()}
-                >
-                  Publicar comentario
-                </Button>
-              </form>
             </div>
-          ) : null}
+          )}
         </div>
       </div>
     </article>
