@@ -603,7 +603,7 @@ function FriendRequestCard({
             )}
           </div>
         </div>
-      </CardContent>
+      </CardContent> 
 
       <div className="grid grid-cols-2 gap-px bg-border border-t">
         <Button
