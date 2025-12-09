@@ -11,6 +11,11 @@ import {
   UserCheck,
   Loader2,
   MapPin,
+  MessageCircle,
+  Search,
+  Sparkles,
+  UserMinus,
+  Ban,
   ChevronRight,
 } from "lucide-react";
 
@@ -24,6 +29,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { getInitials } from "@/lib/utils";
+import { toast } from "sonner";
 
 // ===== Tipos =====
 
@@ -70,6 +76,21 @@ function ViajeroCard({
     setStatus(data.status);
   }, [data.status]);
 
+
+  const handleBlock = async (username: string) => {
+    toast.promise(api.block(username), {
+      loading: "Bloqueando usuario",
+      success: () => {
+        setFriends((prev) => prev.filter((f) => f.username !== username));
+        return `@${username} bloqueado`;
+      },
+      error: (err) => {
+        return "Error al bloquear usuario";
+      },
+    });
+  };
+
+  // --- FUNCIONES DE CARGA DE DATOS ---
   const handleAdd = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -122,7 +143,28 @@ function ViajeroCard({
                   @{data.username}
                 </Badge>
               </div>
-
+        <TabsContent
+          value="friends"
+          className="animate-in fade-in-50 slide-in-from-bottom-2"
+        >
+          {friends.length === 0 ? (
+            <EmptyState
+              icon={Users}
+              title="Tu lista de amigos está vacía"
+              description="¡Es hora de socializar! Busca viajeros con tus mismos intereses para empezar."
+              actionLabel="Buscar viajeros"
+              actionHref="/viajero/amigos/buscar-viajero"
+            />
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
+              {friends.map((friend) => (
+                <FriendCard
+                  key={friend.id}
+                  friend={friend}
+                  onDelete={handleDelete}
+                  onBlock={handleBlock}
+                />
+              ))}
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
                 {data.ciudad && (
                   <span className="flex items-center gap-1 shrink-0">
@@ -242,6 +284,30 @@ function SugerenciaCard({
   );
 }
 
+function FriendCard({
+  friend,
+  onDelete,
+  onBlock,
+}: {
+  friend: Friend;
+  onDelete: (correo: string) => void;
+  onBlock: (username: string) => void;
+}) {
+  const confirmBlock = () => {
+    toast(`¿Estás seguro de bloquear a @${friend.username}?`, {
+      description: "Ya no aparecera en tu lista de amigos",
+      action: {
+        label: "Bloquear",
+        onClick: () => onBlock(friend.username),
+      },
+      cancel: {
+        label: "Cancelar",
+        onClick: () => {},
+      },
+      actionButtonStyle: { backgroundColor: "var(--destructive)", color: "white" },
+    });
+  };
+
 function EmptySearchState() {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center animate-in fade-in zoom-in-95 duration-300">
@@ -259,6 +325,41 @@ function EmptySearchState() {
   );
 }
 
+        <div className="space-y-2 rounded-lg bg-muted/40 p-2.5 text-xs text-muted-foreground">
+          {(friend.city || friend.country) && (
+            <div className="flex items-center gap-2">
+              <MapPin className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">
+                {[friend.city, friend.country].filter(Boolean).join(", ")}
+              </span>
+            </div>
+          )}
+          {friend.mutualCount > 0 && (
+            <div className="flex items-center gap-2">
+              <Users className="h-3.5 w-3.5 shrink-0" />
+              <span>{friend.mutualCount} amigos en común</span>
+            </div>
+          )}
+        </div>
+      </CardContent>
+      <div className="grid grid-cols-2 border-t">
+        <Button
+          variant="ghost"
+          className="w-full rounded-none h-10 text-xs text-muted-foreground hover:bg-muted hover:text-foreground border-r"
+          onClick={() => onDelete(friend.correo)}
+        >
+          <UserMinus className="mr-2 h-3.5 w-3.5" />
+          Eliminar
+        </Button>
+
+        <Button
+          variant="ghost"
+          className="w-full rounded-none h-10 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+          onClick={confirmBlock}
+          >
+          <Ban className="mr-2 h-3.5 w-3.5" />
+          Bloquear
+        </Button>
 function NoResultsState({ term }: { term: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
