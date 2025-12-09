@@ -28,8 +28,8 @@ export function DaySelector({
     <div className="relative border-b bg-background/95 backdrop-blur-sm z-10 shadow-sm">
       
       {/* Máscaras de degradado para indicar scroll (Izquierda/Derecha) */}
-      <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-background to-transparent z-20 pointer-events-none" />
-      <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-background to-transparent z-20 pointer-events-none" />
+      <div className="absolute left-0 top-0 bottom-0 w-6  z-20 pointer-events-none" />
+      <div className="absolute right-0 top-0 bottom-0 w-6  z-20 pointer-events-none" />
 
       <ScrollArea className="w-full whitespace-nowrap">
         <div className="flex items-center p-3 gap-3">
@@ -48,7 +48,7 @@ export function DaySelector({
               >
                 {/* Indicador superior (solo visible si está activo) */}
                 {isSelected && (
-                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-8 h-1 bg-white/20 rounded-full" />
+                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-8 h-1 bg-white/20 rounded-full " />
                 )}
 
                 <span
@@ -62,7 +62,7 @@ export function DaySelector({
                 
                 <span className={cn(
                     "text-xs font-semibold leading-none flex items-center gap-1",
-                    isSelected ? "text-white" : ""
+                    isSelected ? "text-white dark:text-black" : ""
                 )}>
                    {day.subtitle}
                 </span>

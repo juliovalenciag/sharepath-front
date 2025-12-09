@@ -190,8 +190,20 @@ export function PlaceSearchDialog({
     return () => clearTimeout(timer);
   }, [query, activeState, activeCategory, minRating, open]);
 
+  function formatQueryForDatabase(text: string) {
+    if (!text) return undefined;
+    // Separa por espacios, pone mayúscula la primera letra de cada palabra
+    return text.toLowerCase().replace(/(?:^|\s)\S/g, function (a) {
+      return a.toUpperCase();
+    });
+  }
+
   async function handleSearch() {
     setLoading(true);
+
+    // Feedback visual rápido: si escribes algo nuevo, limpia la lista momentáneamente
+    if (query.length > 2) setResults([]);
+
     try {
       const api = ItinerariosAPI.getInstance();
 
@@ -199,47 +211,63 @@ export function PlaceSearchDialog({
       const categoryFilter =
         activeCategory !== "__all__" ? activeCategory : undefined;
 
+      // 1. Preparar texto (Mayúscula inicial para intentar coincidir con la BD)
+      const nombreParaBuscar = query.trim()
+        ? formatQueryForDatabase(query.trim())
+        : undefined;
+
+      // 2. Pedimos los datos (Traemos hasta 100 para tener margen de ordenamiento)
       const resp = await api.getLugares(
         1,
         100,
         stateFilter,
         categoryFilter,
-        query || undefined
+        nombreParaBuscar
       );
 
       let rawData = Array.isArray(resp) ? resp : (resp as any).lugares || [];
 
-      // Filtrado Cliente
-      if (query.trim()) {
+      // 3. Fallback: Si buscamos algo y la API trajo 0 (por culpa de las mayúsculas/acentos),
+      // hacemos una búsqueda genérica y filtramos en React.
+      if (query.trim() && rawData.length === 0) {
+        const respBackup = await api.getLugares(
+          1,
+          100,
+          stateFilter,
+          categoryFilter,
+          undefined
+        );
+        const backupData = Array.isArray(respBackup)
+          ? respBackup
+          : (respBackup as any).lugares || [];
+
         const q = query.toLowerCase();
-        rawData = rawData.filter(
+        rawData = backupData.filter(
           (l: LugarData) =>
             l.nombre?.toLowerCase().includes(q) ||
             l.category?.toLowerCase().includes(q)
         );
       }
 
-      if (meta?.regions) {
-        rawData = rawData.filter((l: LugarData) =>
-          meta.regions.includes(l.mexican_state as any)
-        );
-      }
-
-      if (minRating > 0) {
-        rawData = rawData.filter(
-          (l: LugarData) => (l.google_score || 0) >= minRating
-        );
-      }
-
+      // 4. ORDENAMIENTO DEFINITIVO (Reviews > Ranking)
+      // Este bloque se ejecuta SIEMPRE, haya búsqueda o no.
       rawData.sort((a: LugarData, b: LugarData) => {
-        const scoreA = (a.google_score || 0) + (a.total_reviews || 0) / 5000;
-        const scoreB = (b.google_score || 0) + (b.total_reviews || 0) / 5000;
-        return scoreB - scoreA;
+        const reviewsA = a.total_reviews || 0;
+        const reviewsB = b.total_reviews || 0;
+
+        // Criterio 1: Cantidad de Opiniones (Mayor a menor)
+        if (reviewsB !== reviewsA) {
+          return reviewsB - reviewsA;
+        }
+
+        // Criterio 2: Desempate por Calificación (si tienen las mismas reviews)
+        return (b.google_score || 0) - (a.google_score || 0);
       });
 
       setResults(rawData);
     } catch (e) {
       console.error(e);
+      toast.error("Error al cargar lugares");
     } finally {
       setLoading(false);
     }
@@ -311,7 +339,7 @@ export function PlaceSearchDialog({
         {/* HEADER */}
         <div className="flex shrink-0 items-center justify-between border-b border-border/60 bg-background/95 px-6 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 z-20 relative">
           <div className="flex flex-col gap-1">
-            <DialogTitle className="text-lg font-bold tracking-tight flex items-center gap-2">
+            <DialogTitle className="text-lg font-bold tracking-tight flex items-center gap-2 dark:text-white">
               <Search className="h-5 w-5 text-primary" />
               Explorar Lugares
             </DialogTitle>
@@ -328,7 +356,9 @@ export function PlaceSearchDialog({
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <span className="font-medium text-foreground">{currentDay?.label || "Sin día"}</span>
+                <span className="font-medium text-foreground">
+                  {currentDay?.label || "Sin día"}
+                </span>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -368,7 +398,7 @@ export function PlaceSearchDialog({
             )}
           >
             {/* FILTROS */}
-            <div className="p-4 space-y-4 bg-background border-b z-10 shadow-sm shrink-0">
+            <div className="p-4 space-y-4 bg-background border-b z-10 shadow-sm shrink-0 dark:text-white">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -603,7 +633,7 @@ export function PlaceSearchDialog({
                 </button>
 
                 {showDailyPreview && (
-                  <div className="px-4 pb-4 pt-1 bg-background animate-in slide-in-from-bottom-5">
+                  <div className="px-4 pb-4 pt-1 bg-background animate-in slide-in-from-bottom-5 dark:text-white">
                     <div className="max-h-[140px] overflow-y-auto pr-1 space-y-1.5 scrollbar-thin scrollbar-thumb-muted">
                       {currentDayActivities.length === 0 ? (
                         <p className="text-[11px] text-center py-4 text-muted-foreground/60 italic">
@@ -710,7 +740,7 @@ export function PlaceSearchDialog({
                             Calificación
                           </p>
                           <div className="flex items-end gap-2">
-                            <span className="text-3xl font-bold">
+                            <span className="text-3xl font-bold dark:text-white">
                               {selectedPlace.google_score?.toFixed(1) || "-"}
                             </span>
                             <div className="mb-1.5">
@@ -726,7 +756,7 @@ export function PlaceSearchDialog({
                             Opiniones
                           </p>
                           <div className="flex items-end gap-2">
-                            <span className="text-3xl font-bold">
+                            <span className="text-3xl font-bold dark:text-white">
                               {selectedPlace.total_reviews
                                 ? (selectedPlace.total_reviews / 1000).toFixed(
                                     1
@@ -744,8 +774,8 @@ export function PlaceSearchDialog({
 
                       {/* Info */}
                       <div className="space-y-3">
-                        <h3 className="font-bold text-lg flex items-center gap-2">
-                          <Info className="h-5 w-5 text-primary" /> Acerca del
+                        <h3 className="font-bold text-lg flex items-center gap-2 dark:text-white">
+                          <Info className="h-5 w-5 text-primary " /> Acerca del
                           lugar
                         </h3>
                         <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
@@ -772,7 +802,7 @@ export function PlaceSearchDialog({
                               <div
                                 key={s.id_api_place}
                                 onClick={() => setSelectedPlace(s)}
-                                className="flex gap-3 p-2 rounded-xl bg-card border hover:border-primary/40 hover:shadow-md cursor-pointer transition-all"
+                                className="flex gap-3 p-2 rounded-xl bg-card border hover:border-primary/40 hover:shadow-md cursor-pointer transition-all dark:text-white"
                               >
                                 <div className="h-16 w-16 rounded-lg bg-muted overflow-hidden relative shrink-0 border">
                                   <Image
@@ -820,7 +850,7 @@ export function PlaceSearchDialog({
                       <Button
                         variant="outline"
                         onClick={() => setSelectedPlace(null)}
-                        className="flex-1 md:flex-none"
+                        className="flex-1 md:flex-none dark:text-white"
                       >
                         Cerrar
                       </Button>
