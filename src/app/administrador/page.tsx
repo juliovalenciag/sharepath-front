@@ -27,7 +27,7 @@ export default function CRUDItinerariosPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const res = await fetch("https://harol-lovers.up.railway.app/admin/itinerarios", {
+        const res = await fetch("http://localhost:4000/admin/itinerarios", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -71,7 +71,7 @@ export default function CRUDItinerariosPage() {
   //  Actualizar estado del itinerario
 const actualizarEstado = async (id: number, nuevoEstado: string) => {
   try {
-    await fetch(`https://harol-lovers.up.railway.app/admin/itinerarios/${id}/estado`, {
+    await fetch(`http://localhost:4000/admin/itinerarios/${id}/estado`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -96,7 +96,7 @@ const eliminarItinerario = async (id: number) => {
   if (!confirm("¿Seguro que deseas eliminar este itinerario?")) return;
 
   try {
-    await fetch(`https://harol-lovers.up.railway.app/admin/itinerarios/${id}`, {
+    await fetch(`http://localhost:4000/admin/itinerarios/${id}`, {
       method: "DELETE",
       headers: {
         token: token || "",

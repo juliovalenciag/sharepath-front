@@ -35,12 +35,20 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     const token = localStorage.getItem("authToken");
 
     if(!token){
+      setUserID(null);
+      setIsConnected(false);
+      setUsername(null);
+      if(socket){
+        socket.disconnect();
+        setSocket(null);
+      }
       // console.log("recargarUsuario: No hay token, no se generara socket");
       return;
     }
     // console.log("Ya hay token, generando socket");
 
     if(storedUser) {
+      // console.log("hola desde stored user");
       const datosUsuario = JSON.parse(storedUser);
       setUserID(datosUsuario.correo);
       setUsername(datosUsuario.username);
@@ -57,30 +65,13 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const handleUserChange = () => {
-      const storedUser = localStorage.getItem("user");
-      if(!storedUser) return;
-
-      const datosUsuario = JSON.parse(storedUser);
-
-      if(datosUsuario.correo !== userID){
-        // console.log("Usuario cambio. Reiniciando socket...");
-
-        setIsConnected(false);
-        if(socket){
-          socket.disconnect();
-        }
-        setSocket(null);
-
-        localStorage.removeItem("sessionID");
-
-        recargarUsuario();
-      }
+      recargarUsuario();
     };
 
     window.addEventListener("storage", handleUserChange);
 
     return () => window.removeEventListener("storage", handleUserChange);
-  }, [socket, userID]);
+  }, []);
 
   /*Socket cuando cambia el userID*/
   useEffect(() => {
@@ -98,7 +89,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       }
       // console.log("Token encontrado. Generando Socket...");
 
-    const newSocket = io("https://harol-lovers.up.railway.app", {
+    const newSocket = io("http://localhost:4000", {
     //const newSocket = io("http://localhost:4000", {
       //withCredentials: true,
       path: "/socket.io/",
@@ -109,18 +100,20 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       },
     });
 
+    newSocket.connect();
+    setSocket(newSocket);
     // newSocket.auth = { 
     //     sessionID: sessionID,
     //     token: token 
     // };
 
-    newSocket.on("session", ({ sessionID, userID, username }) => {
-      //console.log(`Evento session - SocketContext: Sesión recibida. ID: ${userID}, Nombre: ${username}, Sesion ID: ${sessionID}`);
-      newSocket.auth = { sessionID, token }; 
-      localStorage.setItem("sessionID", sessionID);
-      setUserID(userID);
-      setUsername(username);//Guarda el username en el navegador y estado de react
-    });
+    // newSocket.on("session", ({ sessionID, userID, username }) => {
+    //   console.log(`Evento session - SocketContext: Sesión recibida. ID: ${userID}, Nombre: ${username}, Sesion ID: ${sessionID}`);
+    //   newSocket.auth = { sessionID, token }; 
+    //   localStorage.setItem("sessionID", sessionID);
+    //   setUserID(userID);
+    //   setUsername(username);//Guarda el username en el navegador y estado de react
+    // });
 
     newSocket.on("connect", () => {
       //console.log("SocketContext: Conectado al servidor");
