@@ -130,12 +130,6 @@ export default function FriendsPage() {
     });
   };
 
-  // Cargar solicitudes pendientes
-  useEffect(() => {
-    const fetchRequests = async () => {
-      try {
-        const token = localStorage.getItem("authToken");
-        if (!token) throw new Error("No hay sesión activa");
   // --- FUNCIONES DE CARGA DE DATOS ---
 
   const loadFriendsData = async () => {
