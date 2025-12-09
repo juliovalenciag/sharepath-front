@@ -70,6 +70,7 @@ function RatingStars({
 }
 
 export default function PublicacionItem({ publicacion }: PublicacionItemProps) {
+  console.log ("PublicacionItem renderizado con datos:", publicacion);
   const [view, setView] = useState<'main' | 'rating' | 'comments'>('main');
   const [userRating, setUserRating] = useState(0);
   const [newComment, setNewComment] = useState("");
