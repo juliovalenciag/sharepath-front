@@ -25,7 +25,7 @@ export default function SearchFilters({
 }: SearchFiltersProps) {
   const commonTags = [
     "restaurante", "museo", "parque", "historia", "gastronomía", 
-    "naturaleza", "cultura", "aventura", "playa", "arquitectura"
+    "naturaleza", "cultura", "aventura", "arquitectura"
   ];
 
   return (
