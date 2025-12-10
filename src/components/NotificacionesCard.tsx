@@ -144,7 +144,7 @@ export const NotificationCard = ({ notification }: { notification: any }) => {
         return `/viajero/perfil/${actor_username}`;
       case "FRIEND_ACCEPTED":
       case "FRIEND_REJECTED":
-        return `/viajero/amigos`;
+        return `/viajero/perfil/${actor_username}`;
       case "NEW_POST":
         return `/viajero/perfil/${actor_username}`;
       case "COMMENT":
