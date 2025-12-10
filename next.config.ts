@@ -11,7 +11,8 @@ const nextConfig: NextConfig = {
       "images.pexels.com",
       "upload.wikimedia.org",
       "www.museosdemexico.com",
-      "dynamic-media-cdn.tripadvisor.com"
+      "dynamic-media-cdn.tripadvisor.com",
+      "media.traveler.es"
     ],
     remotePatterns: [
       {

@@ -281,6 +281,7 @@ export class ItinerariosAPI implements ApiRoutes {
     if (category) query += `&category=${encodeURIComponent(category)}`;
     if (nombre) query += `&nombre=${encodeURIComponent(nombre)}`;
 
+    console.log("URL de la petición:", `${this.HOST}${query}`);
     return await this.get<LugaresListResponse>(query, true);
   }
 
@@ -289,7 +290,10 @@ export class ItinerariosAPI implements ApiRoutes {
   }
 
   async deleteLugar(id: string): Promise<{ message: string }> {
-    return await this.delete<{ message: string }>(`/lugar/${id}`);
+    console.log(`Enviando DELETE a: ${this.HOST}/lugar/${id}`);
+    const result = await this.delete<{ message: string }>(`/lugar/${id}`);
+    console.log("Resultado de deleteLugar:", result);
+    return result;
   }
 
   // ===== USUARIO =====
@@ -495,9 +499,9 @@ export class ItinerariosAPI implements ApiRoutes {
     return await this.get<Reporte>(`/reporte/${reportId}`, true);
   }
 
-    async deleteReport(reportId: number): Promise<void> {
-        await this.delete<{ message: string }>(`/reporte/${reportId}`);
-    }
+  async deleteReport(reportId: number): Promise<void> {
+    await this.delete<{ message: string }>(`/reporte/${reportId}`);
+  }
 
   // ===== RESEÑAS =====
 

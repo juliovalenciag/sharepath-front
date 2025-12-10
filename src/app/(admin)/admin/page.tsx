@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
 	Card,
 	CardContent,
@@ -30,6 +30,8 @@ import {
 	IconMapPin,
 	IconStar,
 	IconTrendingUp,
+	IconAlertTriangle,
+	IconRoute,
 } from "@tabler/icons-react";
 import {
 	Area,
@@ -40,6 +42,8 @@ import {
 	Tooltip,
 	ResponsiveContainer,
 } from "recharts";
+import { ItinerariosAPI } from "@/api/ItinerariosAPI";
+import type { DashboardStatsResponse, Reporte } from "@/api/interfaces/ApiRoutes";
 
 // Datos para la gráfica de usuarios por mes
 const usuariosPorMes2024 = [
@@ -72,57 +76,21 @@ const usuariosPorMes2025 = [
 	{ mes: "Dic", usuarios: 350 },
 ];
 
-// Datos de nuevos usuarios para la tabla
-const nuevosUsuarios = [
-	{
-		id: 1,
-		nombre: "María González",
-		email: "maria.gonzalez@email.com",
-		fechaRegistro: "2025-11-15",
-		estado: "Activo",
-		itinerarios: 3,
-		avatar: "https://i.pravatar.cc/150?img=1",
-	},
-	{
-		id: 2,
-		nombre: "Carlos Ramírez",
-		email: "carlos.ramirez@email.com",
-		fechaRegistro: "2025-11-14",
-		estado: "Activo",
-		itinerarios: 1,
-		avatar: "https://i.pravatar.cc/150?img=2",
-	},
-	{
-		id: 3,
-		nombre: "Ana López",
-		email: "ana.lopez@email.com",
-		fechaRegistro: "2025-11-13",
-		estado: "Activo",
-		itinerarios: 2,
-		avatar: "https://i.pravatar.cc/150?img=3",
-	},
-	{
-		id: 4,
-		nombre: "Juan Pérez",
-		email: "juan.perez@email.com",
-		fechaRegistro: "2025-11-12",
-		estado: "Pendiente",
-		itinerarios: 0,
-		avatar: "https://i.pravatar.cc/150?img=4",
-	},
-	{
-		id: 5,
-		nombre: "Laura Martínez",
-		email: "laura.martinez@email.com",
-		fechaRegistro: "2025-11-11",
-		estado: "Activo",
-		itinerarios: 4,
-		avatar: "https://i.pravatar.cc/150?img=5",
-	},
-];
+type LugarCard = {
+	id: number | string;
+	nombre: string;
+	visitas: number;
+	calificacion: number;
+	imagen: string;
+	descripcion: string;
+	categoria?: string;
+	estado?: string;
+	latitud?: number;
+	longitud?: number;
+};
 
-// Datos de destinos populares con imágenes
-const destinosPopulares = [
+// Fallback de destinos populares (se usa si la API falla)
+const destinosPopulares: LugarCard[] = [
 	{
 		id: 1,
 		nombre: "Teotihuacán",
@@ -131,6 +99,8 @@ const destinosPopulares = [
 		imagen:
 			"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ0eOqiCnR48ykeWdoQSvhnWdO6jTLEfmFnfQ&s",
 		descripcion: "Zona arqueológica con pirámides del Sol y la Luna",
+		categoria: "Arqueológico",
+		estado: "Estado de México",
 	},
 	{
 		id: 2,
@@ -140,6 +110,8 @@ const destinosPopulares = [
 		imagen:
 			"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTUB4eDXywgdKuPz6V6BEBIV2xp_9vjB-LYuQ&s",
 		descripcion: "Parque urbano más grande de América",
+		categoria: "Parque",
+		estado: "Ciudad de México",
 	},
 	{
 		id: 3,
@@ -149,6 +121,8 @@ const destinosPopulares = [
 		imagen:
 			"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS9_0FMj_pljb1LpjvUvlO6xymKT8itvIfwSg&s",
 		descripcion: "Patrimonio de la Humanidad UNESCO",
+		categoria: "Cultural",
+		estado: "Ciudad de México",
 	},
 	{
 		id: 4,
@@ -158,6 +132,8 @@ const destinosPopulares = [
 		imagen:
 			"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSIikF5Tbzn3zKiv7E5TpGAW4BNmZK7HK7YtA&s",
 		descripcion: "Canales tradicionales y trajineras",
+		categoria: "Natural",
+		estado: "Ciudad de México",
 	},
 ];
 
@@ -165,10 +141,79 @@ const destinosPopulares = [
 export default function DashboardAdmin() {
 	const [añoSeleccionado, setAñoSeleccionado] = useState("2025");
 	const [destinoSeleccionado, setDestinoSeleccionado] =
-		useState<null | (typeof destinosPopulares)[number]>(null);
+		useState<null | LugarCard>(null);
 	const [modalAbierto, setModalAbierto] = useState(false);
+	const [statsData, setStatsData] = useState<DashboardStatsResponse | null>(null);
+	const [reportes, setReportes] = useState<Reporte[]>([]);
+	const [reportesLoaded, setReportesLoaded] = useState(false);
+	const [lugares, setLugares] = useState<LugarCard[]>([]);
+	const [loading, setLoading] = useState(true);
 
-	function abrirModal(destino: (typeof destinosPopulares)[number]) {
+	const api = ItinerariosAPI.getInstance();
+
+	useEffect(() => {
+		const fetchData = async () => {
+			try {
+				setLoading(true);
+				
+				// Cargar estadísticas
+				const stats = await api.getAdminStats();
+				setStatsData(stats);
+			
+				// Cargar reportes
+				try {
+					const reportesData = await api.getReports();
+					setReportes(reportesData);
+					setReportesLoaded(true);
+				} catch (error) {
+					console.warn("No se pudieron cargar los reportes:", error);
+					setReportes([]);
+					setReportesLoaded(true);
+				}
+
+				// Cargar lugares recomendados de la API
+				try {
+					// Pedimos recomendaciones (limit 8) y luego tomamos los 4 mejores calificados
+					const recs = await api.getRecommendations({ limit: 8 });
+					const lugaresData = Array.isArray(recs) ? recs : [];
+
+					const lugaresOrdenados = [...lugaresData].sort((a: any, b: any) => {
+						const scoreA = parseFloat(a.google_score) || 0;
+						const scoreB = parseFloat(b.google_score) || 0;
+						return scoreB - scoreA;
+					});
+
+					const mejoresLugares = lugaresOrdenados.slice(0, 4);
+
+					const lugaresFormateados: LugarCard[] = mejoresLugares.map((lugar: any) => ({
+						id: lugar.id_api_place || Math.random(),
+						nombre: lugar.nombre,
+						visitas: lugar.total_reviews || 0,
+						calificacion: parseFloat(lugar.google_score) || 4.5,
+						imagen: lugar.foto_url,
+						descripcion: lugar.descripcion || lugar.category || "Destino turístico",
+						categoria: lugar.category,
+						estado: lugar.mexican_state,
+						latitud: lugar.latitud,
+						longitud: lugar.longitud,
+					}));
+
+					setLugares(lugaresFormateados);
+				} catch (error) {
+					console.warn("No se pudieron cargar recomendaciones; se usarán lugares populares por defecto:", error);
+					setLugares(destinosPopulares);
+				}
+			} catch (error) {
+				console.error("Error al cargar datos del dashboard:", error);
+			} finally {
+				setLoading(false);
+			}
+		};
+
+		fetchData();
+	}, []);
+
+	function abrirModal(destino: LugarCard) {
 		setDestinoSeleccionado(destino);
 		setModalAbierto(true);
 	}
@@ -180,13 +225,13 @@ export default function DashboardAdmin() {
 	const datosGrafica =
 		añoSeleccionado === "2024" ? usuariosPorMes2024 : usuariosPorMes2025;
 
-	// Calcular estadísticas
-	const totalUsuarios = datosGrafica.reduce(
+	
+	const totalUsuarios = statsData?.usuarios.total ?? datosGrafica.reduce(
 		(acc, mes) => acc + mes.usuarios,
 		0
 	);
 	const promedioUsuarios = Math.round(totalUsuarios / datosGrafica.length);
-	const crecimiento =
+	const crecimiento = statsData?.usuarios.crecimiento ?? (
 		datosGrafica.length > 1
 			? Math.round(
 					((
@@ -195,7 +240,21 @@ export default function DashboardAdmin() {
 					) / datosGrafica[0].usuarios) *
 						100
 			  )
-			: 0;
+			: 0
+	);
+
+	if (loading) {
+		return (
+			<div className="container mx-auto py-6 px-4">
+				<div className="flex items-center justify-center min-h-[400px]">
+					<div className="text-center space-y-3">
+						<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+						<p className="text-muted-foreground">Cargando datos del dashboard...</p>
+					</div>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="container mx-auto py-6 px-4 space-y-6">
@@ -204,6 +263,11 @@ export default function DashboardAdmin() {
 				<h1 className="text-3xl font-bold">Dashboard Administrador</h1>
 				<p className="text-muted-foreground">
 					Bienvenido al panel de administración
+					{statsData?.timestamp && (
+						<span className="ml-2 text-xs">
+							(Última actualización: {new Date(statsData.timestamp).toLocaleString("es-MX")})
+						</span>
+					)}
 				</p>
 			</div>
 
@@ -217,9 +281,11 @@ export default function DashboardAdmin() {
 						<IconUsers className="h-4 w-4 text-muted-foreground" />
 					</CardHeader>
 					<CardContent>
-						<div className="text-2xl font-bold">{totalUsuarios}</div>
+						<div className="text-2xl font-bold">
+							{statsData?.usuarios.total ?? 0}
+						</div>
 						<p className="text-xs text-muted-foreground">
-							En {añoSeleccionado}
+							Usuarios registrados
 						</p>
 					</CardContent>
 				</Card>
@@ -227,14 +293,16 @@ export default function DashboardAdmin() {
 				<Card>
 					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 						<CardTitle className="text-sm font-medium">
-							Promedio Mensual
+							Total Itinerarios
 						</CardTitle>
-						<IconTrendingUp className="h-4 w-4 text-muted-foreground" />
+						<IconRoute className="h-4 w-4 text-muted-foreground" />
 					</CardHeader>
 					<CardContent>
-						<div className="text-2xl font-bold">{promedioUsuarios}</div>
+						<div className="text-2xl font-bold">
+							{statsData?.metricasGenerales.totalItinerarios ?? 0}
+						</div>
 						<p className="text-xs text-muted-foreground">
-							Usuarios/mes
+							Itinerarios creados
 						</p>
 					</CardContent>
 				</Card>
@@ -245,7 +313,9 @@ export default function DashboardAdmin() {
 						<IconTrendingUp className="h-4 w-4 text-muted-foreground" />
 					</CardHeader>
 					<CardContent>
-						<div className="text-2xl font-bold">+{crecimiento}%</div>
+						<div className="text-2xl font-bold">
+							{statsData?.usuarios.crecimiento ?? "0%"}
+						</div>
 						<p className="text-xs text-muted-foreground">Este año</p>
 					</CardContent>
 				</Card>
@@ -253,22 +323,45 @@ export default function DashboardAdmin() {
 				<Card>
 					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 						<CardTitle className="text-sm font-medium">
-							Destinos Activos
+							Lugares Registrados
 						</CardTitle>
 						<IconMapPin className="h-4 w-4 text-muted-foreground" />
 					</CardHeader>
 					<CardContent>
 						<div className="text-2xl font-bold">
-							{destinosPopulares.length}
+							{statsData?.metricasGenerales.totalLugares ?? 0}
 						</div>
 						<p className="text-xs text-muted-foreground">
-							Lugares registrados
+							Destinos disponibles
 						</p>
 					</CardContent>
 				</Card>
 			</div>
 
-			{/* Gráfica de nuevos usuarios */}
+			{/* Nueva tarjeta de reportes pendientes */}
+			<Card className="border-orange-200 dark:border-orange-900">
+				<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+					<div>
+						<CardTitle className="text-lg font-medium">
+							Reportes Pendientes
+						</CardTitle>
+						<CardDescription>
+							Reportes que requieren atención
+						</CardDescription>
+					</div>
+					<IconAlertTriangle className="h-5 w-5 text-orange-500" />
+				</CardHeader>
+				<CardContent>
+					<div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+						{statsData?.metricasGenerales.reportesPendientes ?? 0}
+					</div>
+					<p className="text-xs text-muted-foreground mt-1">
+						{reportesLoaded
+							? `${reportes.length || statsData?.metricasGenerales.reportesPendientes || 0} reportes en total`
+							: "Cargando reportes..."}
+					</p>
+				</CardContent>
+			</Card>			{/* Gráfica de nuevos usuarios */}
 			<Card>
 				<CardHeader>
 					<div className="flex items-center justify-between">
@@ -324,68 +417,76 @@ export default function DashboardAdmin() {
 				</CardContent>
 			</Card>
 
-			{/* Tabla de nuevos usuarios */}
-			<Card>
-				<CardHeader>
-					<CardTitle>Usuarios Recientes</CardTitle>
-					<CardDescription>
-						Últimos usuarios registrados en la plataforma
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>Usuario</TableHead>
-								<TableHead>Email</TableHead>
-								<TableHead>Fecha Registro</TableHead>
-								<TableHead>Estado</TableHead>
-								<TableHead className="text-right">
-									Itinerarios
-								</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{nuevosUsuarios.map((usuario) => (
-								<TableRow key={usuario.id}>
-									<TableCell className="font-medium">
-										<div className="flex items-center gap-3">
-											<img
-												src={usuario.avatar}
-												alt={usuario.nombre}
-												className="h-8 w-8 rounded-full object-cover"
-											/>
-											<span>{usuario.nombre}</span>
-										</div>
-									</TableCell>
-									<TableCell>{usuario.email}</TableCell>
-									<TableCell>{usuario.fechaRegistro}</TableCell>
-									<TableCell>
-										<Badge
-											variant={
-												usuario.estado === "Activo"
-													? "default"
-													: "secondary"
-											}
-										>
-											{usuario.estado}
-										</Badge>
-									</TableCell>
-									<TableCell className="text-right">
-										{usuario.itinerarios}
-									</TableCell>
+			{/* Tabla de reportes */}
+			{reportesLoaded && reportes.length > 0 && (
+				<Card>
+					<CardHeader>
+						<CardTitle>Reportes Recientes</CardTitle>
+						<CardDescription>
+							Últimos reportes de publicaciones en la plataforma
+						</CardDescription>
+					</CardHeader>
+					<CardContent>
+						<Table>
+							<TableHeader>
+								<TableRow>
+									<TableHead>ID</TableHead>
+									<TableHead>Usuario</TableHead>
+									<TableHead>Descripción</TableHead>
+									<TableHead>Historial</TableHead>
+									<TableHead className="text-right">
+										Acciones
+									</TableHead>
 								</TableRow>
-							))}
-						</TableBody>
-					</Table>
-				</CardContent>
-			</Card>
+							</TableHeader>
+							<TableBody>
+								{reportes.slice(0, 5).map((reporte) => (
+									<TableRow key={reporte.id}>
+										<TableCell className="font-medium">
+											#{reporte.id}
+										</TableCell>
+										<TableCell>
+											<div className="flex flex-col">
+												<span className="font-medium">
+													{reporte.usuario_emitente.username}
+												</span>
+												<span className="text-xs text-muted-foreground">
+													{reporte.usuario_emitente.correo}
+												</span>
+											</div>
+										</TableCell>
+										<TableCell className="max-w-xs truncate">
+											{reporte.description}
+										</TableCell>
+										<TableCell>
+											<Badge variant="secondary">
+												{reporte.historial.length} accion(es)
+											</Badge>
+										</TableCell>
+										<TableCell className="text-right">
+											<Button
+												variant="outline"
+												size="sm"
+												onClick={() => {
+													console.log("Ver reporte:", reporte.id);
+												}}
+											>
+												Ver Detalle
+											</Button>
+										</TableCell>
+									</TableRow>
+								))}
+							</TableBody>
+						</Table>
+					</CardContent>
+				</Card>
+			)}
 
 			{/* Tarjetas de destinos populares con imágenes */}
 			<div>
 				<h2 className="text-2xl font-bold mb-4">Destinos Populares</h2>
 				<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-					{destinosPopulares.map((destino) => (
+					{(lugares.length > 0 ? lugares : destinosPopulares).map((destino) => (
 						<Card
 							key={destino.id}
 							className="overflow-hidden cursor-pointer"
@@ -396,6 +497,9 @@ export default function DashboardAdmin() {
 									src={destino.imagen}
 									alt={destino.nombre}
 									className="w-full h-full object-cover"
+									onError={(e) => {
+										(e.target as HTMLImageElement).src = "https://via.placeholder.com/400x225?text=Destino";
+									}}
 								/>
 							</div>
 							<CardHeader>
@@ -461,19 +565,19 @@ export default function DashboardAdmin() {
 								{destinoSeleccionado.descripcion}
 							</p>
 
-							{/* Datos adicionales simulados: ubicación y categoría */}
+							{/* Datos adicionales reales: ubicación y categoría */}
 							<div className="grid grid-cols-2 gap-3 text-sm">
 								<div className="rounded-lg border p-3">
-									<p className="text-xs text-muted-foreground">
-										Ubicación
+									<p className="text-xs text-muted-foreground">Ubicación</p>
+									<p className="font-medium">
+										{destinoSeleccionado.estado ?? "Ubicación no disponible"}
 									</p>
-									<p className="font-medium">México</p>
 								</div>
 								<div className="rounded-lg border p-3">
-									<p className="text-xs text-muted-foreground">
-										Categoría
+									<p className="text-xs text-muted-foreground">Categoría</p>
+									<p className="font-medium">
+										{destinoSeleccionado.categoria ?? "Sin categoría"}
 									</p>
-									<p className="font-medium">Destino Turístico</p>
 								</div>
 							</div>
 
@@ -495,3 +599,4 @@ export default function DashboardAdmin() {
 		</div>
 	);
 }
+
