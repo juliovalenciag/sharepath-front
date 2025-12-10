@@ -28,10 +28,11 @@ export default function ViajeroLanding() {
       titulo: pub.itinerario.title,
       calificacion: 4.4, // Valor por defecto
       usuario: {
-        nombre: pub.user_shared?.nombre_completo || "Usuario",
+        nombre: pub.user_shared?.username || "Usuario",
         fotoPerfil: pub.user_shared?.foto_url || ""
       },
       descripcion: pub.descripcion,
+      itinerarioId : pub.itinerario.id,
       itinerario: pub.fotos.map((foto, index) => ({
         id: foto.id,
         url: foto.foto_url,

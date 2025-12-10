@@ -141,8 +141,10 @@ export const NotificationCard = ({ notification }: { notification: any }) => {
     const upperType = tipo?.toUpperCase();
     switch (upperType) {
       case "FRIEND_REQUEST":
+        return `/viajero/perfil/${actor_username}`;
       case "FRIEND_ACCEPTED":
       case "FRIEND_REJECTED":
+        return `/viajero/amigos`;
       case "NEW_POST":
         return `/viajero/perfil/${actor_username}`;
       case "COMMENT":
