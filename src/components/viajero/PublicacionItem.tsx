@@ -21,10 +21,12 @@ import {
   X,
   Check,
   Loader2,
+  Flag,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 import type { Publicacion } from "@/api/interfaces/ApiRoutes";
+import { ReportModal } from "./Reportar";
 
 // Tipos basados en tu interfaz
 export interface Resena {
@@ -113,6 +115,7 @@ export default function PublicacionItem({ publicacion }: PublicacionItemProps) {
   const [view, setView] = useState<'main' | 'resenas'>('main');
   const [userRating, setUserRating] = useState(0);
   const [userComment, setUserComment] = useState("");
+  const [reportModalOpen, setReportModalOpen] = useState(false);
   
   // Estados para reseñas reales
   const [resenas, setResenas] = useState<Resena[]>([]);
@@ -362,15 +365,27 @@ export default function PublicacionItem({ publicacion }: PublicacionItemProps) {
           {view === 'main' ? (
             <>
               {/* Header con foto y nombre */}
-              <div className="flex items-center gap-3 mb-4">
-                <img
-                  src={publicacion.usuario.fotoPerfil}
-                  alt={publicacion.usuario.nombre}
-                  className="w-10 h-10 rounded-full object-cover"
-                />
-                <div onClick={handleVerUsuario} className="cursor-pointer hover:underline">
-                  <h3 className="font-semibold">{publicacion.usuario.nombre}</h3>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <img
+                    src={publicacion.usuario.fotoPerfil}
+                    alt={publicacion.usuario.nombre}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                  <div onClick={handleVerUsuario} className="cursor-pointer hover:underline">
+                    <h3 className="font-semibold">{publicacion.usuario.nombre}</h3>
+                  </div>
                 </div>
+                {/* Boton de reportar */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-gray-400 hover:text-red-500 hover:bg-red-50 h-8 w-8"
+                  title="Reportar publicación"
+                  onClick={() => setReportModalOpen(true)}
+                  >
+                    <Flag className="w-4 h-4" />
+                </Button>
               </div>
 
               {/* Título y descripción */}
@@ -630,6 +645,11 @@ export default function PublicacionItem({ publicacion }: PublicacionItemProps) {
           )}
         </div>
       </div>
+      <ReportModal
+        open={reportModalOpen}
+        onClose={setReportModalOpen}
+        publicationId={publicacion.id}
+      />
     </article>
   );
 }
