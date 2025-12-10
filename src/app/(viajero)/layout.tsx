@@ -87,7 +87,7 @@ export default async function Layout({
                 orientation="vertical"
                 className="mx-2 data-[orientation=vertical]:h-4"
               />
-              <SearchDialog />
+              {/* <SearchDialog /> */}
             </div>
             <div className="flex items-center gap-2">
               <LayoutControls {...layoutPreferences} /> 

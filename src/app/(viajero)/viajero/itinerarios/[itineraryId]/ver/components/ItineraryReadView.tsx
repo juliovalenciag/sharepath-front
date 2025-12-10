@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 
 // --- IMPORTACIÓN DINÁMICA DEL MAPA ---
 const ItineraryViewMap = dynamic(() => import("./ItineraryViewMap"), {
@@ -80,15 +81,9 @@ export default function ItineraryReadView({ id }: { id: string }) {
   // Fetch de Datos
   useEffect(() => {
     async function fetchData() {
+      const api = ItinerariosAPI.getInstance();
       try {
-        const res = await fetch(
-          `https://harol-lovers.up.railway.app/itinerario/${id}`,
-          //`http://localhost:4000/itinerario/${id}`,
-          {
-            headers: { token: localStorage.getItem("authToken") || "" },
-          }
-        );
-        const data = await res.json();
+        const data = await api.getItinerarioById(id);
 
         const actividades = (data.actividades || []).sort(
           (a: any, b: any) =>

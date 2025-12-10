@@ -6,12 +6,14 @@ import SearchFilters from "@/components/viajero/SearchFilters";
 import { Button } from "@/components/ui/button";
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 import type { Publicacion } from "@/api/interfaces/ApiRoutes";
+import { Loader2, AlertCircle, MapPin, X } from "lucide-react"; // Importamos iconos de lucide-react
 
 const btn = {
   primary:
-    "inline-flex items-center justify-center h-11 px-6 rounded-lg bg-primary text-white hover:bg-blue-700 transition-all duration-200 font-medium",
+    "inline-flex items-center justify-center h-10 px-6 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 font-medium shadow-sm",
   ghost:
-    "inline-flex items-center justify-center h-11 px-6 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition-all duration-200 font-medium"
+    "inline-flex items-center justify-center h-10 px-6 rounded-full border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-all duration-200 font-medium shadow-sm",
+  link: "text-sm text-primary hover:underline font-medium p-0 h-auto",
 };
 
 export default function ViajeroLanding() {
@@ -26,17 +28,23 @@ export default function ViajeroLanding() {
     return {
       id: pub.id,
       titulo: pub.itinerario.title,
-      calificacion: 4.4, // Valor por defecto
+      calificacion: 4.4, // Valor por defecto, podrías calcularlo si tienes datos
       usuario: {
         nombre: pub.user_shared?.username || "Usuario",
-        fotoPerfil: pub.user_shared?.foto_url || ""
+        fotoPerfil: pub.user_shared?.foto_url || "",
       },
       descripcion: pub.descripcion,
-      itinerarioId : pub.itinerario.id,
-      itinerario: pub.fotos.map((foto, index) => ({
+      itinerarioId: pub.itinerario.id,
+      // Aseguramos que itinerario tenga la estructura correcta para PublicacionItem
+      // Si PublicacionItem espera fotos en 'itinerario', mantenemos esto.
+      // Si espera otra estructura, ajusta aquí.
+      itinerario: pub.fotos ? pub.fotos.map((foto) => ({
         id: foto.id,
         url: foto.foto_url,
-      }))
+      })) : [],
+      // Añadimos datos útiles para el diseño si están disponibles en 'pub'
+      fecha: new Date().toLocaleDateString(), // Ejemplo
+      ubicacion: "CDMX", // Ejemplo, idealmente vendría del backend
     };
   };
 
@@ -48,7 +56,7 @@ export default function ViajeroLanding() {
         setError(null);
         const api = ItinerariosAPI.getInstance();
         const data = await api.getMyPublications();
-        console.log ("Publicaciones obtenidas del API:", data);
+        console.log("Publicaciones obtenidas del API:", data);
         if (data && Array.isArray(data)) {
           const publicacionesTransformadas = data.map(transformarPublicacion);
           setPublicaciones(publicacionesTransformadas);
@@ -57,8 +65,7 @@ export default function ViajeroLanding() {
         }
       } catch (err) {
         console.error("Error cargando publicaciones:", err);
-        setError("No se pudieron cargar las publicaciones");
-        setPublicaciones([]);
+        setError("No se pudieron cargar las publicaciones. Por favor, intenta de nuevo más tarde.");
       } finally {
         setCargando(false);
       }
@@ -82,105 +89,120 @@ export default function ViajeroLanding() {
       (publicacion.descripcion?.toLowerCase().includes(query.toLowerCase()) || false);
 
     const coincideEstado =
-      estadoSeleccionado === "todos" ||
-      estadoSeleccionado === "CDMX"; // Por ahora todos son de CDMX
+      estadoSeleccionado === "todos" || estadoSeleccionado === "CDMX"; // Por ahora todos son de CDMX
 
     return coincideTexto && coincideEstado;
   });
 
   const resultadosCount = publicacionesFiltradas.length;
+  const hayFiltrosActivos = query !== "" || estadoSeleccionado !== "todos";
 
   if (cargando) {
     return (
-      <div className="min-h-[calc(100dvh-64px)] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-gray-600">Cargando publicaciones...</p>
-        </div>
+      <div className="min-h-[calc(100dvh-64px)] flex flex-col items-center justify-center bg-background">
+        <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground animate-pulse">Cargando experiencias...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-[calc(100dvh-64px)] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
+      <div className="min-h-[calc(100dvh-64px)] flex items-center justify-center bg-background px-4">
+        <div className="text-center max-w-md">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-destructive/10 flex items-center justify-center">
+            <AlertCircle className="h-8 w-8 text-destructive" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900">Error al cargar</h3>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <h3 className="text-xl font-semibold text-foreground mb-2">Error al cargar</h3>
+          <p className="text-muted-foreground mb-6">{error}</p>
+          <Button onClick={() => window.location.reload()} className={btn.primary}>
+            Intentar de nuevo
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-[calc(100dvh-64px)]">
-      <section className="max-w-7xl mx-auto px-4 md:px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-8">
-            <h2 className="text-2xl md:text-3xl font-bold mb-2">
-              Descubre
-            </h2>
-            <p>
-              Descubre los itinerarios compartidos por viajeros y viajeras como tú.
+    <div className="min-h-[calc(100dvh-64px)] bg-background text-foreground transition-colors duration-300">
+      {/* Hero Section / Header */}
+      <section className="bg-muted/30 border-b border-border py-12 md:py-16">
+        <div className="max-w-7xl mx-auto px-4 md:px-6">
+          <div className="max-w-3xl">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight mb-4">
+              Descubre nuevas <span className="text-primary">aventuras</span>
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">
+              Explora itinerarios únicos creados por viajeros apasionados. Encuentra inspiración para tu próximo viaje y comparte tus propias experiencias.
             </p>
           </div>
-          
-          <SearchFilters 
+        </div>
+      </section>
+
+      {/* Main Content */}
+      <section className="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-12">
+        
+        {/* Filters & Search */}
+        <div className="mb-10 space-y-6">
+          <SearchFilters
             query={query}
             estadoSeleccionado={estadoSeleccionado}
             onQueryChange={handleSearchChange}
             onEstadoChange={handleEstadoChange}
           />
-
-          <div className="flex items-center justify-between mb-6">
-            <p className="text-sm text-gray-600">
-              {resultadosCount} {resultadosCount === 1 ? 'itinerario encontrado' : 'itinerarios encontrados'}
-            </p>
-            {query || estadoSeleccionado !== 'todos' ? (
-              <button
+          
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border pb-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-foreground">
+                {resultadosCount}
+              </span>
+              <span className="text-sm text-muted-foreground">
+                {resultadosCount === 1 ? "itinerario encontrado" : "itinerarios encontrados"}
+              </span>
+            </div>
+            
+            {hayFiltrosActivos && (
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => {
-                  setQuery('');
-                  setEstadoSeleccionado('todos');
+                  setQuery("");
+                  setEstadoSeleccionado("todos");
                 }}
-                className="text-sm text-primary hover:text-secondary font-medium"
+                className="text-muted-foreground hover:text-foreground h-auto px-2 py-1"
               >
+                <X className="mr-2 h-3 w-3" />
                 Limpiar filtros
-              </button>
-            ) : null}
+              </Button>
+            )}
           </div>
+        </div>
 
-          <div className="grid gap-8">
-            {resultadosCount > 0 ? (
-              publicacionesFiltradas.map((p) => (
-                <PublicacionItem 
-                  key={p.id} 
-                  publicacion={p}
-                />
-              ))
-            ) : (
-              <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+        {/* Results Grid */}
+        <div className="grid gap-6 md:gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
+          {resultadosCount > 0 ? (
+            publicacionesFiltradas.map((p) => (
+              <PublicacionItem key={p.id} publicacion={p} />
+            ))
+          ) : (
+            <div className="col-span-full py-16 text-center">
+              <div className="max-w-md mx-auto bg-card rounded-2xl border border-border p-8 shadow-sm">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+                  <MapPin className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">No se encontraron itinerarios</h3>
-                <p className="text-gray-600 mb-4 max-w-md mx-auto">
-                  {query || estadoSeleccionado !== 'todos' 
-                    ? "Intenta ajustar tus filtros de búsqueda para ver más resultados."
-                    : "No hay publicaciones disponibles en este momento."
-                  }
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  No se encontraron resultados
+                </h3>
+                <p className="text-muted-foreground mb-6">
+                  {hayFiltrosActivos
+                    ? "Intenta ajustar tus términos de búsqueda o filtros para encontrar lo que buscas."
+                    : "Aún no hay publicaciones disponibles. ¡Sé el primero en compartir tu viaje!"}
                 </p>
-                {(query || estadoSeleccionado !== 'todos') && (
-                  <Button 
+                {hayFiltrosActivos && (
+                  <Button
                     onClick={() => {
-                      setQuery('');
-                      setEstadoSeleccionado('todos');
+                      setQuery("");
+                      setEstadoSeleccionado("todos");
                     }}
                     className={btn.primary}
                   >
@@ -188,8 +210,8 @@ export default function ViajeroLanding() {
                   </Button>
                 )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </section>
     </div>

@@ -29,12 +29,12 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     //console.log("Iniciando configuracion de SocketConext...");
-    
+
     const sessionID = localStorage.getItem("sessionID");
     const token = localStorage.getItem("authToken");
 
-    if (!token) { 
-      console.log('No se encontró token');
+    if (!token) {
+      console.log("No se encontró token");
       return;
     }
 
@@ -45,21 +45,21 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       autoConnect: false,
       auth: {
         sessionID: sessionID,
-        token: token
+        token: token,
       },
     });
 
-    // newSocket.auth = { 
+    // newSocket.auth = {
     //     sessionID: sessionID,
-    //     token: token 
+    //     token: token
     // };
 
     newSocket.on("session", ({ sessionID, userID, username }) => {
       //console.log(`Evento session - SocketContext: Sesión recibida. ID: ${userID}, Nombre: ${username}, Sesion ID: ${sessionID}`);
-      newSocket.auth = { sessionID, token }; 
+      newSocket.auth = { sessionID, token };
       localStorage.setItem("sessionID", sessionID);
       setUserID(userID);
-      setUsername(username);//Guarda el username en el navegador y estado de react
+      setUsername(username); //Guarda el username en el navegador y estado de react
     });
 
     newSocket.on("connect", () => {
@@ -76,12 +76,14 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       console.error(`SocketContext: Error de conexion ${err.message}`);
 
       //Si el servidor rechaza el token o el sessionID, se borran para evitar bucles, es decir, se borra sessionID y se asigna una nueva.
-      if(err.message.includes("inválido") || err.message.includes("No se proporcionó"))
-      {
+      if (
+        err.message.includes("inválido") ||
+        err.message.includes("No se proporcionó")
+      ) {
         console.error("Credenciales inválidas, limpiando sessionID...");
         localStorage.remove("sessionID");
       }
-    })
+    });
 
     //console.log("Intentando conectar...");
     newSocket.connect();

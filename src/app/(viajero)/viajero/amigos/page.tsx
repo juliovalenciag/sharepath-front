@@ -88,43 +88,43 @@ export default function FriendsPage() {
       // USANDO LA API: respondFriendRequest
       await api.respondFriendRequest(id, state);
 
-      // Actualizar UI: Quitamos la solicitud de la lista
+      // Actualizar UI: Quitamos la solicitud de la lista visualmente
       setRequests((prev) => prev.filter((req) => Number(req.id) !== id));
 
       if (state === FriendRequestState.FRIEND) {
-        // Recargar amigos para ver al nuevo
+        toast.success("Solicitud aceptada");
+        // Recargar amigos para ver al nuevo integrante
         loadFriendsData();
+      } else {
+        toast.info("Solicitud rechazada");
       }
     } catch (error) {
       console.error(error);
-      alert("Hubo un error al procesar la solicitud");
+      toast.error("Hubo un error al procesar la solicitud");
     }
   };
 
   const handleDelete = async (correo: string) => {
     try {
       // USANDO LA API: deleteFriend
-      if ("deleteFriend" in api) {
-        await (api as any).deleteFriend(correo);
-      } else {
-        console.warn("Falta agregar deleteFriend a ItinerariosAPI");
-      }
+      await api.deleteFriend(correo);
 
       setFriends((prev) => prev.filter((f) => f.correo !== correo));
+      toast.success("Amigo eliminado");
     } catch (error) {
       console.error(error);
-      alert("No se pudo eliminar al amigo");
+      toast.error("No se pudo eliminar al amigo");
     }
   };
 
   const handleBlock = async (username: string) => {
     toast.promise(api.block(username), {
-      loading: "Bloqueando usuario",
+      loading: "Bloqueando usuario...",
       success: () => {
         setFriends((prev) => prev.filter((f) => f.username !== username));
-        return `@${username} bloqueado`;
+        return `@${username} ha sido bloqueado`;
       },
-      error: (err) => {
+      error: () => {
         return "Error al bloquear usuario";
       },
     });
@@ -478,7 +478,10 @@ function FriendCard({
         label: "Cancelar",
         onClick: () => {},
       },
-      actionButtonStyle: { backgroundColor: "var(--destructive)", color: "white" },
+      actionButtonStyle: {
+        backgroundColor: "var(--destructive)",
+        color: "white",
+      },
     });
   };
 
@@ -486,16 +489,22 @@ function FriendCard({
     <Card className="group flex flex-col justify-between overflow-hidden transition-all hover:border-primary/30 hover:shadow-md">
       <CardContent className="flex flex-col gap-4 p-4">
         <div className="flex items-start justify-between gap-2">
-          <div className="flex gap-3">
+          {/* === LINK AL PERFIL (Actualizado) === */}
+          <Link
+            href={`/viajero/perfil/${friend.username}`}
+            className="flex gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity"
+          >
             <Avatar className="h-12 w-12 border-2 border-background shadow-sm">
               <AvatarImage src={friend.avatar} alt={friend.name} />
               <AvatarFallback className="bg-primary/5 font-medium text-primary">
                 {getInitials(friend.name)}
               </AvatarFallback>
             </Avatar>
-            <div className="space-y-1">
-              <h4 className="font-semibold leading-none">{friend.name}</h4>
-              <p className="text-xs text-muted-foreground">
+            <div className="space-y-1 min-w-0">
+              <h4 className="font-semibold leading-none truncate">
+                {friend.name}
+              </h4>
+              <p className="text-xs text-muted-foreground truncate">
                 @{friend.username}
               </p>
               {friend.isOnline && (
@@ -510,12 +519,14 @@ function FriendCard({
                 </div>
               )}
             </div>
-          </div>
+          </Link>
+
+          {/* Botón de Chat */}
           <Link href={`/viajero/chats?username=${friend.username}`}>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0"
             >
               <MessageCircle className="h-4 w-4" />
             </Button>
@@ -553,7 +564,7 @@ function FriendCard({
           variant="ghost"
           className="w-full rounded-none h-10 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
           onClick={confirmBlock}
-          >
+        >
           <Ban className="mr-2 h-3.5 w-3.5" />
           Bloquear
         </Button>
@@ -580,29 +591,37 @@ function FriendRequestCard({
   return (
     <Card className="overflow-hidden transition-all hover:shadow-md">
       <CardContent className="p-4">
-        <div className="flex gap-3">
+        {/* === LINK AL PERFIL (Actualizado) === */}
+        <Link
+          href={`/viajero/perfil/${request.username}`}
+          className="flex gap-3 group hover:bg-muted/5 p-1 -m-1 rounded-md transition-colors"
+        >
           <Avatar className="h-10 w-10">
             <AvatarImage src={request.avatar} alt={request.name} />
             <AvatarFallback>{getInitials(request.name)}</AvatarFallback>
           </Avatar>
 
-          <div className="flex-1 space-y-1">
-            <div className="flex justify-between">
-              <h4 className="font-medium text-sm">{request.name}</h4>
+          <div className="flex-1 space-y-1 min-w-0">
+            <div className="flex justify-between items-start">
+              <h4 className="font-medium text-sm truncate pr-2 group-hover:text-primary transition-colors">
+                {request.name}
+              </h4>
               {request.dateLabel && (
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-[10px] text-muted-foreground shrink-0 whitespace-nowrap">
                   {request.dateLabel}
                 </span>
               )}
             </div>
-            <p className="text-xs text-muted-foreground">@{request.username}</p>
+            <p className="text-xs text-muted-foreground truncate">
+              @{request.username}
+            </p>
             {request.message && (
               <div className="mt-2 rounded-md bg-muted p-2 text-xs italic text-muted-foreground">
                 &quot;{request.message}&quot;
               </div>
             )}
           </div>
-        </div>
+        </Link>
       </CardContent>
 
       <div className="grid grid-cols-2 gap-px bg-border border-t">
@@ -646,14 +665,20 @@ function FriendSuggestionCard({
   return (
     <Card className="flex flex-col justify-between transition-all hover:border-primary/40">
       <CardContent className="p-4">
-        <div className="flex items-center gap-3 mb-3">
-          <Avatar className="h-12 w-12">
+        {/* === LINK AL PERFIL (Actualizado) === */}
+        <Link
+          href={`/viajero/perfil/${suggestion.username}`}
+          className="flex items-center gap-3 mb-3 group"
+        >
+          <Avatar className="h-12 w-12 group-hover:scale-105 transition-transform">
             <AvatarImage src={suggestion.avatar} alt={suggestion.name} />
             <AvatarFallback>{getInitials(suggestion.name)}</AvatarFallback>
           </Avatar>
-          <div>
-            <h4 className="font-medium text-sm">{suggestion.name}</h4>
-            <p className="text-xs text-muted-foreground">
+          <div className="min-w-0">
+            <h4 className="font-medium text-sm truncate group-hover:text-primary transition-colors">
+              {suggestion.name}
+            </h4>
+            <p className="text-xs text-muted-foreground truncate">
               @{suggestion.username}
             </p>
             {suggestion.mutualCount > 0 && (
@@ -662,7 +687,7 @@ function FriendSuggestionCard({
               </p>
             )}
           </div>
-        </div>
+        </Link>
 
         <div className="flex flex-wrap gap-1.5 min-h-[24px]">
           {suggestion.interests.slice(0, 3).map((tag) => (
