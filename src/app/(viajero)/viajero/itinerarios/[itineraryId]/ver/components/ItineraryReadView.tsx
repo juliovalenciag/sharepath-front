@@ -116,7 +116,7 @@ export default function ItineraryReadView({ id }: { id: string }) {
           }));
 
         setItinerario({
-          id: data.id,
+          id: `${data.id}`,
           titulo: data.title,
           dias: diasArray,
           resumen: {
