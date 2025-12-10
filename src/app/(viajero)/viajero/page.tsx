@@ -32,6 +32,7 @@ export default function ViajeroLanding() {
         fotoPerfil: pub.user_shared?.foto_url || ""
       },
       descripcion: pub.descripcion,
+      itinerarioId : pub.itinerario.id,
       itinerario: pub.fotos.map((foto, index) => ({
         id: foto.id,
         url: foto.foto_url,
