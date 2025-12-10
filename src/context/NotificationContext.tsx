@@ -8,7 +8,7 @@ import { RawNotification } from "@/api/interfaces/ApiRoutes";
 interface NotificationContextType {
   notifications: any[];
   setNotifications: React.Dispatch<React.SetStateAction<any[]>>;
-  markAsRead: (notificationId: string | number) => Promise<void>;
+  markAsRead: (notificationId: number) => Promise<void>;
   unreadCount: number;
 }
 
@@ -29,8 +29,7 @@ const formatNotification = (n: RawNotification) => ({
   fecha: n.createdAt,
   leido: n.isRead,
   linkId: n.resourceId,
-}
-);
+});
 
 export const NotificationProvider = ({
   children,
@@ -45,7 +44,10 @@ export const NotificationProvider = ({
       try {
         const api = ItinerariosAPI.getInstance();
         const dataDB = await api.getNotifications();
-        console.log("🔔 Historial de notificaciones desde la base de datos:", dataDB);
+        console.log(
+          "🔔 Historial de notificaciones desde la base de datos:",
+          dataDB
+        );
         const historialFormateado = dataDB.map(formatNotification);
         console.log("✅ Historial formateado para UI:", historialFormateado);
         setNotifications(historialFormateado);
@@ -55,21 +57,16 @@ export const NotificationProvider = ({
     };
 
     fetchHistory();
-  }, []); 
-
+  }, []);
 
   useEffect(() => {
     if (!socket || !isConnected) return;
 
     const handleReceiveNotification = (payload: any) => {
       console.log("🔔 Socket: Nueva notificación recibida:", payload);
-
-      const notificacionFormateada = formatNotification(payload);
-      console.log("✅ Notificación formateada para UI:", notificacionFormateada);
-      setNotifications((prev) => [notificacionFormateada, ...prev]);
-
-       const audio = new Audio('/audio/notification.mp3');
-       audio.play().catch(e => console.log(e));
+      setNotifications((prev) => [payload, ...prev]);
+      const audio = new Audio("/audio/notification.mp3");
+      audio.play().catch((e) => console.log(e));
     };
 
     socket.on("receive notification", handleReceiveNotification);
@@ -81,7 +78,7 @@ export const NotificationProvider = ({
 
   const unreadCount = notifications.filter((n) => !n.leido).length;
 
-  const markAsRead = async (notificationId: string | number) => {
+  const markAsRead = async (notificationId: number) => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === notificationId ? { ...n, leido: true } : n))
     );

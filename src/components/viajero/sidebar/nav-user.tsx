@@ -30,6 +30,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 import { getInitials } from "@/lib/utils";
 
 // Tipo que viene del backend
@@ -62,25 +63,9 @@ export function NavUser() {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const token =
-          typeof window !== "undefined"
-            ? localStorage.getItem("authToken")
-            : null;
-
-        const res = await fetch("https://harol-lovers.up.railway.app/user", {
-        //const res = await fetch("http://localhost:4000/user", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            token: token || "",
-          },
-        });
-
-        if (!res.ok) {
-          throw new Error("No se pudieron obtener los datos del usuario");
-        }
-
-        const data: ApiUser = await res.json();
+        // Usamos la capa de API en lugar de fetch
+        const api = ItinerariosAPI.getInstance();
+        const data = await api.getUser();
 
         setUser({
           name: data.username,

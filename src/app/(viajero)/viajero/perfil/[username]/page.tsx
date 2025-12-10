@@ -87,8 +87,6 @@ interface UserItinerary {
   updatedAt: string;
 }
 
-const API_URL = "https://harol-lovers.up.railway.app";
-//const API_URL = "https://localhost:4000/";
 
 export default function UserProfilePage() {
 

@@ -22,9 +22,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Link from "next/link";
 import { getInitials } from "@/lib/utils";
 
-const API_URL = "https://harol-lovers.up.railway.app";
-//const API_URL = "http://localhost:4000";
-
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 
 // 2. INSTANCIAR LA API
@@ -104,11 +101,7 @@ export default function FriendsPage() {
   const handleDelete = async (correo: string) => {
     try {
       // USANDO LA API: deleteFriend
-      if ("deleteFriend" in api) {
-        await (api as any).deleteFriend(correo);
-      } else {
-        console.warn("Falta agregar deleteFriend a ItinerariosAPI");
-      }
+      await api.deleteFriend(correo);
 
       setFriends((prev) => prev.filter((f) => f.correo !== correo));
     } catch (error) {
