@@ -48,8 +48,8 @@ export class ItinerariosAPI implements ApiRoutes {
 
   private static instance: ItinerariosAPI
 
-  private HOST = "https://harol-lovers.up.railway.app"
-  //private HOST = "http://localhost:4000"
+  //private HOST = "https://harol-lovers.up.railway.app"
+  private HOST = "http://localhost:4000"
 
 
   private constructor() { }
@@ -156,6 +156,28 @@ export class ItinerariosAPI implements ApiRoutes {
     }
 
     return data as T;
+  }
+
+  private async patchEmpty(
+    route: string,
+    auth: boolean,
+    body: object = {}
+  ): Promise<void> {
+    const token = auth ? localStorage.getItem("authToken") : undefined;
+    const request = await fetch(`${this.HOST}${route}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { token }),
+      },
+    });
+
+    if (!request.ok) {
+      // Si hay error, intentamos leer el mensaje
+      const data = (await request.json().catch(() => ({}))) as ErrorResponse;
+      throw new Error(data.message || `Error ${request.status}`);
+    }
   }
 
   private async get<T>(route: string, auth: boolean = true): Promise<T> {
@@ -467,12 +489,9 @@ export class ItinerariosAPI implements ApiRoutes {
 
   // ===== NOTIFICACIONES =====
   async markNotificationAsRead(
-    notificationId: string | number
-  ): Promise<MarkAsReadResponse> {
-    return await this.patch<MarkAsReadResponse>(
-      `/notificacion/read/${notificationId}`,
-      true
-    );
+    notificationId: string | number,
+  ): Promise<void> {
+    return await this.patchEmpty(`/notificacion/read/${notificationId}`, true);
   }
 
   async getNotifications(): Promise<RawNotification[]> {
@@ -549,6 +568,3 @@ export class ItinerariosAPI implements ApiRoutes {
     }
 
 }
-
-
-

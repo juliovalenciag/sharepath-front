@@ -30,6 +30,7 @@ import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 import { getInitials } from "@/lib/utils";
 import { Publicacione, UserInfoResponse } from "@/api/interfaces/ApiRoutes";
 
+
 export default function UserProfilePage() {
   const params = useParams();
   const router = useRouter();

@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { getInitials } from "@/lib/utils";
+import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 
 // --- Tipos que vienen (o vendrán) del backend ---
 
@@ -72,25 +73,9 @@ export default function ViajeroProfilePage() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const token =
-          typeof window !== "undefined"
-            ? localStorage.getItem("authToken")
-            : null;
-
-        const res = await fetch("https://harol-lovers.up.railway.app/user", {
-        //const res = await fetch("https://localhost:4000/user", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            token: token || "",
-          },
-        });
-
-        if (!res.ok) {
-          throw new Error("No se pudieron obtener los datos del viajero");
-        }
-
-        const data: ApiUser = await res.json();
+        // Usamos la capa de API en lugar de fetch
+        const api = ItinerariosAPI.getInstance();
+        const data = await api.getUser();
 
         // Pequeña función para formatear fecha si el backend llega a mandarla
         const formatCreatedAt = (iso?: string) => {
@@ -108,9 +93,7 @@ export default function ViajeroProfilePage() {
           name: data.username, // Si después tienes "nombre completo", cámbialo aquí
           email: data.correo,
           avatar: data.foto_url,
-          bio:
-            data.bio ??
-            "Aún no ha escrito una biografía.",
+          bio: data.bio ?? "Aún no ha escrito una biografía.",
           ciudad: data.ciudad,
           pais: data.pais,
           idiomas: data.idiomas ?? ["Español"],
@@ -249,11 +232,7 @@ export default function ViajeroProfilePage() {
           value={profile.stats.lugares_visitados}
           icon={MapPin}
         />
-        <StatCard
-          label="Amigos"
-          value={profile.stats.amigos}
-          icon={Users}
-        />
+        <StatCard label="Amigos" value={profile.stats.amigos} icon={Users} />
       </div>
 
       {/* Intereses del viajero */}

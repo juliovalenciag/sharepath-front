@@ -8,7 +8,7 @@ import { RawNotification } from "@/api/interfaces/ApiRoutes";
 interface NotificationContextType {
   notifications: any[];
   setNotifications: React.Dispatch<React.SetStateAction<any[]>>;
-  markAsRead: (notificationId: string | number) => Promise<void>;
+  markAsRead: (notificationId: number) => Promise<void>;
   unreadCount: number;
 }
 
@@ -16,21 +16,28 @@ const NotificationContext = createContext<NotificationContextType | null>(null);
 
 // --- FUNCIÓN HELPER PARA FORMATEAR ---
 // Centraliza la lógica de transformación de datos del backend a la UI.
-const formatNotification = (n: RawNotification) => ({
-  id: n.id,
-  tipo: n.type,
-  preview: {
-    mensaje: n.previewText || "Nueva notificación",
-  },
-  actor_nombre: n.emisor.nombre_completo || "Usuario",
-  actor_username: n.emisor.username || "user",
-  actor_avatar: n.emisor.foto_url || "/img/angel.jpg",
-  // 4. RESTO DE DATOS
-  fecha: n.createdAt,
-  leido: n.isRead,
-  linkId: n.resourceId,
-}
-);
+const formatNotification = (n: any): any => {
+  // Si la notificación ya viene con el formato de la UI (desde el socket), la devolvemos tal cual.
+  if (n.actor_nombre) {
+    return n;
+  }
+
+  // Si no, es una `RawNotification` de la base de datos y la transformamos.
+  // Añadimos comprobaciones para evitar errores si `emisor` es nulo.
+  const raw = n as RawNotification;
+  return {
+    id: raw.id,
+    tipo: raw.type,
+    preview: { mensaje: raw.previewText || "Nueva notificación" },
+    actor_nombre:
+      raw.emisor?.nombre_completo || raw.emisor?.username || "Usuario",
+    actor_username: raw.emisor?.username || "user",
+    actor_avatar: raw.emisor?.foto_url || null, // Devolver null si no hay foto
+    fecha: raw.createdAt,
+    leido: raw.isRead,
+    linkId: raw.resourceId,
+  };
+};
 
 export const NotificationProvider = ({
   children,
@@ -44,10 +51,55 @@ export const NotificationProvider = ({
     const fetchHistory = async () => {
       try {
         const api = ItinerariosAPI.getInstance();
-        const dataDB = await api.getNotifications();
-        console.log("🔔 Historial de notificaciones desde la base de datos:", dataDB);
-        const historialFormateado = dataDB.map(formatNotification);
-        console.log("✅ Historial formateado para UI:", historialFormateado);
+
+        // 1. Obtenemos todas las notificaciones, amigos y solicitudes pendientes en paralelo
+        const [notificacionesRaw, amigosData, solicitudesData] =
+          await Promise.all([
+            api.getNotifications(),
+            api.getFriends().catch(() => []), // Si falla, devolvemos un array vacío
+            api.getRequests().catch(() => ({ data: [] })), // Si falla, devolvemos un objeto vacío
+          ]);
+
+        // Obtenemos el username del usuario actual para comparar correctamente
+        const meJson = localStorage.getItem("user");
+        const meUsername = meJson ? JSON.parse(meJson).username : null;
+
+        // 2. Creamos Sets para una búsqueda rápida de estados de amistad
+        const amigosUsernames = new Set(
+          (amigosData || [])
+            .map((amigo: any) => {
+              // Lógica correcta para identificar al otro usuario
+              return amigo.requesting_user?.username === meUsername
+                ? amigo.receiving_user?.username
+                : amigo.requesting_user?.username;
+            })
+            .filter(Boolean)
+        );
+        const solicitudesPendientesIds = new Set(
+          (solicitudesData?.data || []).map((req: any) => req.id.toString())
+        );
+
+        // 3. Filtramos y transformamos las notificaciones
+        const historialFiltrado = notificacionesRaw.filter((notif) => {
+          if (notif.type.toUpperCase() === "FRIEND_REQUEST") {
+            // Si es una solicitud, solo la mostramos si su ID de recurso está en la lista de pendientes
+            return solicitudesPendientesIds.has(notif.resourceId.toString());
+          }
+          return true; // Mantenemos el resto de notificaciones
+        });
+
+        const historialFormateado = historialFiltrado.map((notif) => {
+          const formatted = formatNotification(notif);
+          // Si el actor de una notificación ya es nuestro amigo, la marcamos como 'FRIEND_ACCEPTED'
+          if (
+            amigosUsernames.has(formatted.actor_username) &&
+            formatted.tipo === "FRIEND_REQUEST"
+          ) {
+            return { ...formatted, tipo: "FRIEND_ACCEPTED" };
+          }
+          return formatted;
+        });
+
         setNotifications(historialFormateado);
       } catch (error) {
         console.error("Error al cargar el historial de notificaciones:", error);
@@ -55,21 +107,17 @@ export const NotificationProvider = ({
     };
 
     fetchHistory();
-  }, []); 
-
+  }, []);
 
   useEffect(() => {
     if (!socket || !isConnected) return;
 
     const handleReceiveNotification = (payload: any) => {
       console.log("🔔 Socket: Nueva notificación recibida:", payload);
-
-      const notificacionFormateada = formatNotification(payload);
-      console.log("✅ Notificación formateada para UI:", notificacionFormateada);
-      setNotifications((prev) => [notificacionFormateada, ...prev]);
-
-       const audio = new Audio('/audio/notification.mp3');
-       audio.play().catch(e => console.log(e));
+      // Formateamos la notificación del socket antes de añadirla al estado
+      setNotifications((prev) => [payload, ...prev]);
+      const audio = new Audio("/audio/notification.mp3");
+      audio.play().catch((e) => console.log(e));
     };
 
     socket.on("receive notification", handleReceiveNotification);
@@ -81,7 +129,7 @@ export const NotificationProvider = ({
 
   const unreadCount = notifications.filter((n) => !n.leido).length;
 
-  const markAsRead = async (notificationId: string | number) => {
+  const markAsRead = async (notificationId: number) => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === notificationId ? { ...n, leido: true } : n))
     );

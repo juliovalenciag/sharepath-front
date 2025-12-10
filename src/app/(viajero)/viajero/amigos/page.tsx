@@ -107,11 +107,7 @@ export default function FriendsPage() {
   const handleDelete = async (correo: string) => {
     try {
       // USANDO LA API: deleteFriend
-      if ("deleteFriend" in api) {
-        await (api as any).deleteFriend(correo);
-      } else {
-        console.warn("Falta agregar deleteFriend a ItinerariosAPI");
-      }
+      await api.deleteFriend(correo);
 
       setFriends((prev) => prev.filter((f) => f.correo !== correo));
       toast.success("Amigo eliminado");
