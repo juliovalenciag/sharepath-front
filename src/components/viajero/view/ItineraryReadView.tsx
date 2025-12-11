@@ -85,7 +85,7 @@ export default function ItineraryReadView({ id }: { id: string }) {
       try {
         const res = await fetch(
           `https://harol-lovers.up.railway.app/itinerario/${id}`,
-          //`http://localhost:4000/itinerario/${id}`,
+          //`https://harol-lovers.up.railway.app/itinerario/${id}`,
           {
             method: "GET",
             headers: {

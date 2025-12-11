@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSocket } from "@/context/socketContext"; // <--- Importar esto
 import {
   IconCreditCard,
   IconDotsVertical,
@@ -46,11 +47,17 @@ export function NavUser({
   const { isMobile } = useSidebar();
   const pathname     = usePathname();
 
+  const { recargarUsuario } = useSocket();
+
   const handleLogout = () => {
     localStorage.removeItem('authToken');
-    localStorage.removeItem('user');  
-    
+    localStorage.removeItem('user');
+    localStorage.removeItem('sessionID');
+
+    recargarUsuario();
+
     window.location.href = '/';
+    console.log("Sesion cerrada");
   };
 
   const menuItems = [

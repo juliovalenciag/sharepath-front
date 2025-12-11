@@ -4,6 +4,7 @@ import * as React from "react";
 import { Conversation, Message } from "./_types";
 // import { currentUser } from "./_mock";
 import { cn } from "@/lib/utils";
+import { Check, CheckCheck } from "lucide-react";
 
 function formatDay(dateISO: string) {
   const d = new Date(dateISO);
@@ -13,6 +14,20 @@ function formatDay(dateISO: string) {
 function sameDay(a: string, b: string) {
   const da = new Date(a), db = new Date(b);
   return da.toDateString() === db.toDateString();
+}
+
+function MessageStatus({ status }: { status?: string | number }){
+  if(status === undefined) return null; //Es mensaje recibido, no se muestra nada
+
+  if(status === "read" || status === 2){
+    return <span className="text-blue-500 text-[10px]">✓✓</span>
+  }
+
+  if(status === "received" || status === 1){
+    return <span className="text-gray-500 text-[10px]">✓✓</span>
+  }
+
+  return <span className="text-gray-500 text-[10px]">✓</span>
 }
 
 export function ChatThread({
@@ -28,7 +43,10 @@ export function ChatThread({
 }) {
   const [text, setText] = React.useState("");
   const [typing, setTyping] = React.useState(false);
-  const bottomRef = React.useRef<HTMLDivElement>(null);
+
+  /*Para que los mensajes se muestren hasta abajo*/
+  const messagesRef = React.useRef<HTMLDivElement | null>(null);
+  /**/
 
   function handleKey(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -47,11 +65,19 @@ export function ChatThread({
     return () => clearTimeout(t);
   }, [text]);
 
-  React.useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth"});
-  }, [conversation.messages]);
+  // React.useEffect(() => {
+  //   bottomRef.current?.scrollIntoView({ behavior: "smooth"});
+  // }, [conversation.messages]);
 
   const msgs = conversation.messages;
+
+  /* Para que los mensajes se muestren hasta abajo */
+  React.useEffect(() => {
+    if(messagesRef.current){
+      messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
+    }
+  }, [msgs]);
+  /**/
 
   //Amigos menos yo
   const otherMember = conversation.members.find((m) => m.id !== selfUserId);
@@ -97,8 +123,8 @@ export function ChatThread({
         </div>
       </header>
 
-      {/* Messages */}
-      <div className="overflow-y-auto h-120 px-3 py-4 bg-gray-60">
+      {/* Messages ref messagesRef*/}
+      <div ref={messagesRef} className="overflow-y-auto h-120 px-3 py-4"> 
         {msgs.map((m, i) => {
           const prev = msgs[i - 1];
           const showDay = !prev || !sameDay(prev.createdAt, m.createdAt);
@@ -132,14 +158,27 @@ export function ChatThread({
                   {/* {!!m.text && <p className="whitespace-pre-wrap">{m.text}</p>} */}
                   {/* word-wrap: break-word; es overflow-wrap: break-word; */}
                   {!!m.text && <p className="break-words">{m.text}</p>}
-                  {!!m.images?.length && (
+
+                  {/* Hora y estado */}
+                  <div className={cn("flex justify-end items-center gap-1 mt-1", mine ? "text-right" : "")}>
+                    <span className="text-[10px] opacity-70 text-gray-500 dark:text-gray-300">
+                      {new Date(m.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    </span>
+
+                    {/* Se muestran las palomitas si el mensaje es mio */}
+                    {mine && <MessageStatus status={m.status}></MessageStatus>}
+                  </div>
+
+                  {/* {!!m.images?.length && (
                     <div className="mt-2 grid grid-cols-2 gap-2">
                       {m.images.map((src) => (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img key={src} src={src} alt="" className="rounded-lg border object-cover" />
                       ))}
                     </div>
-                  )}
+                  )} */}
+
+
                   {/* Hora del mensaje, corregir porque se muestra la misma hora en todos */}
                   {/* <div className={cn("mt-1 text-[10px] opacity-75", mine ? "text-black" : "text-white")}> */}
                     {/* {new Date(m.createdAt).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })} */}
@@ -151,7 +190,7 @@ export function ChatThread({
           );
         })}
 
-        <div ref={bottomRef}></div>
+        {/* <div ref={bottomRef}></div> */}
 
         {/* Cuando alguien escribe, corregir porque no se muestra en el otro usuario */}
         {/* {typing && (
@@ -205,7 +244,6 @@ export function ChatThread({
       </div>
     </div>
   );
-
 }
 
 
