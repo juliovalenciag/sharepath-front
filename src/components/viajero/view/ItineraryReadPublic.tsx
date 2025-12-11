@@ -280,19 +280,18 @@ export default function ItineraryPublishView({ id }: { id: string }) {
     try {
       // Usamos la instancia de la API en lugar del fetch directo
       const api = ItinerariosAPI.getInstance();
+      
+      // 1. Creamos el objeto que el método `shareItinerary` de la API espera.
+      const shareRequest = {
+        descripcion: descripcion.trim(),
+        privacity_mode: privacityMode!, // Usamos '!' porque el botón está deshabilitado si es null
+        fotos: fotos, // Pasamos el array de archivos directamente
+      };
 
-      // Construimos el FormData aquí para asegurar que se envíe correctamente
-      const formData = new FormData();
-      formData.append('descripcion', descripcion.trim());
-      formData.append('privacity_mode', String(privacityMode));
-      fotos.forEach(foto => {
-        formData.append('fotos', foto);
-      });
-
-      // Pasamos el FormData directamente al método de la API.
-      // Asumimos que shareItinerary puede manejar un FormData.
-      await api.shareItinerary(Number(id), formData as any);
-
+      // 2. Llamamos al método de la API con el objeto correcto.
+      console.log("Publicando con datos:", shareRequest);
+      await api.shareItinerary(Number(id), shareRequest);
+      
       toast.success("¡Viaje publicado!", { id: toastId });
       router.push('/viajero/itinerarios'); 
 

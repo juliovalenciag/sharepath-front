@@ -36,7 +36,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
     if(!token){
       setUserID(null);
-      setIsConnected(false);
+      // setIsConnected(false);
       setUsername(null);
       if(socket){
         socket.disconnect();

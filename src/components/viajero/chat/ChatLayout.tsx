@@ -95,7 +95,7 @@ export function ChatLayout() {
   useEffect(() => { activeIdRef.current = activeId }, [activeId]);
 
   React.useEffect(() => {
-    audioRef.current = new Audio('/sonido.mp3');
+    audioRef.current = new Audio('/audio/nvoMsg.mp3');
 
     if (!socket || !userID || !username) {
         // console.log("ChatLayout: Esperando username socket y userID... Socket no listo");

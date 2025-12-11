@@ -70,6 +70,7 @@ function RatingStars({
 }
 
 export default function PublicacionItem({ publicacion }: PublicacionItemProps) {
+  console.log ("PublicacionItem renderizado con datos:", publicacion);
   const [view, setView] = useState<'main' | 'rating' | 'comments'>('main');
   const [userRating, setUserRating] = useState(0);
   const [newComment, setNewComment] = useState("");
@@ -148,11 +149,15 @@ export default function PublicacionItem({ publicacion }: PublicacionItemProps) {
         <div className="lg:w-1/2 p-6 lg:p-8">
           {/* Header con foto y nombre */}
           <div className="flex items-center gap-3 mb-6">
-            <img
+            {publicacion.usuario.fotoPerfil !== "" ? 
+              <img
               src={publicacion.usuario.fotoPerfil}
               alt={publicacion.usuario.nombre}
               className="w-12 h-12 rounded-full object-cover border"
-            />
+              />
+            :
+            <div className="w-12 h-12 flex items-center justify-center rounded-full border"><p>{publicacion.usuario.nombre[0]}</p></div>  
+          }
             <div>
               <h3 className="font-bold">{publicacion.usuario.nombre}</h3>
             </div>
