@@ -150,7 +150,7 @@ export default function SignInPage() {
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 mt-2 text-muted-foreground"
                             aria-label="Toggle password visibility"
                           >
                             {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
@@ -169,7 +169,7 @@ export default function SignInPage() {
                     </Link>
                   </div>
 
-                  <Button type="submit" className="w-full py-6 text-lg font-semibold" style={{ backgroundColor: '#555', color: 'white' }} disabled={isLoading}>
+                  <Button type="submit" className="w-full py-6 text-lg font-semibold" disabled={isLoading}>
                     {isLoading ? "Verificando..." : "Iniciar sesión"}
                   </Button>
 

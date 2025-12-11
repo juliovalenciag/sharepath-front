@@ -54,7 +54,7 @@ export function ActivityListPanel({
   return (
     <div className="flex flex-col h-full bg-muted/5 dark:bg-background">
       {/* HEADER DE LA LISTA */}
-      <div className="flex items-center justify-between px-4 py-3 border-b bg-background/95 backdrop-blur sticky top-0 z-10">
+      <div className="flex items-center justify-between px-4 py-3 border-b  sticky top-0 z-10">
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-md bg-primary/10 text-primary">
             <List className="h-4 w-4" />

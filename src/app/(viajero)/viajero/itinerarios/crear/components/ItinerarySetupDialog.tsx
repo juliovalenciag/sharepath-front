@@ -164,7 +164,7 @@ export function ItinerarySetupDialog({
   // 2. Sugerir nombre
   useEffect(() => {
     if (meta && meta.title === watchedNombre) return;
-    if (watchedNombre?.trim().length > 0 && !watchedNombre.startsWith("Trip"))
+    if (watchedNombre?.trim().length > 0 && !watchedNombre.startsWith("Viaje a"))
       return;
 
     if (!watchedRegions.length) return;
@@ -182,7 +182,7 @@ export function ItinerarySetupDialog({
           )}`
         : "";
 
-    const sugerido = `Trip ${labelsStr}${rango ? ` (${rango})` : ""}`;
+    const sugerido = `Viaje a ${labelsStr}${rango ? ` (${rango})` : ""}`;
     setValue("nombre", sugerido, { shouldValidate: true });
   }, [watchedRegions, watchedStart, watchedEnd]);
 
@@ -302,7 +302,7 @@ export function ItinerarySetupDialog({
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden gap-0 dark:bg-zinc-950 dark:border-zinc-800">
           <DialogHeader className="px-6 pt-6 pb-2">
-            <DialogTitle className="text-xl font-extrabold tracking-tight">
+            <DialogTitle className="text-xl font-extrabold tracking-tight dark:text-white">
               {meta ? "Editar Configuración" : "Crea tu Itinerario"}
             </DialogTitle>
             <DialogDescription>
@@ -316,14 +316,14 @@ export function ItinerarySetupDialog({
           >
             {/* NOMBRE */}
             <div className="space-y-2">
-              <Label htmlFor="nombre" className="font-semibold text-sm">
+              <Label htmlFor="nombre" className="font-semibold text-sm dark:text-white">
                 Nombre del viaje
               </Label>
               <Input
                 id="nombre"
                 placeholder="Ej. Mi primera visita en CDMX"
                 maxLength={50}
-                className="h-11"
+                className="h-11 dark:text-gray-100"
                 {...form.register("nombre")}
               />
               {errors.nombre && (
@@ -336,7 +336,7 @@ export function ItinerarySetupDialog({
             {/* DESTINOS */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label className="font-semibold text-sm">Destinos</Label>
+                <Label className="font-semibold text-sm dark:text-white">Destinos</Label>
                 <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
                   {watchedRegions.length} Seleccionados
                 </span>
@@ -433,7 +433,7 @@ export function ItinerarySetupDialog({
             {/* FECHAS */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label className="font-semibold text-sm">Fechas</Label>
+                <Label className="font-semibold text-sm dark:text-white">Fechas</Label>
                 {dateRange?.from && dateRange?.to && (
                   <span className="text-[10px] text-muted-foreground">
                     {differenceInCalendarDays(dateRange.to, dateRange.from) + 1}{" "}
@@ -447,11 +447,11 @@ export function ItinerarySetupDialog({
                   <Button
                     variant={"outline"}
                     className={cn(
-                      "w-full justify-start text-left font-normal h-11",
+                      "w-full justify-start text-left font-normal h-11 dark:text-white",
                       !dateRange?.from && "text-muted-foreground"
                     )}
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4 opacity-70" />
+                    <CalendarIcon className="mr-2 h-4 w-4 opacity-70 dark:text-white" />
                     {dateRange?.from ? (
                       dateRange.to ? (
                         <>
@@ -481,7 +481,7 @@ export function ItinerarySetupDialog({
 
               {(errors.start || errors.end) && (
                 <div className="flex items-center gap-1.5 text-xs text-red-500 font-medium mt-1">
-                  <Info className="h-3 w-3" />
+                  <Info className="h-3 w-3 " />
                   {errors.end?.message || "Selecciona un rango válido."}
                 </div>
               )}

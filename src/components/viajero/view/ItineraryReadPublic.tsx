@@ -175,19 +175,8 @@ export default function ItineraryPublishView({ id }: { id: string }) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem("authToken");
-        if (!token) throw new Error("No hay sesión activa");
-        
-        const res = await fetch(
-          `http://localhost:4000/itinerario/${id}`,
-          //`http://localhost:4000/itinerario/${id}`,
-          { headers: { "Content-Type": "application/json", "token": token } }
-        );
-
-        if (!res.ok) throw new Error("Error al cargar datos");
-
-        const data = await res.json();
-        console.log ("Itinerario cargado:", data);
+        const api = ItinerariosAPI.getInstance();
+        const data = await api.getItinerarioById(id); // Usando la API
         const actividadesOrdenadas = data.actividades?.sort(
           (a: any, b: any) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
         ) || [];
@@ -278,10 +267,8 @@ export default function ItineraryPublishView({ id }: { id: string }) {
     const toastId = toast.loading("Publicando viaje...");
 
     try {
-      // Usamos la instancia de la API en lugar del fetch directo
       const api = ItinerariosAPI.getInstance();
       
-      // 1. Creamos el objeto que el método `shareItinerary` de la API espera.
       const shareRequest = {
         descripcion: descripcion.trim(),
         privacity_mode: privacityMode!, // Usamos '!' porque el botón está deshabilitado si es null

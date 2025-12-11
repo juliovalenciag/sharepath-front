@@ -1,36 +1,36 @@
 "use client";
 
 import React from "react";
+import { ItinerariosAPI } from "@/api/ItinerariosAPI";
+import { Reporte } from "@/api/interfaces/ApiRoutes";
 
 type ReportStatus = "en_revision" | "pendiente";
 
 type ReportItem = {
-	id: string;
-	author: {
-		name: string;
+	id: number;
+	description: string;
+	usuario_emitente: {
+		username: string;
+		nombre_completo: string;
 		role: "viajero" | "administrador";
 	};
-	date: string; // ISO or formatted
+	date: string;
 	status: ReportStatus;
 };
 
 const sampleReports: ReportItem[] = [
 	{
-		id: "RPT-0001",
-		author: { name: "Ana López", role: "viajero" },
+		id: 1,
+		description: "Contenido inapropiado",
+		usuario_emitente: { username: "usuario1", nombre_completo: "Ana López", role: "viajero" },
 		date: "2025-12-01",
 		status: "en_revision",
 	},
 	{
-		id: "RPT-0002",
-		author: { name: "Equipo Admin", role: "administrador" },
+		id: 2,
+		description: "Spam",
+		usuario_emitente: { username: "admin", nombre_completo: "Equipo Admin", role: "administrador" },
 		date: "2025-11-28",
-		status: "pendiente",
-	},
-	{
-		id: "RPT-0003",
-		author: { name: "Carlos Díaz", role: "viajero" },
-		date: "2025-11-25",
 		status: "pendiente",
 	},
 ];
@@ -78,72 +78,149 @@ function StatusBadge({ status }: { status: ReportStatus }) {
 }
 
 export default function ReportesPage() {
-		const toYMD = (value: unknown): string => {
-			if (value == null) return "";
-			if (typeof value === "string") {
-				const s = value.trim();
-				if (s.length >= 10) return s.slice(0, 10);
-			}
-			try {
-				const d = new Date(value as any);
-				if (isNaN(d.getTime())) return "";
-				const y = d.getFullYear();
-				const m = String(d.getMonth() + 1).padStart(2, "0");
-				const day = String(d.getDate()).padStart(2, "0");
-				return `${y}-${m}-${day}`;
-			} catch {
-				return "";
-			}
-		};
-
-		const formatDateDisplay = (value: string) => {
-			const ymd = toYMD(value);
-			if (!ymd) return value;
-			const [y, m, d] = ymd.split("-");
-			return `${d}/${m}/${y}`;
-		};
+	const [reports, setReports] = React.useState<ReportItem[]>(sampleReports);
+	const [loading, setLoading] = React.useState(true);
+	const [selectedReport, setSelectedReport] = React.useState<Reporte | null>(null);
+	const [detailLoading, setDetailLoading] = React.useState(false);
 	const [queryId, setQueryId] = React.useState("");
 	const [queryUser, setQueryUser] = React.useState("");
 	const [queryDate, setQueryDate] = React.useState(""); // yyyy-mm-dd
 	const [queryStatus, setQueryStatus] = React.useState<ReportStatus | "">("");
-	const [reports, setReports] = React.useState<ReportItem[]>(sampleReports);
 
-  const filtered = React.useMemo(() => {
+	const api = React.useMemo(() => ItinerariosAPI.getInstance(), []);
+
+	// Cargar reportes del backend
+	React.useEffect(() => {
+		const loadReports = async () => {
+			try {
+				setLoading(true);
+				// Obtener lista de reportes del backend
+				const reportesDelBackend = await api.getReports();
+				
+				// Mapear reportes del backend al formato esperado
+				const mappedReports = reportesDelBackend.map((reporte) => ({
+					id: reporte.id,
+					description: reporte.description,
+					usuario_emitente: {
+						username: reporte.usuario_emitente.username,
+						nombre_completo: reporte.usuario_emitente.nombre_completo,
+						role: (reporte.usuario_emitente.role as "viajero" | "administrador") || "viajero",
+					},
+					date: new Date().toISOString().split('T')[0],
+					status: "pendiente" as ReportStatus,
+				}));
+				
+				setReports(mappedReports);
+			} catch (error: any) {
+				console.error("Error al cargar reportes del backend:", error);
+				console.log("Usando datos de muestra. Verifica que el endpoint esté disponible.");
+				setReports(sampleReports);
+			} finally {
+				setLoading(false);
+			}
+		};
+
+		loadReports();
+	}, [api]);
+
+	const toYMD = (value: unknown): string => {
+		if (value == null) return "";
+		if (typeof value === "string") {
+			const s = value.trim();
+			if (s.length >= 10) return s.slice(0, 10);
+		}
+		try {
+			const d = new Date(value as any);
+			if (isNaN(d.getTime())) return "";
+			const y = d.getFullYear();
+			const m = String(d.getMonth() + 1).padStart(2, "0");
+			const day = String(d.getDate()).padStart(2, "0");
+			return `${y}-${m}-${day}`;
+		} catch {
+			return "";
+		}
+	};
+
+	const formatDateDisplay = (value: string) => {
+		const ymd = toYMD(value);
+		if (!ymd) return value;
+		const [y, m, d] = ymd.split("-");
+		return `${d}/${m}/${y}`;
+	};
+
+	const filtered = React.useMemo(() => {
 		return reports.filter((r) => {
 			const matchId = queryId
-				? r.id.toLowerCase().includes(queryId.toLowerCase())
+				? r.id.toString().includes(queryId)
 				: true;
 			const matchUser = queryUser
-				? r.author.name.toLowerCase().includes(queryUser.toLowerCase()) ||
-				  r.author.role.toLowerCase().includes(queryUser.toLowerCase())
+				? r.usuario_emitente.nombre_completo.toLowerCase().includes(queryUser.toLowerCase()) ||
+				  r.usuario_emitente.role.toLowerCase().includes(queryUser.toLowerCase())
 				: true;
 			const matchDate = queryDate ? toYMD(r.date) === toYMD(queryDate) : true;
 			const matchStatus = queryStatus ? r.status === queryStatus : true;
 			return matchId && matchUser && matchDate && matchStatus;
 		});
-  }, [reports, queryId, queryUser, queryDate, queryStatus]);	const onView = (id: string) => {
-		// Placeholder: replace with navigation or modal
-		console.log("Ver reporte", id);
-		alert(`Ver reporte ${id}`);
+	}, [reports, queryId, queryUser, queryDate, queryStatus]);
+
+	const onView = (id: number) => {
+		console.log("Ver detalles del reporte", id);
+		loadReportDetail(id);
 	};
 
-	const onApprove = (id: string) => {
-		console.log("Aprobar", id);
-		alert(`Aprobado reporte ${id}`);
+	const loadReportDetail = async (reportId: number) => {
+		try {
+			setDetailLoading(true);
+			const detail = await api.getReportById(reportId);
+			setSelectedReport(detail);
+		} catch (error) {
+			console.error("Error al cargar detalles del reporte:", error);
+			alert("Error al cargar detalles del reporte");
+		} finally {
+			setDetailLoading(false);
+		}
 	};
 
-	const onReject = (id: string) => {
+	const onApprove = async (id: number) => {
+		try {
+			console.log("Baneando publicación del reporte", id);
+			await api.banPublication(id);
+			
+			// Actualizar estado del reporte a "en_revision"
+			setReports((prev) =>
+				prev.map((r) =>
+					r.id === id ? { ...r, status: "en_revision" as ReportStatus } : r
+				)
+			);
+			
+			alert(`Publicación baneada y reporte ${id} marcado como revisado`);
+		} catch (error) {
+			console.error("Error al banear publicación:", error);
+			alert("Error al procesar el reporte");
+		}
+	};
+
+	const onReject = (id: number) => {
 		console.log("Rechazar", id);
-		alert(`Rechazado reporte ${id}`);
+		alert(`Reporte ${id} rechazado`);
 	};
 
-	const onDelete = (id: string) => {
+	const onDelete = async (id: number) => {
 		console.log("Eliminar", id);
 		const ok = confirm(`¿Eliminar reporte ${id}?`);
-		if (ok) alert(`Eliminado reporte ${id}`);
+		if (ok) {
+			try {
+				await api.deleteReport(id);
+				setReports((prev) => prev.filter((r) => r.id !== id));
+				alert(`Reporte ${id} eliminado`);
+			} catch (error) {
+				console.error("Error al eliminar reporte:", error);
+				alert("Error al eliminar el reporte");
+			}
+		}
 	};
 
-	const onToggleStatus = (id: string) => {
+	const onToggleStatus = (id: number) => {
 		setReports((prev) =>
 			prev.map((r) =>
 				r.id === id
@@ -164,6 +241,8 @@ export default function ReportesPage() {
 			>
 				Reportes
 			</h1>
+
+			{loading && <p style={{ color: "#6b7280" }}>Cargando reportes...</p>}
 
 			<div
 				style={{
@@ -214,24 +293,24 @@ export default function ReportesPage() {
 				}}
 			>
 				<table style={{ width: "100%", borderCollapse: "collapse" }}>
-					<thead>
-						<tr style={{ background: "#f9fafb" }}>
-							<th style={thStyle}>Autor</th>
-							<th style={thStyle}>ID</th>
-							<th style={thStyle}>Fecha</th>
-							<th style={thStyle}>Detalles</th>
-							<th style={thStyle}>Estado</th>
-							<th style={thStyle}>Acciones</th>
-						</tr>
-					</thead>
+				<thead>
+					<tr style={{ background: "#f9fafb" }}>
+						<th style={thStyle}>Autor</th>
+						<th style={thStyle}>ID</th>
+						<th style={thStyle}>Fecha</th>
+						<th style={thStyle}>Descripción</th>
+						<th style={thStyle}>Estado</th>
+						<th style={thStyle}>Acciones</th>
+					</tr>
+				</thead>
 					<tbody>
 						{filtered.map((r) => (
 							<tr key={r.id} style={{ borderTop: "1px solid #e5e7eb" }}>
 								<td style={tdStyle}>
 									<div style={{ display: "flex", flexDirection: "column" }}>
-										<span style={{ fontWeight: 600 }}>{r.author.name}</span>
+										<span style={{ fontWeight: 600 }}>{r.usuario_emitente.nombre_completo}</span>
 										<span style={{ fontSize: 12, color: "#6b7280" }}>
-											Usuario {r.author.role}
+											Usuario {r.usuario_emitente.role}
 										</span>
 									</div>
 								</td>
@@ -244,7 +323,7 @@ export default function ReportesPage() {
 										onClick={() => onView(r.id)}
 										style={buttonStyle}
 									>
-										Ver reporte
+										Ver detalles
 									</button>
 								</td>
 								<td style={tdStyle}>
@@ -259,7 +338,7 @@ export default function ReportesPage() {
 								<td style={tdStyle}>
 									<div style={{ display: "flex", gap: 8 }}>
 										<IconButton
-											title="Aprobar"
+											title="Banear publicación"
 											color="#16a34a"
 											onClick={() => onApprove(r.id)}
 										>
@@ -273,7 +352,7 @@ export default function ReportesPage() {
 											<XIcon />
 										</IconButton>
 										<IconButton
-											title="Eliminar"
+											title="Eliminar reporte"
 											color="#6b7280"
 											onClick={() => onDelete(r.id)}
 										>
@@ -286,7 +365,128 @@ export default function ReportesPage() {
 					</tbody>
 				</table>
 			</div>
-		</div>
+
+		{/* Modal de Detalles del Reporte */}
+		{selectedReport && (
+			<div style={{
+				position: "fixed",
+				top: 0,
+				left: 0,
+				right: 0,
+				bottom: 0,
+				background: "rgba(0, 0, 0, 0.5)",
+				display: "flex",
+				alignItems: "center",
+				justifyContent: "center",
+				zIndex: 9999,
+			}} onClick={() => setSelectedReport(null)}>
+				<div style={{
+					background: "white",
+					borderRadius: 12,
+					padding: 24,
+					maxWidth: 600,
+					width: "90%",
+					maxHeight: "80vh",
+					overflowY: "auto",
+				}} onClick={(e) => e.stopPropagation()}>
+					<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+						<h2 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>Detalles del Reporte #{selectedReport.id}</h2>
+						<button onClick={() => setSelectedReport(null)} style={{
+							background: "transparent",
+							border: "none",
+							fontSize: 24,
+							cursor: "pointer",
+						}}>×</button>
+					</div>
+
+					{detailLoading ? (
+						<p style={{ color: "#6b7280" }}>Cargando detalles...</p>
+					) : (
+						<div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+							<div style={{ marginBottom: 16 }}>
+								<h3 style={{ fontSize: 14, fontWeight: 600, color: "#6b7280", margin: "0 0 8px 0" }}>Descripción</h3>
+								<p style={{ margin: 0, fontSize: 14, color: "#111827" }}>{selectedReport.description}</p>
+							</div>
+
+							<div style={{ marginBottom: 16 }}>
+								<h3 style={{ fontSize: 14, fontWeight: 600, color: "#6b7280", margin: "0 0 8px 0" }}>Usuario que reportó</h3>
+								<div style={{ 
+									background: "#f9fafb", 
+									padding: 12, 
+									borderRadius: 8,
+									fontSize: 14,
+									color: "#111827"
+								}}>
+									<p style={{ margin: "0 0 4px 0" }}>
+										<strong>{selectedReport.usuario_emitente.nombre_completo}</strong> (@{selectedReport.usuario_emitente.username})
+									</p>
+									<p style={{ margin: 0, color: "#6b7280", fontSize: 12 }}>
+										Rol: {selectedReport.usuario_emitente.role}
+									</p>
+								</div>
+							</div>
+
+							{selectedReport.historial && selectedReport.historial.length > 0 && (
+								<div style={{ marginBottom: 16 }}>
+									<h3 style={{ fontSize: 14, fontWeight: 600, color: "#6b7280", margin: "0 0 8px 0" }}>Historial</h3>
+									<div style={{ 
+										background: "#f9fafb", 
+										padding: 12, 
+										borderRadius: 8,
+										fontSize: 12,
+										color: "#111827"
+									}}>
+										{selectedReport.historial.map((item, idx) => (
+											<p key={idx} style={{ margin: "0 0 4px 0" }}>
+												• {item.action_description}
+											</p>
+										))}
+									</div>
+								</div>
+							)}
+
+							<div style={{ 
+								display: "flex", 
+								gap: 8, 
+								marginTop: 24,
+								paddingTop: 16,
+								borderTop: "1px solid #e5e7eb"
+							}}>
+								<button onClick={() => setSelectedReport(null)} style={{
+									flex: 1,
+									padding: "10px 16px",
+									borderRadius: 8,
+									border: "1px solid #e5e7eb",
+									background: "#ffffff",
+									fontSize: 14,
+									fontWeight: 600,
+									cursor: "pointer",
+								}}>
+									Cerrar
+								</button>
+								<button onClick={() => {
+									onApprove(selectedReport.id);
+									setSelectedReport(null);
+								}} style={{
+									flex: 1,
+									padding: "10px 16px",
+									borderRadius: 8,
+									border: "none",
+									background: "#10b981",
+									color: "white",
+									fontSize: 14,
+									fontWeight: 600,
+									cursor: "pointer",
+								}}>
+									Banear Publicación
+								</button>
+							</div>
+						</div>
+					)}
+				</div>
+			</div>
+		)}
+	</div>
 	);
 }
 

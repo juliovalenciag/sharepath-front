@@ -19,11 +19,12 @@ import ItinerarioCard from "@/components/viajero-components/ItineraryCard";
 export default function MisItinerariosPage() {
   const [itinerarios, setItinerarios] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const api = ItinerariosAPI.getInstance();
+
 
   useEffect(() => {
     const fetchItinerarios = async () => {
       try {
-        const api = ItinerariosAPI.getInstance();
         const response: any = await api.getMyItinerarios();
         console.log("Itinerarios recibidos:", response);
         if (Array.isArray(response)) {
@@ -50,10 +51,20 @@ export default function MisItinerariosPage() {
   }, []);
 
   const handleDeleteSuccess = (idEliminado: string | number) => {
-    setItinerarios((prev) => prev.filter((it) => it.id !== idEliminado));
-    toast.success("Viaje eliminado", {
-      description: "El itinerario se ha borrado correctamente.",
-    });
+    api.deleteItinerario(idEliminado)
+      .then(() => {
+        setItinerarios((prev) => prev.filter((it) => it.id !== idEliminado));
+        toast.success("Viaje eliminado", {
+          description: "El itinerario se ha borrado correctamente.",
+        });
+      })
+      .catch(err => {
+        toast.error("Error al eliminar", {
+          description: err.message || "No pudimos conectar con el servidor.",
+        });
+      })
+    
+    
   };
 
   return (

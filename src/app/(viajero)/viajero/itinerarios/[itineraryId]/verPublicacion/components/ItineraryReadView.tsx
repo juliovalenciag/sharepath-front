@@ -22,7 +22,6 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 
 // --- IMPORTACIÓN DINÁMICA DEL MAPA ---
 const ItineraryViewMap = dynamic(() => import("./ItineraryViewMap"), {
@@ -81,9 +80,15 @@ export default function ItineraryReadView({ id }: { id: string }) {
   // Fetch de Datos
   useEffect(() => {
     async function fetchData() {
-      const api = ItinerariosAPI.getInstance();
       try {
-        const data = await api.getItinerarioById(id);
+        const res = await fetch(
+          //`https://harol-lovers.up.railway.app/itinerario/${id}`,
+          `http://localhost:4000/itinerario/${id}`,
+          {
+            headers: { token: localStorage.getItem("authToken") || "" },
+          }
+        );
+        const data = await res.json();
 
         const actividades = (data.actividades || []).sort(
           (a: any, b: any) =>
@@ -116,7 +121,7 @@ export default function ItineraryReadView({ id }: { id: string }) {
           }));
 
         setItinerario({
-          id: `${data.id}`,
+          id: data.id,
           titulo: data.title,
           dias: diasArray,
           resumen: {
@@ -222,24 +227,6 @@ export default function ItineraryReadView({ id }: { id: string }) {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {/* BOTÓN PUBLICAR DESTACADO */}
-            <Button
-              onClick={() => router.push(`/viajero/itinerarios/${id}/publicar`)}
-              className="hidden sm:flex bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all rounded-full px-5 h-9 font-semibold"
-            >
-              <Globe className="mr-2 h-4 w-4" /> Publicar
-            </Button>
-
-            {/* Acciones Secundarias */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push(`/viajero/itinerarios/${id}/editar`)}
-              className="hidden sm:flex h-9 rounded-full"
-            >
-              <Edit3 className="mr-2 h-4 w-4" /> Editar
-            </Button>
-
             {/* Menú Móvil Simplificado */}
             <Button
               size="icon"

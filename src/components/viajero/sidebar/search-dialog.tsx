@@ -54,7 +54,7 @@ export function SearchDialog() {
         </kbd>
       </Button>
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder="Search dashboards, users, and more…" />
+        <CommandInput placeholder="Busca, users, and more…" />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
           {[...new Set(searchItems.map((item) => item.group))].map((group, i) => (

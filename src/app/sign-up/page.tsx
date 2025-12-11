@@ -230,7 +230,7 @@ export default function SignUpPage() {
                     Al registrarte, aceptas nuestras <Link href="/sign-up/terminos" className="underline">Terminos y Condiciones</Link>.
                 </p>
 
-                <Button type="submit" className="w-full py-6 text-lg font-semibold" style={{ backgroundColor: '#555', color: 'white' }} disabled={isLoading}>
+                <Button type="submit" className="w-full py-6 text-lg font-semibold" disabled={isLoading}>
                   {isLoading ? "Registrando..." : "Regístrate"}
                 </Button>
               </form>

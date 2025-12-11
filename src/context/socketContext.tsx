@@ -76,18 +76,13 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   /*Socket cuando cambia el userID*/
   useEffect(() => {
     //console.log("Iniciando configuracion de SocketConext...");
-    if(!userID) return;
 
-    // console.log("Generando socket para usuario...", userID);
-
-    const token = localStorage.getItem("authToken");
     const sessionID = localStorage.getItem("sessionID");
 
-      if(!token){
-        // console.log("Buscando token...");
-        return;
-      }
-      // console.log("Token encontrado. Generando Socket...");
+    if (!token) { 
+      console.log('No se encontró token');
+      return;
+    }
 
     const newSocket = io("http://localhost:4000", {
     //const newSocket = io("http://localhost:4000", {
@@ -96,7 +91,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       autoConnect: false,
       auth: {
         sessionID: sessionID,
-        token: token
+        token: token,
       },
     });
 
@@ -104,7 +99,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     setSocket(newSocket);
     // newSocket.auth = { 
     //     sessionID: sessionID,
-    //     token: token 
+    //     token: token
     // };
 
     // newSocket.on("session", ({ sessionID, userID, username }) => {
@@ -120,6 +115,29 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       setIsConnected(true);
     });
 
+    newSocket.on("disconnect", () => {
+      //console.log("SocketContext: Se perdió la conexión");
+      setIsConnected(false);
+    });
+
+    newSocket.on("connect_error", (err) => {
+      console.error(`SocketContext: Error de conexion ${err.message}`);
+
+      //Si el servidor rechaza el token o el sessionID, se borran para evitar bucles, es decir, se borra sessionID y se asigna una nueva.
+      if (
+        err.message.includes("inválido") ||
+        err.message.includes("No se proporcionó")
+      ) {
+        console.error("Credenciales inválidas, limpiando sessionID...");
+        localStorage.remove("sessionID");
+      }
+    });
+
+    //console.log("Intentando conectar...");
+    newSocket.connect();
+
+    //Guardar el socket en el estado de react
+    setSocket(newSocket);
       newSocket.on("session", ({ sessionID, userID, username }) => {
         //console.log("Sesion valida, actualizando datos...");
         localStorage.setItem("sessionID", sessionID);

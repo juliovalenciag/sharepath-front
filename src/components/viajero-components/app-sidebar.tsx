@@ -45,7 +45,6 @@ const data = {
     { title: "Usuarios", url: "/admin/usuarios", icon: IconUsers },
     { title: "Reportes", url: "/admin/reportes", icon: IconFileText },
   ],
-  // Sección Otros (eliminada)
   navSecondary: [],
 };
 
@@ -78,7 +77,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
-              {/* Usa Link de Next para navegación cliente */}
               <Link href="/admin" className="flex items-center gap-2">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -104,14 +102,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
 
       <SidebarContent>
-        {/* Sección General */}
         <NavMain items={data.navMain} label="General" />
         
-        {/* Sección Gestión */}
         <NavDocuments items={data.navGestion} label="Gestión" />
       </SidebarContent>
 
-      {/* Sidebar sin footer de cuenta/notifications */}
       <SidebarFooter></SidebarFooter>
     </Sidebar>
   );

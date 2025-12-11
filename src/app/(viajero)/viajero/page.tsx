@@ -6,13 +6,8 @@ import SearchFilters from "@/components/viajero/SearchFilters";
 import { Button } from "@/components/ui/button";
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 import type { Publicacion } from "@/api/interfaces/ApiRoutes";
-
-const btn = {
-  primary:
-    "inline-flex items-center justify-center h-11 px-6 rounded-lg bg-primary text-white hover:bg-blue-700 transition-all duration-200 font-medium",
-  ghost:
-    "inline-flex items-center justify-center h-11 px-6 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition-all duration-200 font-medium"
-};
+import { Loader2, MapPin, Compass, SearchX } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ViajeroLanding() {
   const [query, setQuery] = useState("");
@@ -21,25 +16,30 @@ export default function ViajeroLanding() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Transformar publicación del backend al formato del componente
+  // Transformar publicación
   const transformarPublicacion = (pub: Publicacion): any => {
     return {
       id: pub.id,
       titulo: pub.itinerario.title,
-      calificacion: 4.4, // Valor por defecto
+      calificacion: 4.4,
       usuario: {
-        nombre: pub.user_shared?.nombre_completo || "Usuario",
-        fotoPerfil: pub.user_shared?.foto_url || ""
+        nombre: pub.user_shared?.username || "Viajero Anónimo",
+        fotoPerfil: pub.user_shared?.foto_url || "",
+        nombre_completo: pub.user_shared?.nombre_completo, // Añadido si existe
       },
       descripcion: pub.descripcion,
-      itinerario: pub.fotos.map((foto, index) => ({
-        id: foto.id,
-        url: foto.foto_url,
-      }))
+      itinerarioId: pub.itinerario.id,
+      itinerario: pub.fotos
+        ? pub.fotos.map((foto) => ({
+            id: foto.id,
+            url: foto.foto_url,
+          }))
+        : [],
+      fecha: new Date().toLocaleDateString(),
+      ubicacion: "México", // Placeholder o dato real
     };
   };
 
-  // Efecto para cargar publicaciones
   useEffect(() => {
     const cargarPublicaciones = async () => {
       try {
@@ -47,7 +47,7 @@ export default function ViajeroLanding() {
         setError(null);
         const api = ItinerariosAPI.getInstance();
         const data = await api.getMyPublications();
-        console.log ("Publicaciones obtenidas del API:", data);
+
         if (data && Array.isArray(data)) {
           const publicacionesTransformadas = data.map(transformarPublicacion);
           setPublicaciones(publicacionesTransformadas);
@@ -55,11 +55,11 @@ export default function ViajeroLanding() {
           setPublicaciones([]);
         }
       } catch (err) {
-        console.error("Error cargando publicaciones:", err);
-        setError("No se pudieron cargar las publicaciones");
-        setPublicaciones([]);
+        console.error(err);
+        setError("No pudimos conectar con el servidor de viajes.");
       } finally {
-        setCargando(false);
+        // Pequeño delay artificial para que la UI no parpadee demasiado rápido
+        setTimeout(() => setCargando(false), 500);
       }
     };
 
@@ -78,119 +78,143 @@ export default function ViajeroLanding() {
     const coincideTexto =
       publicacion.usuario.nombre.toLowerCase().includes(query.toLowerCase()) ||
       publicacion.titulo.toLowerCase().includes(query.toLowerCase()) ||
-      (publicacion.descripcion?.toLowerCase().includes(query.toLowerCase()) || false);
+      publicacion.descripcion?.toLowerCase().includes(query.toLowerCase()) ||
+      false;
 
     const coincideEstado =
-      estadoSeleccionado === "todos" ||
-      estadoSeleccionado === "CDMX"; // Por ahora todos son de CDMX
+      estadoSeleccionado === "todos" || estadoSeleccionado === "CDMX";
 
     return coincideTexto && coincideEstado;
   });
 
   const resultadosCount = publicacionesFiltradas.length;
-
-  if (cargando) {
-    return (
-      <div className="min-h-[calc(100dvh-64px)] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-gray-600">Cargando publicaciones...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-[calc(100dvh-64px)] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900">Error al cargar</h3>
-          <p className="text-gray-600 mb-4">{error}</p>
-        </div>
-      </div>
-    );
-  }
+  const hayFiltrosActivos = query !== "" || estadoSeleccionado !== "todos";
 
   return (
-    <div className="min-h-[calc(100dvh-64px)]">
-      <section className="max-w-7xl mx-auto px-4 md:px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-8">
-            <h2 className="text-2xl md:text-3xl font-bold mb-2">
-              Descubre
-            </h2>
-            <p>
-              Descubre los itinerarios compartidos por viajeros y viajeras como tú.
+    <div className="min-h-screen bg-muted/5 pb-20">
+      {/* --- HERO SECTION --- */}
+      <div className="relative bg-background border-b border-border/60">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-950 dark:to-slate-900 opacity-50" />
+        <div className="relative max-w-7xl mx-auto px-4 md:px-8 py-16 md:py-20 text-center md:text-left">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-sm font-medium text-primary mb-4 backdrop-blur-sm">
+              <Compass className="mr-2 h-4 w-4" /> Comunidad de Viajeros
+            </div>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-foreground mb-4">
+              Inspírate con <br className="hidden md:block" /> rutas reales.
+            </h1>
+            <p className="text-lg text-muted-foreground leading-relaxed">
+              Descubre itinerarios creados por expertos locales y viajeros
+              apasionados. Encuentra tu próxima aventura.
             </p>
-          </div>
-          
-          <SearchFilters 
-            query={query}
-            estadoSeleccionado={estadoSeleccionado}
-            onQueryChange={handleSearchChange}
-            onEstadoChange={handleEstadoChange}
-          />
-
-          <div className="flex items-center justify-between mb-6">
-            <p className="text-sm text-gray-600">
-              {resultadosCount} {resultadosCount === 1 ? 'itinerario encontrado' : 'itinerarios encontrados'}
-            </p>
-            {query || estadoSeleccionado !== 'todos' ? (
-              <button
-                onClick={() => {
-                  setQuery('');
-                  setEstadoSeleccionado('todos');
-                }}
-                className="text-sm text-primary hover:text-secondary font-medium"
-              >
-                Limpiar filtros
-              </button>
-            ) : null}
-          </div>
-
-          <div className="grid gap-8">
-            {resultadosCount > 0 ? (
-              publicacionesFiltradas.map((p) => (
-                <PublicacionItem 
-                  key={p.id} 
-                  publicacion={p}
-                />
-              ))
-            ) : (
-              <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900">No se encontraron itinerarios</h3>
-                <p className="text-gray-600 mb-4 max-w-md mx-auto">
-                  {query || estadoSeleccionado !== 'todos' 
-                    ? "Intenta ajustar tus filtros de búsqueda para ver más resultados."
-                    : "No hay publicaciones disponibles en este momento."
-                  }
-                </p>
-                {(query || estadoSeleccionado !== 'todos') && (
-                  <Button 
-                    onClick={() => {
-                      setQuery('');
-                      setEstadoSeleccionado('todos');
-                    }}
-                    className={btn.primary}
-                  >
-                    Ver todos los itinerarios
-                  </Button>
-                )}
-              </div>
-            )}
           </div>
         </div>
-      </section>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 md:px-8 -mt-8 relative z-10">
+        {/* --- FILTROS --- */}
+        <SearchFilters
+          query={query}
+          estadoSeleccionado={estadoSeleccionado}
+          onQueryChange={handleSearchChange}
+          onEstadoChange={handleEstadoChange}
+        />
+
+        {/* --- RESULTADOS INFO --- */}
+        <div className="flex items-center justify-between mb-6 px-2">
+          <h2 className="text-xl font-bold text-foreground">
+            Explorar Itinerarios
+          </h2>
+          <span className="text-sm text-muted-foreground font-medium bg-background px-3 py-1 rounded-full border shadow-sm">
+            {resultadosCount}{" "}
+            {resultadosCount === 1 ? "resultado" : "resultados"}
+          </span>
+        </div>
+
+        {/* --- GRID DE CONTENIDO --- */}
+        {error ? (
+          <ErrorState message={error} />
+        ) : cargando ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <CardSkeleton key={i} />
+            ))}
+          </div>
+        ) : resultadosCount > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 auto-rows-fr">
+            {publicacionesFiltradas.map((p) => (
+              <PublicacionItem key={p.id} publicacion={p} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            hasFilters={hayFiltrosActivos}
+            onReset={() => {
+              setQuery("");
+              setEstadoSeleccionado("todos");
+            }}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Subcomponentes visuales para mantener limpio el código
+function CardSkeleton() {
+  return (
+    <div className="flex flex-col space-y-3">
+      <Skeleton className="h-[250px] w-full rounded-xl" />
+      <div className="space-y-2 px-2">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-8 w-8 rounded-full" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-4 w-1/2" />
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({
+  hasFilters,
+  onReset,
+}: {
+  hasFilters: boolean;
+  onReset: () => void;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center py-24 text-center border-2 border-dashed border-muted rounded-3xl bg-muted/10">
+      <div className="bg-background p-4 rounded-full shadow-sm mb-4">
+        <SearchX className="h-10 w-10 text-muted-foreground" />
+      </div>
+      <h3 className="text-xl font-bold text-foreground">
+        No encontramos aventuras
+      </h3>
+      <p className="text-muted-foreground max-w-sm mt-2 mb-6">
+        {hasFilters
+          ? "Intenta con otros términos o limpia los filtros para ver más resultados."
+          : "Aún no hay publicaciones."}
+      </p>
+      {hasFilters && (
+        <Button onClick={onReset} variant="outline" className="rounded-full">
+          Limpiar búsqueda
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function ErrorState({ message }: { message: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 text-center">
+      <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4">
+        <MapPin className="h-8 w-8" />
+      </div>
+      <h3 className="text-lg font-bold">Algo salió mal</h3>
+      <p className="text-muted-foreground mb-4">{message}</p>
+      <Button onClick={() => window.location.reload()}>Reintentar</Button>
     </div>
   );
 }
