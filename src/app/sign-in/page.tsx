@@ -40,7 +40,7 @@ const formSchema = z.object({
     })
 })
 
-const HOST = "http://localhost:4000"
+const HOST = "https://harol-lovers.up.railway.app"
 
 export default function SignInPage() {
   const [showPassword, setShowPassword] = useState(false);

@@ -44,8 +44,8 @@ interface FriendSuggestionApi{ //https://harol-lovers.up.railway.app
   correo?: string;
   foto_url?: string | null;
 }
-//const API_URL = "https://harol-lovers.up.railway.app";
-const API_URL = "http://localhost:4000";
+const API_URL = "https://harol-lovers.up.railway.app";
+// const API_URL = "https://harol-lovers.up.railway.app";
 // API instance
 const api = ItinerariosAPI.getInstance();
 
