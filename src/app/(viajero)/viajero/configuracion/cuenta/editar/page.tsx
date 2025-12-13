@@ -16,10 +16,14 @@ import {
 import { Usuario } from "@/api/interfaces/ApiRoutes";
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 import { toast } from "sonner";
-import { z } from "zod";
+import { z, ZodError } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+
+function isZodError(err: unknown): err is ZodError {
+  return err instanceof ZodError;
+}
 
 export default function EditAccountPage() {
   const api = ItinerariosAPI.getInstance();
@@ -157,8 +161,8 @@ export default function EditAccountPage() {
     try {
       verifySchema.parse(currentPassword);
     } catch (err) {
-      if (err instanceof z.ZodError) {
-        toast.error(err.errors[0].message);
+      if (isZodError(err)) {
+        toast.error(err.issues[0].message);
       } else {
         toast.error("Contraseña inválida");
       }
@@ -185,8 +189,8 @@ export default function EditAccountPage() {
     try {
       newPasswordSchema.parse(newPassword);
     } catch (err) {
-      if (err instanceof z.ZodError) {
-        toast.error(err.errors[0].message);
+      if (isZodError(err)) {
+        toast.error(err.issues[0].message);
       } else {
         toast.error("Contraseña inválida");
       }
@@ -205,7 +209,7 @@ export default function EditAccountPage() {
     };
 
     toast.promise(
-      api.updatePassword(body),
+      api.updatePassword(bodyd),
       {
         loading: "Cambiando contraseña...",
         success: (data) => {
