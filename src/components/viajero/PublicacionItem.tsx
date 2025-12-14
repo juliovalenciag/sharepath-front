@@ -212,7 +212,7 @@ export default function PublicacionItem({ publicacion }: { publicacion: Publicac
                   Historia
                </TabsTrigger>
                <TabsTrigger value="resenas" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-2 text-sm text-muted-foreground data-[state=active]:text-foreground transition-all">
-                  Reseñas ({resenas.length || 0})
+                  Reseñas
                </TabsTrigger>
             </TabsList>
          </div>
