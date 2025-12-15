@@ -1,6 +1,7 @@
 "use client";
+
 import Cookies from 'js-cookie';
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -8,8 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { toast } from "sonner";
-import Login from "@/components/Google/Login";
-import { GoogleOAuthProvider } from "@react-oauth/google"; // API DE GOOGLE OAUTH 
+import Login from "@/components/Google/Login"; 
+import { GoogleOAuthProvider } from "@react-oauth/google"; 
 import { Usuario } from "@/api/interfaces/ApiRoutes";
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 import z from "zod";
@@ -19,35 +20,17 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from "@/component
 
 const formSchema = z.object({
   correo: z.string()
-    .refine((email) => email.includes("@"), {
-      message: "Falta agregar la arroba",
-    })
-    .refine((email) => {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
-      return emailRegex.test(email);
-    }, {
-      message: "Ingresa un correo válido",
-    }),
+    .min(1, { message: "El correo es necesario" }) 
+    .email({ message: "Ingresa un correo válido (ejemplo@dominio.com)" }),
   password: z.string()
-    .min(8, {
-      message: "La contraseña debe tener mínimo 8 caracteres.",
-    })
-    .refine((password) => {
-      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$_?¿*]).{8,}$/;
-      return passwordRegex.test(password);
-    }, {
-      message: "La contraseña debe contener mayúscula, minúscula, número y un carácter especial válido (#, $, _, ?, ¿, *).",
-    })
+    .min(1, { message: "La contraseña es necesaria" })
 })
-
-const HOST = "https://harol-lovers.up.railway.app"
 
 export default function SignInPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  // Uso de la API
   const api = ItinerariosAPI.getInstance();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -57,26 +40,33 @@ export default function SignInPage() {
       password: ""
     },
   });
+
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
+
 
     const promise: Promise<Usuario> = api.doLogin(values.correo, values.password);
 
     toast.promise(promise, {
-      loading: "Iniciando sesión...",
+      loading: "Verificando credenciales...",
       success: (data) => {
+       
         Cookies.set("auth_token", JSON.stringify(data), { expires: 1 });
+        
+       
         const userRole = data.role;
         let redirectPath = '/viajero';
 
         if (userRole === 'admin') {
           redirectPath = '/admin';
         }
-        router.push(redirectPath)
-        return `¡Bienvenido de vuelta ${data.username}`;
+        router.push(redirectPath);
+        
+        return `¡Bienvenido de vuelta, ${data.username}!`;
       },
+     
       error: (error) => {
-        return error.message || "Credenciales incorrectas o error de red.";
+        return error.message || "Credenciales incorrectas. Inténtalo de nuevo.";
       },
       finally: () => {
         setIsLoading(false);
@@ -84,13 +74,14 @@ export default function SignInPage() {
     });
   };
 
-  // --- ESTRUCTURA Y DISEÑO (JSX) ---
   return (
     <GoogleOAuthProvider clientId="934272342967-it58ahq1jmjt347vm7t1mopi7hnql9dl.apps.googleusercontent.com">
+
       <main className="flex min-h-screen w-full items-center justify-center bg-muted/40 p-4">
+        
         <div className="flex w-full max-w-4xl min-h-[600px] overflow-hidden rounded-2xl shadow-2xl">
 
-          {/* Panel Izquierdo: Imagen */}
+          {/* Panel Izquierdo: Imagen Decorativa */}
           <div className="hidden lg:block lg:w-1/2">
             <Image
               src="/img/bellas_artes.jpg"
@@ -98,6 +89,7 @@ export default function SignInPage() {
               width={1920}
               height={1080}
               className="h-full w-full object-cover"
+              priority 
             />
           </div>
 
@@ -106,7 +98,8 @@ export default function SignInPage() {
             <div className="w-full max-w-sm text-center">
 
               <Form {...form}>
-                <form onSubmit={ form.handleSubmit(handleSubmit) } >
+                {/* 'noValidate' deshabilita las alertas nativas de HTML para usar las de Zod/Sonner */}
+                <form onSubmit={form.handleSubmit(handleSubmit)} noValidate>
                   <Image
                     src="/img/login.png"
                     alt="Icono de login"
@@ -120,38 +113,43 @@ export default function SignInPage() {
                     control={form.control}
                     name="correo"
                     render={({ field }) => (
-                      <FormItem>
-                          <FormControl>
-                          <Input type="text"
-                            placeholder="Correo (ejemplo: usuario@dominio.com)" {...field}
+                      <FormItem className="text-left">
+                        <FormControl>
+                          <Input 
+                            type="email" 
+                            placeholder="Correo (ejemplo: usuario@dominio.com)" 
+                            {...field}
                             className="py-6"
                             disabled={isLoading}
                           />
                         </FormControl>
+                       
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+
+        
                   <FormField
                     control={form.control}
                     name="password"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="text-left mt-4">
                         <div className="relative">
                           <FormControl>
                             <Input
                               type={showPassword ? "text" : "password"}
                               placeholder="Contraseña"
                               {...field}
-                              className="py-6 pr-10 mt-4"
+                              className="py-6 pr-10"
                               disabled={isLoading}
                             />
                           </FormControl>
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 mt-2 text-muted-foreground"
-                            aria-label="Toggle password visibility"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+                            aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                           >
                             {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
                           </button>
@@ -161,7 +159,8 @@ export default function SignInPage() {
                     )}
                   />
 
-                  <div className="mb-6 text-right">
+                  <div className="mb-6 mt-2 text-right">
+                    
                     <Link href="/recover-password"
                       className="text-sm text-muted-foreground hover:text-primary hover:underline"
                     >
@@ -178,9 +177,10 @@ export default function SignInPage() {
                     <span className="mx-4 text-xs text-muted-foreground">o</span>
                     <div className="flex-grow border-t border-border"></div>
                   </div>
-                  {/* Funcion de google */}
-                  <div className="flex justify-center"><Login /></div>
 
+                  <div className="flex justify-center">
+                    <Login />
+                  </div>
 
                   <p className="mt-8 text-sm text-muted-foreground">
                     ¿Aún no tienes una cuenta?{" "}
@@ -197,4 +197,3 @@ export default function SignInPage() {
     </GoogleOAuthProvider>
   );
 }
-
