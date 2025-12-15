@@ -38,14 +38,14 @@ interface ViajeroData {
 }
 
 // Tipo de sugerencia proveniente del backend
-interface FriendSuggestionApi{ //https://harol-lovers.up.railway.app
+interface FriendSuggestionApi{ //http://localhost:4000
   username: string;
   nombre_completo: string;
   correo?: string;
   foto_url?: string | null;
 }
-const API_URL = "https://harol-lovers.up.railway.app";
-// const API_URL = "https://harol-lovers.up.railway.app";
+const API_URL = "http://localhost:4000";
+// const API_URL = "http://localhost:4000";
 // API instance
 const api = ItinerariosAPI.getInstance();
 
