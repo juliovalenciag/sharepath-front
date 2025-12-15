@@ -38,6 +38,7 @@ export default function Pregunta2Page() {
     resolver: zodResolver(PreguntaSchema),
     defaultValues: loadFormData(), 
   });
+  const selectedCount = (form.watch('pregunta2') || []).length;
   
   const toggleValue = (currentArray: string[] = [], value: string): string[] => {
     if (currentArray.includes(value)) {
@@ -63,6 +64,7 @@ export default function Pregunta2Page() {
           totalPreguntas={totalPreguntas}
           onSiguiente={form.handleSubmit(onSiguiente)}
           isLoading={isLoading}
+          selectedCount={selectedCount}
         >
           <div className="space-y-4">
             <FormField

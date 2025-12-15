@@ -13,6 +13,7 @@ import {
   Sparkles,
   UserMinus,
   Ban,
+  Unlock,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -71,12 +72,24 @@ type FriendSuggestion = {
   interests: string[];
 };
 
+type BlockedUser = {
+  id: string;
+  username: string;
+  name: string;
+  avatar: string;
+  city?: string;
+  country?: string;
+  blockedAt?: string;
+  reason?: string;
+};
+
 // ===== Página Principal =====
 
 export default function FriendsPage() {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [requests, setRequests] = useState<FriendRequest[]>([]);
   const [suggestions, setSuggestions] = useState<FriendSuggestion[]>([]);
+  const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
   const [loading, setLoading] = useState(true);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -122,11 +135,26 @@ export default function FriendsPage() {
       loading: "Bloqueando usuario...",
       success: () => {
         setFriends((prev) => prev.filter((f) => f.username !== username));
+        // Recargar bloqueados para que aparezca en el nuevo apartado
+        loadBlockedData();
         return `@${username} ha sido bloqueado`;
       },
       error: () => {
         return "Error al bloquear usuario";
       },
+    });
+  };
+
+  const handleUnblock = async (username: string) => {
+    toast.promise(api.unblock(username), {
+      loading: "Desbloqueando usuario...",
+      success: () => {
+        setBlockedUsers((prev) => prev.filter((u) => u.username !== username));
+        // Recuperar lista de amigos por si vuelve a ser visible
+        loadFriendsData();
+        return `@${username} ha sido desbloqueado`;
+      },
+      error: "No se pudo desbloquear al usuario",
     });
   };
 
@@ -235,6 +263,48 @@ export default function FriendsPage() {
     }
   };
 
+  const loadBlockedData = async () => {
+    try {
+      let rawBlocked: any[] = [];
+
+      if ("getBlockedUsers" in api) {
+        const res = await (api as any).getBlockedUsers();
+        rawBlocked = Array.isArray(res)
+          ? res
+          : Array.isArray(res?.data)
+          ? res.data
+          : [];
+      }
+
+      const mapped: BlockedUser[] = rawBlocked.map((item: any) => {
+        const user = item.blocked_user || item.user || item;
+
+        return {
+          id:
+            user.username ||
+            user.correo ||
+            String(item.id || user.id || user.username || ""),
+          username: user.username || "desconocido",
+          name:
+            user.nombre_completo ||
+            user.nombre ||
+            user.username ||
+            "Usuario bloqueado",
+          avatar: user.foto_url || "",
+          city: user.ciudad,
+          country: user.pais,
+          blockedAt: item.fecha_bloqueo || item.blocked_at,
+          reason: item.motivo || item.reason,
+        };
+      });
+
+      setBlockedUsers(mapped);
+    } catch (err) {
+      console.warn("Error cargando bloqueados:", err);
+      setBlockedUsers([]);
+    }
+  };
+
   // --- EFECTO INICIAL ---
   useEffect(() => {
     const init = async () => {
@@ -243,6 +313,7 @@ export default function FriendsPage() {
         loadFriendsData(),
         loadRequestsData(),
         loadSuggestionsData(),
+        loadBlockedData(),
       ]);
       setLoading(false);
     };
@@ -253,6 +324,7 @@ export default function FriendsPage() {
   const totalFriends = friends.length;
   const totalRequests = requests.length;
   const totalSuggestions = suggestions.length;
+  const totalBlocked = blockedUsers.length;
 
   if (loading) {
     return (
@@ -290,7 +362,7 @@ export default function FriendsPage() {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <SummaryCard
           label="Total Amigos"
           value={totalFriends}
@@ -308,6 +380,12 @@ export default function FriendsPage() {
           value={totalSuggestions}
           icon={Sparkles}
           intent="info"
+        />
+        <SummaryCard
+          label="Bloqueados"
+          value={totalBlocked}
+          icon={Ban}
+          intent={totalBlocked > 0 ? "warning" : "default"}
         />
       </div>
 
@@ -340,6 +418,17 @@ export default function FriendsPage() {
               className="px-4 text-xs sm:text-sm"
             >
               Sugerencias
+            </TabsTrigger>
+            <TabsTrigger value="blocked" className="px-4 text-xs sm:text-sm">
+              Bloqueados
+              {totalBlocked > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="ml-2 h-5 px-1.5 text-[10px] font-normal"
+                >
+                  {totalBlocked}
+                </Badge>
+              )}
             </TabsTrigger>
           </TabsList>
         </div>
@@ -407,6 +496,29 @@ export default function FriendsPage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {suggestions.map((s) => (
                 <FriendSuggestionCard key={s.id} suggestion={s} />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent
+          value="blocked"
+          className="animate-in fade-in-50 slide-in-from-bottom-2"
+        >
+          {blockedUsers.length === 0 ? (
+            <EmptyState
+              icon={Ban}
+              title="Sin usuarios bloqueados"
+              description="Aquí verás a los usuarios que bloquees. Puedes desbloquearlos cuando quieras."
+            />
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {blockedUsers.map((user) => (
+                <BlockedUserCard
+                  key={user.id}
+                  user={user}
+                  onUnblock={handleUnblock}
+                />
               ))}
             </div>
           )}
@@ -713,6 +825,79 @@ function FriendSuggestionCard({
         <Button className="w-full h-8 text-xs" variant="outline">
           <UserPlus className="mr-2 h-3.5 w-3.5" />
           Conectar
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
+function BlockedUserCard({
+  user,
+  onUnblock,
+}: {
+  user: BlockedUser;
+  onUnblock: (username: string) => void;
+}) {
+  const blockedLabel = user.blockedAt
+    ? new Date(user.blockedAt).toLocaleDateString("es-MX", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : null;
+
+  return (
+    <Card className="flex flex-col justify-between transition-all hover:border-destructive/40">
+      <CardContent className="p-4">
+        <Link
+          href={`/viajero/perfil/${user.username}`}
+          className="flex items-center gap-3 mb-3 group"
+        >
+          <Avatar className="h-12 w-12 group-hover:scale-105 transition-transform">
+            <AvatarImage src={user.avatar} alt={user.name} />
+            <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <h4 className="font-medium text-sm truncate group-hover:text-destructive transition-colors">
+              {user.name}
+            </h4>
+            <p className="text-xs text-muted-foreground truncate">
+              @{user.username}
+            </p>
+            {blockedLabel && (
+              <Badge
+                variant="outline"
+                className="mt-1 rounded-md px-1.5 py-0 text-[10px] font-normal"
+              >
+                Bloqueado {blockedLabel}
+              </Badge>
+            )}
+          </div>
+        </Link>
+
+        {(user.city || user.country) && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <MapPin className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">
+              {[user.city, user.country].filter(Boolean).join(", ")}
+            </span>
+          </div>
+        )}
+
+        {user.reason && (
+          <p className="mt-2 text-xs text-muted-foreground line-clamp-2">
+            Motivo: {user.reason}
+          </p>
+        )}
+      </CardContent>
+      <div className="p-3 pt-0 mt-auto">
+        <Button
+          variant="outline"
+          className="w-full h-8 text-xs text-destructive border-destructive/30 hover:bg-destructive/10"
+          onClick={() => onUnblock(user.username)}
+        >
+          <Unlock className="mr-2 h-3.5 w-3.5" />
+          Desbloquear
         </Button>
       </div>
     </Card>
