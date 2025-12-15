@@ -72,7 +72,16 @@ export function ChatsSidebar({
             >
               {/* Avatar stack */}
               <div className="relative">
-                <div className="size-10 rounded-full bg-muted grid place-content-center border">👥</div>
+                {/* <div className="size-10 rounded-full bg-muted grid place-content-center border">👥</div> */}
+                <div className="size-10 rounded-full bg-muted grid place-content-center border overflow-hidden">
+                  {
+                    c.members[1]?.foto_url !== "" ? (
+                      <img src={c.members[1].foto_url} className="aspect-square size-full" alt="Foto de perfil"></img>
+                    ) : (
+                      <p>{c.members[1]?.name.charAt(0)}</p>
+                    )
+                  }
+                </div>
                 {/* indicador de online si algun amigo esta en linea */}
                 <span className="absolute -bottom-0 -right-0 size-3 rounded-full ring-2 ring-card"
                   // style={{ background: c.members.some(m => m.online) ? "#16a34a" : "#94a3b8" }} />

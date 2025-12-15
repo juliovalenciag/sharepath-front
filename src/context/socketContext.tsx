@@ -1,6 +1,7 @@
+//socketCOntext original
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 
 //Datos del contexto
@@ -9,6 +10,7 @@ interface ISocketContext {
   isConnected: boolean;
   userID: string | null;
   username: string | null;
+  recargarUsuario: () => void;
 }
 
 //Incializacion de datos del contexto
@@ -17,6 +19,7 @@ const SocketContext = createContext<ISocketContext>({
   isConnected: false,
   userID: null,
   username: null,
+  recargarUsuario: () => {}
 });
 
 export const useSocket = () => useContext(SocketContext);
@@ -27,19 +30,63 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const [userID, setUserID] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
 
+  const recargarUsuario = () => {
+    const storedUser = localStorage.getItem("user");
+    const token = localStorage.getItem("authToken");
+
+    if(!token){
+      setUserID(null);
+      // setIsConnected(false);
+      setUsername(null);
+      if(socket){
+        socket.disconnect();
+        setSocket(null);
+      }
+      // console.log("recargarUsuario: No hay token, no se generara socket");
+      return;
+    }
+    // console.log("Ya hay token, generando socket");
+
+    if(storedUser) {
+      // console.log("hola desde stored user");
+      const datosUsuario = JSON.parse(storedUser);
+      setUserID(datosUsuario.correo);
+      setUsername(datosUsuario.username);
+    }
+    else{
+      setUserID(null);
+      setUsername(null);
+    }
+  };
+
+  useEffect(() => {
+    recargarUsuario();
+  }, []);
+
+  useEffect(() => {
+    const handleUserChange = () => {
+      recargarUsuario();
+    };
+
+    window.addEventListener("storage", handleUserChange);
+
+    return () => window.removeEventListener("storage", handleUserChange);
+  }, []);
+
+  /*Socket cuando cambia el userID*/
   useEffect(() => {
     //console.log("Iniciando configuracion de SocketConext...");
 
-    const sessionID = localStorage.getItem("sessionID");
     const token = localStorage.getItem("authToken");
+    const sessionID = localStorage.getItem("sessionID");
 
-    if (!token) {
-      console.log("No se encontró token");
+    if (!token) { 
+      console.log('No se encontró token');
       return;
     }
 
     const newSocket = io("https://harol-lovers.up.railway.app", {
-    //const newSocket = io("http://localhost:4000", {
+    //const newSocket = io("https://harol-lovers.up.railway.app", {
       //withCredentials: true,
       path: "/socket.io/",
       autoConnect: false,
@@ -49,18 +96,20 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       },
     });
 
-    // newSocket.auth = {
+    newSocket.connect();
+    setSocket(newSocket);
+    // newSocket.auth = { 
     //     sessionID: sessionID,
     //     token: token
     // };
 
-    newSocket.on("session", ({ sessionID, userID, username }) => {
-      //console.log(`Evento session - SocketContext: Sesión recibida. ID: ${userID}, Nombre: ${username}, Sesion ID: ${sessionID}`);
-      newSocket.auth = { sessionID, token };
-      localStorage.setItem("sessionID", sessionID);
-      setUserID(userID);
-      setUsername(username); //Guarda el username en el navegador y estado de react
-    });
+    // newSocket.on("session", ({ sessionID, userID, username }) => {
+    //   console.log(`Evento session - SocketContext: Sesión recibida. ID: ${userID}, Nombre: ${username}, Sesion ID: ${sessionID}`);
+    //   newSocket.auth = { sessionID, token }; 
+    //   localStorage.setItem("sessionID", sessionID);
+    //   setUserID(userID);
+    //   setUsername(username);//Guarda el username en el navegador y estado de react
+    // });
 
     newSocket.on("connect", () => {
       //console.log("SocketContext: Conectado al servidor");
@@ -90,15 +139,40 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
     //Guardar el socket en el estado de react
     setSocket(newSocket);
+      newSocket.on("session", ({ sessionID, userID, username }) => {
+        //console.log("Sesion valida, actualizando datos...");
+        localStorage.setItem("sessionID", sessionID);
+        newSocket.auth = { sessionID, token };
+        setUserID(userID);
+        setUsername(username);
+
+        //Pedir amigos aqui
+        // console.log("Pidiendo lista de amigos...");
+        newSocket.emit("get friends list");
+      });
+
+      // newSocket.on("users", (users) => {
+        // console.log("Contexto: Recibida lista de amigos: ", users.length);
+      // });
+
+      newSocket.on("disconnect", () => setIsConnected(false));
+      // newSocket.off("session");
+      // newSocket.off("connect");
+      // newSocket.off("connect_error");
+      // newSocket.off("disconnect");
+      //Se pueden poner los .off aqui?
 
     return () => {
       //console.log("SocketContext: Desconectando usuario...")
+      newSocket.off("connect");
+      newSocket.off("session");
+      newSocket.off("disconnect"),
       newSocket.disconnect();
     };
-  }, []);
+  }, [userID]);
 
   return (
-    <SocketContext.Provider value={{ socket, isConnected, userID, username }}>
+    <SocketContext.Provider value={{ socket, isConnected, userID, username, recargarUsuario }}>
       {children}
     </SocketContext.Provider>
   );

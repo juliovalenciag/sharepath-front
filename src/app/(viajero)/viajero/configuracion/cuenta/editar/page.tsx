@@ -16,10 +16,14 @@ import {
 import { Usuario } from "@/api/interfaces/ApiRoutes";
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 import { toast } from "sonner";
-import { z } from "zod";
+import { z, ZodError } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+
+function isZodError(err: unknown): err is ZodError {
+  return err instanceof ZodError;
+}
 
 export default function EditAccountPage() {
   const api = ItinerariosAPI.getInstance();
@@ -133,9 +137,8 @@ export default function EditAccountPage() {
     setPreview(url);
   };
 
-  const handleDelete = async () => {
+  const executeDelete = async () => {
     if (loadingDelete) return;
-
     setLoadingDelete(true);
 
     toast.promise(api.deleteUser(), {
@@ -150,15 +153,32 @@ export default function EditAccountPage() {
         setLoadingDelete(false);
         return `Error al eliminar la cuenta: ${err.message}`;
       }
-    }); // CORRECCIÓN: Se agregó ;
+    });
+  };
+
+  const handleDeleteClick = () => {
+    toast("¿Estás seguro de eliminar tu cuenta?", {
+      description: "Esta acción es permanente y perderás todos tus datos.",
+      action: {
+        label: "Eliminar definitivamente",
+        onClick: () => executeDelete(),
+      },
+      cancel: {
+        label: "Cancelar",
+        onClick: () => {}, // No hace nada, solo cierra el toast
+      },
+      // Estilo rojo para indicar peligro (consistente con tu FriendsPage)
+      actionButtonStyle: { backgroundColor: "var(--destructive)", color: "white" },
+      duration: 5000, 
+    });
   };
 
   const handleVerifyCurrent = async () => {
     try {
       verifySchema.parse(currentPassword);
     } catch (err) {
-      if (err instanceof z.ZodError) {
-        toast.error(err.errors[0].message);
+      if (isZodError(err)) {
+        toast.error(err.issues[0].message);
       } else {
         toast.error("Contraseña inválida");
       }
@@ -185,8 +205,8 @@ export default function EditAccountPage() {
     try {
       newPasswordSchema.parse(newPassword);
     } catch (err) {
-      if (err instanceof z.ZodError) {
-        toast.error(err.errors[0].message);
+      if (isZodError(err)) {
+        toast.error(err.issues[0].message);
       } else {
         toast.error("Contraseña inválida");
       }
@@ -205,7 +225,7 @@ export default function EditAccountPage() {
     };
 
     toast.promise(
-      api.updatePassword(body),
+      api.updatePassword(bodyd),
       {
         loading: "Cambiando contraseña...",
         success: (data) => {
@@ -342,14 +362,16 @@ export default function EditAccountPage() {
               <div className="flex flex-col sm:flex-row justify-between gap-4 mt-4">
                 <Button
                   type="submit"
-                  className="bg-primary text-white hover:bg-primary/90 w-full sm:w-auto"
+                  className="bg-primary text-white dark:text-black hover:bg-primary/90 w-full sm:w-auto"
                 >
                   Aceptar cambios
                 </Button>
+
                 <Button
+                  type="button"
                   variant="destructive"
                   className="w-full sm:w-auto"
-                  onClick={handleDelete}
+                  onClick={handleDeleteClick}
                   disabled={loadingDelete}
                 >
                   {loadingDelete ? "Eliminando..." : "Eliminar cuenta"}

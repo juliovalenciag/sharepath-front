@@ -9,8 +9,9 @@ export default function ViajeroChatsPage() {
   const initialUsername = searchParams.get("username") || undefined;
 
   return (
-    <div className="min-h-[calc(100dvh-64px)] bg-background">
-      <ChatLayout initialUsername={initialUsername} />
+    // <div className="min-h-[calc(100dvh-64px)] bg-background">
+    <div className="min-h-100dvh bg-background">
+      <ChatLayout/>
     </div>
   );
 }

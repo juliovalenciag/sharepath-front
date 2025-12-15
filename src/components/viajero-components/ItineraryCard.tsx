@@ -217,7 +217,7 @@ export default function ItinerarioCard({
             size="sm"
             className="text-xs h-7 gap-1.5 text-primary hover:bg-primary/10 hover:text-primary font-semibold px-3 rounded-full"
             onClick={() =>
-              handleAction("ver", `/viajero/itinerarios/${data.id}/ver`)
+              handleAction("ver", `/viajero/itinerarios/${data.id}/editar`)
             }
           >
             Editar <Pencil className="h-3 w-3" />
