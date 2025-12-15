@@ -12,10 +12,13 @@ import {
   Trash2,
   Pencil,
   Loader2,
+  MapPinned,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { REGIONS_DATA, RegionKey } from "@/lib/constants/regions";
 import { BuilderMeta } from "@/lib/itinerary-builder-store";
+import { cn } from "@/lib/utils";
 
 interface ItineraryHeaderProps {
   meta: BuilderMeta;
@@ -23,6 +26,7 @@ interface ItineraryHeaderProps {
   onReset: () => void;
   onOptimize: () => void;
   onSave: () => void;
+  onRuta: () => void; // 1. Hacer la prop opcional
   isSaving: boolean;
   canOptimize: boolean;
 }
@@ -33,6 +37,7 @@ export function ItineraryHeader({
   onReset,
   onOptimize,
   onSave,
+  onRuta,
   isSaving,
   canOptimize,
 }: ItineraryHeaderProps) {
@@ -103,13 +108,26 @@ export function ItineraryHeader({
         </Button>
 
         <div className="h-4 w-px bg-border mx-1 hidden sm:block" />
-
+        {/* 2. Renderizar condicionalmente el botón solo si la función existe */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onRuta}
+            className="h-9 sm:inline-flex min-w-[110px] shadow-sm active:scale-95 transition-transform"
+            title="Completar itinerario con IA"
+          >
+            <Sparkles className="mr-2 h-3.5 w-3.5 text-primary" />
+            Completar
+          </Button>
         <Button
           variant="outline"
           size="sm"
           onClick={onOptimize}
           disabled={!canOptimize}
-          className="h-9 hidden sm:flex"
+          className={cn(
+            "h-9 min-w-[110px] shadow-sm active:scale-95 transition-transform",
+            canOptimize ? "sm:inline-flex" : "hidden"
+          )}
           title="Reordenar ruta por distancia"
         >
           <Wand2 className="mr-2 h-3.5 w-3.5 text-primary" />

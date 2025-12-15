@@ -473,8 +473,8 @@ export interface CreateItinerarioRequest {
 export interface DashboardStatsResponse {
   usuarios: {
     total: number;
-    nuevosEsteMes: number; // Por ahora vendrá en 0
-    crecimiento: string;   // Por ahora vendrá en "0%"
+    nuevosEsteMes: number; 
+    crecimiento: string;   
   };
   metricasGenerales: {
     totalLugares: number;
