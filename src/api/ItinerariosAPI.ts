@@ -33,7 +33,7 @@ import {
   ListRecomen,
   Block,
   UnBlock,
-  BlockedListResponse,
+  ListBlock,
   CreateResenaRequest,
   UpdateResenaRequest,
   Resena,
@@ -442,15 +442,10 @@ export class ItinerariosAPI implements ApiRoutes {
     return await this.post<UnBlock>("/amigo/unblock", true, { user });
   }
 
-  async getBlockedUsers(): Promise<BlockedListResponse> {
-    try {
-      return await this.get<BlockedListResponse>("/amigo/bloqueados", true);
-    } catch (error) {
-      console.warn("Fallo /amigo/bloqueados, probando /amigo/blocked");
-      return await this.get<BlockedListResponse>("/amigo/blocked", true);
-    }
+  async listblock(): Promise<ListBlock> {
+    return await this.get<ListBlock>("/amigo/listblock", true);
   }
-
+  
   // ===== RECOMENDACIONES =====
   async getRecomen(): Promise<ListRecomen> {
     return await this.get<ListRecomen>("/recomendacion", true);
