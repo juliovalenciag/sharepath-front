@@ -237,7 +237,7 @@ function SugerenciaCard({
             if (onConnect) onConnect(username);
           }}
         >
-          {status === "Solicitud enviada" ? "Pendiente" : "Conectar"}
+          {status === "Solicitud enviada" ? "Pendiente" : "Enviar Solicitud"}
         </Button>
       </CardContent>
     </Card>
