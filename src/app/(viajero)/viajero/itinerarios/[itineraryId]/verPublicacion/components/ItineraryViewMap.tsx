@@ -422,9 +422,10 @@ export default function ItineraryViewMap({
           <Polyline
             positions={activities.map((a) => [a.lat, a.lng])}
             pathOptions={{
-              color: "#2563eb",
-              weight: 5,
+              color: "#94a3b8",
+              weight: 4,
               opacity: 0.8,
+              dashArray: "5, 10",
               lineCap: "round",
               lineJoin: "round",
             }}

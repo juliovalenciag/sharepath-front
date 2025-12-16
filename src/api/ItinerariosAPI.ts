@@ -43,6 +43,7 @@ import {
   ItinerarioData,
   DashboardStatsResponse,
   UserInfoResponse,
+  UpdatePublicationRequest,
 } from "./interfaces/ApiRoutes";
 
 export class ItinerariosAPI implements ApiRoutes {
@@ -201,7 +202,10 @@ export class ItinerariosAPI implements ApiRoutes {
       const errorMessage =
         errorData?.message || `Error ${request.status}: ${request.statusText}`;
       console.warn(`[${request.status}] ${route}: ${errorMessage}`);
-      throw new Error(errorMessage);
+      const err: any = new Error(errorMessage);
+      err.status = request.status;
+      err.route = route;
+      throw err;
     }
 
     return data as T;
@@ -520,6 +524,18 @@ export class ItinerariosAPI implements ApiRoutes {
       `/publicacion/${publicacionId}`,
       true
     );
+
+  }
+
+  async updatePublication(
+    publicacionId: number,
+    body: UpdatePublicationRequest
+  ): Promise<Publicacion> {
+    return await this.put<Publicacion>(
+      `/publicacion/${publicacionId}`,
+      true,
+      body
+    );
   }
 
   async deletePublication(publicacionId: number): Promise<{ message: string }> {
@@ -631,12 +647,12 @@ export class ItinerariosAPI implements ApiRoutes {
 
   /**
    * Ejecuta la acción de Baneo basada en un reporte.
-   * Ruta Back: POST /admin/ban/id
+
    * Nota: el id es el del reporte
    */
   async banPublication(reportId: number): Promise<{ message: string }> {
     return await this.post<{ message: string }>(
-      `/admin/ban/${reportId}`,
+      `/reports/admin/ban/${reportId}`,
       true,
       {}
     );
@@ -649,5 +665,13 @@ export class ItinerariosAPI implements ApiRoutes {
    */
   async getAdminReportDetail(reportId: number): Promise<Reporte> {
     return await this.get<Reporte>(`/reports/${reportId}`, true);
+  }
+
+  /**
+   * Obtiene los detalles de una publicación.
+   * Ruta Back: GET /publicacion/id
+   */
+  async getPublicacion(publicacionId: number): Promise<Publicacion> {
+    return await this.get<Publicacion>(`/publicacion/${publicacionId}`, true);
   }
 }

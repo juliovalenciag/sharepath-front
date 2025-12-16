@@ -340,6 +340,7 @@ export interface ApiRoutes {
 
   getPublicationWithResenas: (publicacionId: number) => Promise<PublicacionConResenas>;
   deletePublication: (publicacionId: number) => Promise<{ message: string }>;
+  updatePublication: (publicacionId: number, body: UpdatePublicationRequest) => Promise<Publicacion>;
   
   // Reseñas
   createResena: (publicacionId: number, body: CreateResenaRequest) => Promise<Resena>;
@@ -355,6 +356,8 @@ export interface ApiRoutes {
 
   // Notificaciones
   getNotifications: () => Promise<RawNotification[]>;
+
+
 }
 
 export interface MarkAsReadResponse {
@@ -450,13 +453,27 @@ export interface Foto {
   foto_url: string;
 }
 
+export interface Resena {
+  id?: number;
+  comentario?: string;
+  rating?: number;
+  [key: string]: any;
+}
+
 export interface Publicacion {
   id: number;
-  descripcion: string;
+  descripcion?: string | null;
   privacity_mode: boolean;
-  itinerario: { id: number; nombre: string } | null;
-  fotos: Foto[]; // <-- AGREGADO: Array de fotos
-  user_shared?: Usuario; // Lo dejamos opcional para evitar ciclos
+  itinerario: { id: number; nombre?: string; title?: string } | null;
+  fotos?: Foto[];
+  resenas?: Resena[];
+  user_shared?: Usuario;
+  [key: string]: any;
+}
+
+export interface UpdatePublicationRequest {
+  descripcion?: string;
+  privacity_mode?: boolean;
 }
 
 export interface AverageRatingResponse {
