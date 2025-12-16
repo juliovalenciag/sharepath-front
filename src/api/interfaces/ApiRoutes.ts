@@ -455,13 +455,22 @@ export interface Foto {
   foto_url: string;
 }
 
+export interface Resena {
+  id?: number;
+  comentario?: string;
+  rating?: number;
+  [key: string]: any;
+}
+
 export interface Publicacion {
   id: number;
-  descripcion: string;
+  descripcion?: string | null;
   privacity_mode: boolean;
-  itinerario: { id: number; nombre: string } | null;
-  fotos: Foto[]; // <-- AGREGADO: Array de fotos
-  user_shared?: Usuario; // Lo dejamos opcional para evitar ciclos
+  itinerario: { id: number; nombre?: string; title?: string } | null;
+  fotos?: Foto[];
+  resenas?: Resena[];
+  user_shared?: Usuario;
+  [key: string]: any;
 }
 
 export interface AverageRatingResponse {

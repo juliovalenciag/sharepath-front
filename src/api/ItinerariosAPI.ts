@@ -601,11 +601,11 @@ export class ItinerariosAPI implements ApiRoutes {
 
     /**
      * Ejecuta la acción de Baneo basada en un reporte.
-     * Ruta Back: POST /admin/ban/id
+     * Ruta Back: POST /reports/admin/ban/id
      * Nota: el id es el del reporte
      */
     async banPublication(reportId: number): Promise<{ message: string }> {
-      return await this.post<{ message: string }>(`/admin/ban/${reportId}`, true, {});
+      return await this.post<{ message: string }>(`/reports/admin/ban/${reportId}`, true, {});
     }
 
     /**
@@ -615,6 +615,14 @@ export class ItinerariosAPI implements ApiRoutes {
      */
     async getAdminReportDetail(reportId: number): Promise<Reporte> {
       return await this.get<Reporte>(`/reports/${reportId}`, true);
+    }
+
+    /**
+     * Obtiene los detalles de una publicación.
+     * Ruta Back: GET /publicacion/id
+     */
+    async getPublicacion(publicacionId: number): Promise<Publicacion> {
+      return await this.get<Publicacion>(`/publicacion/${publicacionId}`, true);
     }
 
 }

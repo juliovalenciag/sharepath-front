@@ -2,7 +2,7 @@
 
 import React from "react";
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
-import { Reporte } from "@/api/interfaces/ApiRoutes";
+import { Reporte, Publicacion } from "@/api/interfaces/ApiRoutes";
 
 type ReportStatus = "en_revision" | "pendiente";
 
@@ -81,7 +81,10 @@ export default function ReportesPage() {
 	const [reports, setReports] = React.useState<ReportItem[]>(sampleReports);
 	const [loading, setLoading] = React.useState(true);
 	const [selectedReport, setSelectedReport] = React.useState<Reporte | null>(null);
+	const [selectedPublicacion, setSelectedPublicacion] = React.useState<Publicacion | null>(null);
 	const [detailLoading, setDetailLoading] = React.useState(false);
+	const [publicacionLoading, setPublicacionLoading] = React.useState(false);
+	const [publicacionError, setPublicacionError] = React.useState<string | null>(null);
 	const [queryId, setQueryId] = React.useState("");
 	const [queryUser, setQueryUser] = React.useState("");
 	const [queryDate, setQueryDate] = React.useState(""); // yyyy-mm-dd
@@ -193,6 +196,60 @@ export default function ReportesPage() {
 			alert(`Error al cargar detalles del reporte: ${errorMsg}`);
 		} finally {
 			setDetailLoading(false);
+		}
+	};
+
+	// Extrae el ID de la publicación del historial o descripción
+	const extractPublicacionId = (reporte: Reporte): number | null => {
+		// Busca en el historial
+		if (reporte.historial && reporte.historial.length > 0) {
+			for (const item of reporte.historial) {
+				const match = item.action_description.match(/con id (\d+)/i);
+				if (match) {
+					return parseInt(match[1], 10);
+				}
+			}
+		}
+		// Si no encuentra en historial, intenta en descripción
+		const descMatch = reporte.description.match(/id[:\s]+(\d+)/i);
+		if (descMatch) {
+			return parseInt(descMatch[1], 10);
+		}
+		return null;
+	};
+
+	const loadPublicacionPreview = async (publicacionId: number) => {
+		try {
+			setPublicacionLoading(true);
+			setPublicacionError(null);
+			console.log(`📥 Cargando publicación ${publicacionId}...`);
+			const publicacion = await api.getPublicacion(publicacionId);
+			console.log(`✅ Publicación cargada:`, publicacion);
+			console.log(`Descripción:`, publicacion.descripcion);
+			console.log(`Fotos:`, publicacion.fotos);
+			console.log(`Itinerario:`, publicacion.itinerario);
+			
+			// Si el reporte tiene descripción, usarla como fallback
+			if (!publicacion.descripcion && selectedReport?.description) {
+				publicacion.descripcion = selectedReport.description;
+			}
+			
+			setSelectedPublicacion(publicacion);
+		} catch (error: any) {
+			console.error("❌ Error al cargar la publicación:", error);
+			const errorMsg = error?.message || "Error desconocido";
+			
+			// Determinar si es error de acceso o no encontrado
+			let userMessage = `Error al cargar la publicación: ${errorMsg}`;
+			if (errorMsg.includes("404") || errorMsg.includes("no encontrada")) {
+				userMessage = "La publicación no fue encontrada o ha sido eliminada.";
+			} else if (errorMsg.includes("403") || errorMsg.includes("acceso")) {
+				userMessage = "No tienes acceso para ver esta publicación (privada).";
+			}
+			
+			setPublicacionError(userMessage);
+		} finally {
+			setPublicacionLoading(false);
 		}
 	};
 
@@ -500,6 +557,26 @@ export default function ReportesPage() {
 									Cerrar
 								</button>
 								<button onClick={() => {
+									const pubId = extractPublicacionId(selectedReport);
+									if (pubId) {
+										loadPublicacionPreview(pubId);
+									} else {
+										alert("No se pudo obtener el ID de la publicación del reporte");
+									}
+								}} style={{
+									flex: 1,
+									padding: "10px 16px",
+									borderRadius: 8,
+									border: "1px solid #3b82f6",
+									background: "#eff6ff",
+									color: "#1e40af",
+									fontSize: 14,
+									fontWeight: 600,
+									cursor: "pointer",
+								}}>
+									Ver Publicación
+								</button>
+								<button onClick={() => {
 									onApprove(selectedReport.id);
 									setSelectedReport(null);
 								}} style={{
@@ -517,6 +594,200 @@ export default function ReportesPage() {
 								</button>
 							</div>
 						</div>
+					)}
+				</div>
+			</div>
+		)}
+
+		{/* Modal de Vista Previa de Publicación */}
+		{selectedPublicacion && (
+			<div style={{
+				position: "fixed",
+				top: 0,
+				left: 0,
+				right: 0,
+				bottom: 0,
+				background: "rgba(0, 0, 0, 0.5)",
+				display: "flex",
+				alignItems: "center",
+				justifyContent: "center",
+				zIndex: 10000,
+			}} onClick={() => setSelectedPublicacion(null)}>
+				<div style={{
+					background: "white",
+					borderRadius: 12,
+					padding: 24,
+					maxWidth: 700,
+					width: "90%",
+					maxHeight: "80vh",
+					overflowY: "auto",
+				}} onClick={(e) => e.stopPropagation()}>
+					<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+						<h2 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>Vista Previa de Publicación</h2>
+						<button onClick={() => setSelectedPublicacion(null)} style={{
+							background: "transparent",
+							border: "none",
+							fontSize: 24,
+							cursor: "pointer",
+						}}>×</button>
+					</div>
+
+				{publicacionLoading ? (
+					<p style={{ color: "#6b7280" }}>Cargando publicación...</p>
+				) : publicacionError ? (
+					<div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+						<div style={{
+							padding: 16,
+							backgroundColor: "#fee2e2",
+							borderLeft: "4px solid #dc2626",
+							borderRadius: 4,
+							color: "#991b1b",
+							fontSize: 14,
+						}}>
+							⚠️ {publicacionError}
+						</div>
+						<div style={{ 
+							display: "flex", 
+							gap: 8, 
+							marginTop: 24,
+							paddingTop: 16,
+							borderTop: "1px solid #e5e7eb"
+						}}>
+							<button onClick={() => setSelectedPublicacion(null)} style={{
+								flex: 1,
+								padding: "10px 16px",
+								borderRadius: 8,
+								border: "1px solid #e5e7eb",
+								background: "#ffffff",
+								fontSize: 14,
+								fontWeight: 600,
+								cursor: "pointer",
+							}}>
+								Cerrar
+							</button>
+							<button onClick={() => {
+								const pubId = extractPublicacionId(selectedReport!);
+								if (pubId) {
+									loadPublicacionPreview(pubId);
+								}
+							}} style={{
+								flex: 1,
+								padding: "10px 16px",
+								borderRadius: 8,
+								border: "1px solid #3b82f6",
+								background: "#eff6ff",
+								color: "#1e40af",
+								fontSize: 14,
+								fontWeight: 600,
+								cursor: "pointer",
+							}}>
+								Intentar de Nuevo
+							</button>
+						</div>
+					</div>
+				) : selectedPublicacion ? (
+						<div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+							<div style={{ marginBottom: 16 }}>
+								<h3 style={{ fontSize: 14, fontWeight: 600, color: "#6b7280", margin: "0 0 8px 0" }}>ID</h3>
+								<p style={{ margin: 0, fontSize: 14, color: "#111827" }}>
+									<code>{selectedPublicacion.id}</code>
+								</p>
+							</div>
+
+							<div style={{ marginBottom: 16 }}>
+								<h3 style={{ fontSize: 14, fontWeight: 600, color: "#6b7280", margin: "0 0 8px 0" }}>Descripción</h3>
+								<p style={{ margin: 0, fontSize: 14, color: "#111827", whiteSpace: "pre-wrap" }}>
+									{selectedPublicacion.descripcion && selectedPublicacion.descripcion !== "undefined" 
+										? selectedPublicacion.descripcion 
+										: "Sin descripción"}
+								</p>
+							</div>
+
+							{selectedPublicacion.itinerario && (
+								<div style={{ marginBottom: 16 }}>
+									<h3 style={{ fontSize: 14, fontWeight: 600, color: "#6b7280", margin: "0 0 8px 0" }}>Itinerario Relacionado</h3>
+									<div style={{ 
+										background: "#f9fafb", 
+										padding: 12, 
+										borderRadius: 8,
+										fontSize: 14,
+										color: "#111827"
+									}}>
+										<p style={{ margin: 0 }}>
+											<strong>{(selectedPublicacion.itinerario as any).title || (selectedPublicacion.itinerario as any).nombre || "Sin nombre"}</strong> (ID: {selectedPublicacion.itinerario.id})
+										</p>
+									</div>
+								</div>
+							)}
+
+							{selectedPublicacion.fotos && selectedPublicacion.fotos.length > 0 && (
+								<div style={{ marginBottom: 16 }}>
+									<h3 style={{ fontSize: 14, fontWeight: 600, color: "#6b7280", margin: "0 0 8px 0" }}>Fotos ({selectedPublicacion.fotos.length})</h3>
+									<div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 12 }}>
+										{selectedPublicacion.fotos.map((foto) => (
+											<div key={foto.id} style={{ position: "relative", width: "100%", paddingBottom: "100%", background: "#f0f0f0", borderRadius: 12, overflow: "hidden", border: "1px solid #e5e7eb" }}>
+												<img 
+													src={foto.foto_url} 
+													alt={`Foto ${foto.id}`}
+													style={{
+														position: "absolute",
+														top: 0,
+														left: 0,
+														width: "100%",
+														height: "100%",
+														objectFit: "cover"
+													}}
+													onError={(e) => {
+														const elem = e.target as HTMLImageElement;
+														elem.style.display = "none";
+														const parent = elem.parentElement;
+														if (parent) {
+															parent.style.background = "#fee2e2";
+														}
+													}}
+												/>
+											</div>
+										))}
+									</div>
+								</div>
+							)}
+
+							{(!selectedPublicacion.fotos || selectedPublicacion.fotos.length === 0) && (
+								<div style={{ marginBottom: 16, padding: 16, background: "#f3f4f6", borderRadius: 8, textAlign: "center", color: "#6b7280", fontSize: 14 }}>
+									📸 No hay fotos en esta publicación
+								</div>
+							)}
+
+							<div style={{ marginBottom: 16 }}>
+								<h3 style={{ fontSize: 14, fontWeight: 600, color: "#6b7280", margin: "0 0 8px 0" }}>Privacidad</h3>
+								<p style={{ margin: 0, fontSize: 14, color: "#111827" }}>
+									{selectedPublicacion.privacity_mode ? "🔒 Privada" : "🌍 Pública"}
+								</p>
+							</div>
+
+							<div style={{ 
+								display: "flex", 
+								gap: 8, 
+								marginTop: 24,
+								paddingTop: 16,
+								borderTop: "1px solid #e5e7eb"
+							}}>
+								<button onClick={() => setSelectedPublicacion(null)} style={{
+									flex: 1,
+									padding: "10px 16px",
+									borderRadius: 8,
+									border: "1px solid #e5e7eb",
+									background: "#ffffff",
+									fontSize: 14,
+									fontWeight: 600,
+									cursor: "pointer",
+								}}>
+									Cerrar
+								</button>
+							</div>
+						</div>
+					) : (
+						<p style={{ color: "#dc2626" }}>Error: No se pudo cargar la publicación</p>
 					)}
 				</div>
 			</div>
