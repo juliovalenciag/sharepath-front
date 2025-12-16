@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { Toaster, toast } from "sonner";
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 import { LugarData } from "@/api/interfaces/ApiRoutes";
+import { getCategoryName, getDefaultImageForCategory } from "@/lib/category-utils";
 
 // Dynamic import for MiniMap to avoid SSR issues
 const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
@@ -285,7 +286,7 @@ export default function LugaresPage() {
 					>
 						<option value="">Todas las categorías</option>
 						{CATEGORIAS.map((cat) => (
-							<option key={cat} value={cat}>{cat}</option>
+							<option key={cat} value={cat}>{getCategoryName(cat)}</option>
 						))}
 					</select>
 					<select
@@ -319,7 +320,7 @@ export default function LugaresPage() {
 				<div key={`${place.id_api_place}-${currentPage}-${index}`} className="rounded-lg border bg-white/5 shadow-sm overflow-hidden flex flex-col h-full">
 					<div className="relative w-full h-44">
 						<Image
-							src={place.foto_url || "/img/placeholder.jpg"}
+							src={place.foto_url || getDefaultImageForCategory(place.category)}
 							alt={place.nombre}
 							fill
 							sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -332,7 +333,7 @@ export default function LugaresPage() {
 							<div>
 								<h2 className="text-lg font-medium">{place.nombre}</h2>
 								<p className="text-sm text-gray-600">{place.descripcion}</p>
-								<p className="text-xs text-gray-500 mt-1">{place.category} • {place.mexican_state}</p>
+								<p className="text-xs text-gray-500 mt-1">{getCategoryName(place.category)} • {place.mexican_state}</p>
 							</div>
 							<StarRating rating={place.google_score} />
 						</div>
@@ -454,7 +455,7 @@ export default function LugaresPage() {
 							<p className="text-gray-700 mb-2">¿Estás seguro de que deseas eliminar este lugar?</p>
 							<div className="bg-gray-50 rounded-md p-3 border border-gray-200">
 								<p className="font-medium text-gray-900">{placeToDelete.nombre}</p>
-								<p className="text-sm text-gray-600">{placeToDelete.mexican_state} • {placeToDelete.category}</p>
+								<p className="text-sm text-gray-600">{placeToDelete.mexican_state} • {getCategoryName(placeToDelete.category)}</p>
 							</div>
 						</div>
 
@@ -535,7 +536,7 @@ export default function LugaresPage() {
 								>
 									<option value="">Seleccione una categoría</option>
 									{CATEGORIAS.map((cat) => (
-										<option key={cat} value={cat}>{cat}</option>
+										<option key={cat} value={cat}>{getCategoryName(cat)}</option>
 									))}
 								</select>
 							</div>
