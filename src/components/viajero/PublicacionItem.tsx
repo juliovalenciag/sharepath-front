@@ -234,7 +234,7 @@ export default function PublicacionItem({ publicacion }: { publicacion: Publicac
   };
 
   const navigateToItinerario = (itinerarioId: number) => {
-    router.push(`/viajero/itinerarios/${itinerarioId}/ver`);
+    router.push(`/viajero/itinerarios/${itinerarioId}/verPublicacion`);
   };
 
   const navigateToPublicacionDetail = useCallback(() => {
