@@ -9,7 +9,7 @@ import { ChatsSidebar } from "./ChatsSidebar";
 import { ChatThread } from "./ChatThread";
 import { ChatDetails } from "./ChatDetails";
 import { useSocket } from "@/context/socketContext"; //
-import { m } from "motion/react";
+// import { m } from "react-motion";
 //import { currentUser } from "./_mock"; //
 
 //Datos que se reciben del servidor
@@ -20,6 +20,8 @@ type SocketUser = {
   connected: boolean;
   messages: any[];
   hasNewMessages?: boolean;
+  lastMessage?: string;
+  lastMessageHora?: string;
   unreadCount: number;
 };
 
@@ -61,7 +63,8 @@ function adaptSocketUserToConversation(user: SocketUser, selfUser: User): Conver
     title: user.username,
     members: [selfUser, { id: user.userID, name: user.username, online: user.connected, foto_url: user.foto_url }],
     messages: uiMessages,
-    lastMessage: uiMessages[uiMessages.length - 1],
+    lastMessage: user.lastMessage,
+    lastMessageHora: user.lastMessageHora,
     unread: unreadValue,//Mensajes sin leer
     tripId: undefined,
   };
@@ -146,7 +149,9 @@ export function ChatLayout() {
             messages: existingUser ? existingUser.messages : [],
             hasNewMessages: existingUser ? existingUser.hasNewMessages : false,
             unreadCount: existingUser ? existingUser.unreadCount : (newUser.unreadCount || 0),
-            foto_url: existingUser ? existingUser.foto_url : (newUser.foto_url || ""),
+            //foto_url: existingUser ? existingUser.foto_url : (newUser.foto_url || ""),
+            //lastMessage: existingUser ? existingUser.lastMessage : (newUser.lastMessage || ""), //Creo que estos se pueden comentarizar porque el nuevo mensaje con hora y texto se muestran
+            //lastMessageHora: existingUser ? existingUser.lastMessageHora : (newUser.lastMessageHora || ""), //cuando envio (sendMessage - setSocketUser) y cuando recibo uno (private message)
           };
         });
       });
@@ -209,37 +214,74 @@ export function ChatLayout() {
         // });
 
         const currentActiveId = activeIdRef.current;
+        
+        const fromSelf = message.from === userID; //Mensajes a mi mismo
+        // const targetUserID = fromSelf ? message.to : message.from; //el target es el remitente (from)
+        const isChatOpen = activeIdRef.current === message.from; //El chat esta abierto?
 
-        setSocketUsers((prev) =>
-          prev.map((u) => {
-            const fromSelf = message.from === userID;
-            const targetUserID = fromSelf ? message.to : message.from;
-            const isChatOpen = activeIdRef.current === targetUserID;
+        if(!fromSelf && isChatOpen)
+        {
+          socket.emit("mark messages read", { withUserID: message.from });
+        }
 
-            if (u.userID === targetUserID) {
-              //Si el chat esta abierto y recibo un mensaje, se marca como leido
-              if(!fromSelf && isChatOpen)
-              {
-                socket.emit("mark messages read", { withUserID: targetUserID });
-              }
+        if(!fromSelf)
+        {
+          socket.emit("mark messages received", { withUserID: message.from });
+        }
 
-              if(!fromSelf)
-              {
-               socket.emit("mark messages received", { withUserID: targetUserID });
-              }
+        setSocketUsers((prev) => {
+          const senderUser = prev.find((u) => u.userID === message.from);
 
-              return {
-                ...u,
-                messages: [...u.messages, message], //Se agrega el array existente
-                // hasNewMessages: u.userID !== activeId,
-                hasNewMessages: !isChatOpen,
-                // unreadCount: u.userID !== activeId ? (u.unreadCount + 1) : 0,
-                unreadCount: isChatOpen ? 0 : (u.unreadCount + 1),
-              };
-            }
-            return u;
-          })
-        );
+          if(!senderUser) return prev;
+
+          const updatedUser = {
+            ...senderUser,
+            messages: [...senderUser.messages, message],
+            hasNewMessages: !isChatOpen,
+            // unreadCount: u.userID !== activeId ? (u.unreadCount + 1) : 0,
+            unreadCount: isChatOpen ? 0 : ((senderUser.unreadCount || 0) + 1),
+            lastMessage: message.content,
+            lastMessageHora: new Date().toISOString(),
+          };
+
+          const otherUsers = prev.filter((u) => u.userID !== message.from);
+
+          return [updatedUser, ...otherUsers];
+        });
+
+        // setSocketUsers((prev) =>
+        //   prev.map((u) => {
+        //     const fromSelf = message.from === userID;
+        //     const targetUserID = fromSelf ? message.to : message.from;
+        //     const isChatOpen = activeIdRef.current === targetUserID;
+
+        //     if (u.userID === targetUserID) {
+        //       //Si el chat esta abierto y recibo un mensaje, se marca como leido
+        //       if(!fromSelf && isChatOpen)
+        //       {
+        //         socket.emit("mark messages read", { withUserID: targetUserID });
+        //       }
+
+        //       if(!fromSelf)
+        //       {
+        //        socket.emit("mark messages received", { withUserID: targetUserID });
+        //       }
+
+        //       return {
+        //         ...u,
+        //         messages: [...u.messages, message], //Se agrega el array existente
+        //         // hasNewMessages: u.userID !== activeId,
+        //         hasNewMessages: !isChatOpen,
+        //         // unreadCount: u.userID !== activeId ? (u.unreadCount + 1) : 0,
+        //         unreadCount: isChatOpen ? 0 : (u.unreadCount + 1),
+
+        //         lastMessage: message.content,
+        //         lastMessageHora: new Date().toISOString(),
+        //       };
+        //     }
+        //     return u;
+        //   })
+        // );
       }
     );
 
@@ -324,12 +366,30 @@ export function ChatLayout() {
       status: 0 //Enviado
     };
 
-    setSocketUsers((prev) =>
-      prev.map((u) =>
-        u.userID === active.id
-          ? { ...u, messages: [...u.messages, socketMsg] }
-          : u
-    ))
+  setSocketUsers((prev) => {
+    const userToMove = prev.find((u) => u.userID === active.id);
+
+    if (!userToMove) return prev; 
+
+    const updatedUser = {
+      ...userToMove,
+      messages: [...userToMove.messages, socketMsg],
+      lastMessage: text,
+      lastMessageHora: new Date().toISOString()
+    };
+
+    const otherUsers = prev.filter((u) => u.userID !== active.id);
+
+    return [updatedUser, ...otherUsers];
+  });
+
+
+    // setSocketUsers((prev) =>
+    //   prev.map((u) =>
+    //     u.userID === active.id
+    //       ? { ...u, messages: [...u.messages, socketMsg], lastMessage: text, lastMessageHora: new Date().toISOString() }
+    //       : u
+    // ))
   }
   const handleSelectConversation = (id: string) => {
     setActiveId(id);
