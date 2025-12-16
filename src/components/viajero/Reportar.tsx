@@ -12,7 +12,7 @@ interface ReportModalProps {
     publicationId: number;
 }
 
-// Lista de razones (puedes editarla a tu gusto)
+// Lista de razones
 const REPORT_REASONS = [
     "Promoción de artículos restringidos",
     "Violencia, odio o explotación",
