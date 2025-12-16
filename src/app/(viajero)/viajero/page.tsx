@@ -263,40 +263,6 @@ export default function ViajeroLanding() {
                 <SearchX className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               </div>
             </div>
-
-            {/* Filtros */}
-            <div className="flex gap-3">
-              <Select value={estadoSeleccionado} onValueChange={handleEstadoChange}>
-                <SelectTrigger className="w-[180px] h-12 rounded-xl">
-                  <SelectValue placeholder="Ubicación" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todas las ubicaciones</SelectItem>
-                  <SelectItem value="ciudad de méxico">Ciudad de México</SelectItem>
-                  <SelectItem value="guadalajara">Guadalajara</SelectItem>
-                  <SelectItem value="monterrey">Monterrey</SelectItem>
-                  <SelectItem value="cancún">Cancún</SelectItem>
-                  <SelectItem value="playa del carmen">Playa del Carmen</SelectItem>
-                  <SelectItem value="tulum">Tulum</SelectItem>
-                  <SelectItem value="oaxaca">Oaxaca</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={categoriaSeleccionada} onValueChange={handleCategoriaChange}>
-                <SelectTrigger className="w-[180px] h-12 rounded-xl">
-                  <SelectValue placeholder="Categoría" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todas">Todas las categorías</SelectItem>
-                  <SelectItem value="playa">Playa</SelectItem>
-                  <SelectItem value="montaña">Montaña</SelectItem>
-                  <SelectItem value="ciudad">Ciudad</SelectItem>
-                  <SelectItem value="aventura">Aventura</SelectItem>
-                  <SelectItem value="cultural">Cultural</SelectItem>
-                  <SelectItem value="gastronómico">Gastronómico</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           {/* Contador y filtros activos */}
@@ -351,7 +317,7 @@ export default function ViajeroLanding() {
           </div>
         ) : resultadosCount > 0 ? (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 auto-rows-fr">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 md:gap-8 auto-rows-fr">
               {publicacionesFiltradas.map((p, index) => (
                 <PublicacionItem 
                   key={`${p.id}-${p.fecha}-${index}`} 

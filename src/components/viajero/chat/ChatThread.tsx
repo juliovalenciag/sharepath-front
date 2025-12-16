@@ -124,7 +124,7 @@ export function ChatThread({
       </header>
 
       {/* Messages ref messagesRef*/}
-      <div ref={messagesRef} className="overflow-y-auto h-120 px-3 py-4"> 
+      <div ref={messagesRef} className="overflow-y-auto h-110 px-3 py-4"> {/* La altura h-110 se puso considerando ChatsSidebar.tsx */}
         {msgs.map((m, i) => {
           const prev = msgs[i - 1];
           const showDay = !prev || !sameDay(prev.createdAt, m.createdAt);

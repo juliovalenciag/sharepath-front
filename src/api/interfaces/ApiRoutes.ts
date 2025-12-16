@@ -190,22 +190,17 @@ export interface UnBlock {
 }
 
 export interface BlockedUser {
-  id?: string | number;
   username: string;
-  nombre_completo?: string;
-  nombre?: string;
-  correo?: string;
-  foto_url?: string | null;
-  ciudad?: string | null;
-  pais?: string | null;
-  fecha_bloqueo?: string;
-  motivo?: string;
+  nombre_completo: string;
+  correo: string;
+  foto_url: string | null;
 }
 
-export interface BlockedListResponse {
-  message?: string;
-  data?: BlockedUser[];
+export interface ListBlock {
+  message: string;
+  data: BlockedUser[];
 }
+
 export interface FriendSuggestion {
   username: string;
   nombre_completo: string;
@@ -328,7 +323,7 @@ export interface ApiRoutes {
   deleteFriend: (correo: string) => Promise<{ message: string }>;
   block: (user: string) => Promise<Block>;
   unblock: (user: string) => Promise<UnBlock>;
-  getBlockedUsers: () => Promise<BlockedListResponse>;
+  listblock: () => Promise<ListBlock>;
 
   //Recomendacion de new user
   getRecomen: () => Promise<ListRecomen>;

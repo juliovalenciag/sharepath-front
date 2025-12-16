@@ -29,7 +29,6 @@ import {
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 import type { ItinerarioData } from "@/api/interfaces/ApiRoutes";
 
-
 // Constantes / Utils
 import { REGIONS_DATA, RegionKey } from "@/lib/constants/regions";
 import { cn } from "@/lib/utils";
@@ -134,6 +133,29 @@ export default function EditarItinerarioPage() {
 
   const [saving, setSaving] = useState(false);
   const [loadingItinerary, setLoadingItinerary] = useState(true);
+
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteItinerary = useCallback(async () => {
+    if (!itineraryId) return;
+
+    setDeleting(true);
+    try {
+      const api = ItinerariosAPI.getInstance();
+
+      // ⚠️ ajusta el nombre del método si en tu API se llama distinto
+      await api.deleteItinerario(itineraryId);
+
+      toast.success("Itinerario eliminado");
+      router.push("/viajero/itinerarios");
+    } catch (e: any) {
+      toast.error("No se pudo eliminar", {
+        description: e?.message || "Error de conexión con el servidor.",
+      });
+    } finally {
+      setDeleting(false);
+    }
+  }, [itineraryId, router]);
 
   // Snapshot para "Descartar cambios"
   const originalSnapshotRef = useRef<{
@@ -390,7 +412,7 @@ export default function EditarItinerarioPage() {
   };
 
   const handleRuta = useCallback(async () => {
-    console.log ("Generando ruta automática...");
+    console.log("Generando ruta automática...");
     const toastId = toast.loading("Buscando recomendaciones...");
 
     try {
@@ -628,8 +650,11 @@ export default function EditarItinerarioPage() {
         {meta && (
           <ItineraryHeader
             meta={meta}
+            mode="edit"
             onEditSetup={() => setSetupOpen(true)}
-            onReset={handleDiscardChanges} // ✅ aquí es “Descartar cambios”
+            onDiscardChanges={handleDiscardChanges}
+            onDeleteItinerary={handleDeleteItinerary}
+            isDeleting={deleting}
             onOptimize={handleOptimize}
             onSave={handlePreSave}
             onRuta={handleRuta}

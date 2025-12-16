@@ -8,23 +8,55 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Button } from '@/components/ui/button';
 import { PreguntaWrapper } from '@/components/cuestionario/PreguntaWrapper';
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
+import { 
+  MapPin, 
+  Landmark, 
+  Trees, 
+  Tent, 
+  Utensils, 
+  Coffee, 
+  Beer, 
+  Ticket, 
+  PawPrint,
+  Sparkles,
+  CheckCircle2
+} from 'lucide-react';
+
+// ... (MANTÉN TU CONFIGURACIÓN DE ICONOS IGUAL) ...
+const CATEGORY_CONFIG: Record<string, { icon: any, color: string }> = {
+  'Pueblos mágicos': { icon: Sparkles, color: 'text-purple-500' },
+  'Zonas arqueológicas': { icon: MapPin, color: 'text-amber-600' },
+  'Museos': { icon: Landmark, color: 'text-blue-500' },
+  'Parques': { icon: Trees, color: 'text-green-500' },
+  'Zoológicos': { icon: PawPrint, color: 'text-orange-500' },
+  'Parques de diversión': { icon: Ticket, color: 'text-red-500' },
+  'Campamentos': { icon: Tent, color: 'text-emerald-600' },
+  'Restaurantes': { icon: Utensils, color: 'text-slate-600' },
+  'Cafes': { icon: Coffee, color: 'text-amber-800' },
+  'Bares': { icon: Beer, color: 'text-yellow-500' },
+};
 
 const PreguntaSchema = z.object({
-  pregunta1: z.array(z.string()).min(1, "Seleccione al menos una opcion ").max(3, "Seleccione maximo tres"),
+  pregunta1: z.array(z.string()).min(1, "Seleccione al menos una opción").max(3, "Seleccione máximo tres"),
 });
 
 type PreguntaValues = z.infer<typeof PreguntaSchema>;
 
-const loadFormData = () => {
+// Función auxiliar simple para leer (la usaremos dentro del efecto)
+const getStoredData = () => {
     if (typeof window !== 'undefined') {
         const stored = localStorage.getItem('form-data');
-        return stored ? JSON.parse(stored) : { pregunta1: [] };
+        return stored ? JSON.parse(stored) : null;
     }
-    return { pregunta1: [] };
+    return null;
 };
+
 const updateFormData = (data: Partial<PreguntaValues>) => {
     if (typeof window !== 'undefined') {
-        const currentData = loadFormData();
+        // Leemos directo del localStorage para no perder otras respuestas
+        const stored = localStorage.getItem('form-data');
+        const currentData = stored ? JSON.parse(stored) : {};
         localStorage.setItem('form-data', JSON.stringify({ ...currentData, ...data }));
     }
 };
@@ -34,11 +66,20 @@ export default function Pregunta1Page() {
   const [isLoading, setIsLoading] = useState(false);
   const totalPreguntas = 3; 
 
+  // 1. CAMBIO IMPORTANTE: Inicializamos SIEMPRE vacío para evitar el error de hidratación
   const form = useForm<PreguntaValues>({
     resolver: zodResolver(PreguntaSchema),
-    defaultValues: loadFormData(), 
+    defaultValues: { pregunta1: [] }, 
   });
-  const selectedCount = (form.watch('pregunta1') || []).length;
+
+  // 2. CAMBIO IMPORTANTE: Cargamos los datos SOLO después de que el componente se monta
+  useEffect(() => {
+    const stored = getStoredData();
+    if (stored && stored.pregunta1) {
+      // Reseteamos el formulario con los datos guardados
+      form.reset({ pregunta1: stored.pregunta1 });
+    }
+  }, [form]); // Se ejecuta una sola vez al montar
   
   const toggleValue = (currentArray: string[] = [], value: string): string[] => {
     if (currentArray.includes(value)) {
@@ -47,60 +88,97 @@ export default function Pregunta1Page() {
     return [...currentArray, value];
   };
   
-  // Función para avanzar a la siguiente página (pregunta 2)
   const onSiguiente = (data: PreguntaValues) => {
     setIsLoading(true);
-    // 1. Guardar la respuesta actual en el almacenamiento temporal (localStorage o Context)
     updateFormData(data);
-    
-    // 2. Redirigir a la siguiente pregunta
     router.push('/preferencias/pregunta2');
   };
 
+  const currentSelection = form.watch('pregunta1') || [];
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSiguiente)}>
+      <form onSubmit={form.handleSubmit(onSiguiente)} className="w-full">
         <PreguntaWrapper
           preguntaActual={1}
           totalPreguntas={totalPreguntas}
           onSiguiente={form.handleSubmit(onSiguiente)}
           isLoading={isLoading}
-          selectedCount={selectedCount}
         >
-          <div className="space-y-4">
+          <div className="space-y-6">
             <FormField
               control={form.control}
               name="pregunta1"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel className='text-blue-950'>1) ¿Qué lugares prefieres para turistear?</FormLabel>
+                <FormItem className="space-y-4">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+                    <FormLabel className='text-2xl font-bold text-blue-950'>
+                      ¿Qué lugares prefieres para turistear?
+                    </FormLabel>
+                    <span className={cn(
+                      "text-xs font-medium px-3 py-1 rounded-full border transition-colors",
+                      currentSelection.length > 3 
+                        ? "bg-red-100 text-red-700 border-red-200" 
+                        : currentSelection.length === 0 
+                          ? "bg-gray-100 text-gray-500" 
+                          : "bg-blue-50 text-blue-700 border-blue-200"
+                    )}>
+                      Seleccionados: {currentSelection.length} / 3
+                    </span>
+                  </div>
                   
                   <FormControl>
-                    <div className="flex flex-wrap gap-3 mt-4">
-                      {['Pueblos mágicos', 'Zonas arqueológicas', 'Museos', 'Parques','Zoológicos', 'Parques de diversión', 'Campamentos', 'Restaurantes', 'Cafes', 'Bares'].map((opt) => {
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mt-4">
+                      {Object.keys(CATEGORY_CONFIG).map((opt) => {
                         const isSelected = (field.value || []).includes(opt);
+                        const config = CATEGORY_CONFIG[opt] || { icon: Sparkles, color: 'text-gray-500' };
+                        const IconComponent = config.icon;
                         
                         return (
-                          <Button
+                          <div
                             key={opt}
-                            type="button" 
-                            onClick={() => field.onChange(toggleValue(field.value, opt))}
-                            className={`
-                              rounded-full px-4 py-2 text-sm transition-colors duration-200 
-                              ${
-                                isSelected
-                                  ? 'bg-primary text-white shadow-md hover:bg-secondary' 
-                                  : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200' 
-                              }
-                            `}
+                            onClick={() => {
+                                if (!isSelected && field.value?.length >= 3) return;
+                                field.onChange(toggleValue(field.value, opt));
+                            }}
+                            className={cn(
+                              "group relative cursor-pointer flex flex-col items-center justify-center gap-3 p-4 rounded-xl border-2 transition-all duration-300 h-32 select-none",
+                              isSelected
+                                ? "border-primary bg-primary/5 shadow-md scale-[1.02]"
+                                : "border-gray-100 bg-white hover:border-primary/30 hover:shadow-sm hover:-translate-y-1",
+                              (!isSelected && field.value?.length >= 3) && "opacity-50 cursor-not-allowed hover:transform-none hover:border-gray-100"
+                            )}
                           >
-                            {opt}
-                          </Button>
+                            <div className={cn(
+                              "p-3 rounded-full transition-all duration-300",
+                              isSelected ? "bg-white shadow-sm" : "bg-gray-50 group-hover:bg-blue-50"
+                            )}>
+                              <IconComponent 
+                                className={cn(
+                                  "w-6 h-6 transition-colors duration-300", 
+                                  isSelected ? config.color : "text-gray-400 group-hover:text-primary"
+                                )} 
+                              />
+                            </div>
+
+                            <span className={cn(
+                              "text-sm font-medium text-center leading-tight transition-colors",
+                              isSelected ? "text-primary font-semibold" : "text-gray-600"
+                            )}>
+                              {opt}
+                            </span>
+
+                            {isSelected && (
+                              <div className="absolute top-2 right-2 animate-in zoom-in duration-200">
+                                <CheckCircle2 className="w-4 h-4 text-primary fill-white" />
+                              </div>
+                            )}
+                          </div>
                         );
                       })}
                     </div>
-                  </FormControl>                  
-                  <FormMessage />
+                  </FormControl>
+                  <FormMessage className="text-center font-medium bg-red-50 p-2 rounded-md border border-red-100" />
                 </FormItem>
               )}
             />

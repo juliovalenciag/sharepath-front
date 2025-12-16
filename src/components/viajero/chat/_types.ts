@@ -23,7 +23,8 @@ export type Conversation = {
   title?: string;           // p.ej. "CDMX 1-4 nov"
   tripId?: string;          // vínculo al itinerario
   members: User[];
-  lastMessage?: Message;
+  lastMessage?: string;
+  lastMessageHora?: string;
   unread?: number;
   pinned?: boolean;
   muted?: boolean;
