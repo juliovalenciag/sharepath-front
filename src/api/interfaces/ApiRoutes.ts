@@ -481,7 +481,7 @@ export interface CreateItinerarioRequest {
   start_date?: string;
   end_date?: string;
   regions?: string[];
-  visibility?: "private" | "friends" | "public";
+  visibility?: string;
 }
 
 export interface DashboardStatsResponse {

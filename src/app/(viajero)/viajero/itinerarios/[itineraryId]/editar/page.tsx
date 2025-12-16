@@ -505,8 +505,8 @@ export default function EditarItinerarioPage() {
 
     try {
       const payload = buildItineraryPayload(meta, actividades);
+      console.log("Enviando payload para actualizar itinerario:", payload);
       await ItinerariosAPI.getInstance().updateItinerario(itineraryId, payload);
-
       toast.success("¡Itinerario actualizado!", {
         description: "Tus cambios se guardaron correctamente.",
         duration: 2500,

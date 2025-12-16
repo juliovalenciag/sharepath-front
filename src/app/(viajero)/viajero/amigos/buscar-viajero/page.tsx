@@ -81,14 +81,14 @@ function ViajeroCard({
     try {
       setIsSending(true);
       console.log("Enviando solicitud a:", data.username);
-      
+
       const response = await sendFriendRequest(data.username);
-      
+
       toast.success("Solicitud enviada correctamente");
       console.log("Respuesta del backend:", response);
-      
+
       setStatus(0); // Actualizar visualmente a "Enviada"
-      
+
       if (onSent) onSent(data.username);
     } catch (error) {
       console.error("No se pudo enviar la solicitud:", error);
@@ -337,7 +337,7 @@ export default function BuscarViajeroPage() {
           f.requesting_user?.username === myUsername
             ? f.receiving_user?.username
             : f.requesting_user?.username;
-        
+
         if (friendUsername) {
           userStatus.set(friendUsername, 2);
         }
@@ -376,7 +376,7 @@ export default function BuscarViajeroPage() {
           amigos_en_comun: u.amigos_en_comun || 0,
           ciudad: u.ciudad,
           // Aquí aplicamos el estado encontrado en el mapa. Si no existe, es 1 (Agregar)
-          status: userStatus.get(u.username) ?? 1, 
+          status: userStatus.get(u.username) ?? 1,
         }))
         // Filtramos para no mostrarme a mí mismo
         .filter((v) => v.username !== myUsername);
