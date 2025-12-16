@@ -81,26 +81,23 @@ export const NotificationProvider = ({
 
         // 3. Filtramos y transformamos las notificaciones
         const historialFiltrado = notificacionesRaw.filter((notif) => {
-          if (notif.type.toUpperCase() === "FRIEND_REQUEST") {
-            // Si es una solicitud, solo la mostramos si su ID de recurso está en la lista de pendientes
+          const upperCaseType = notif.type.toUpperCase();
+
+          // Lógica para notificaciones de solicitud de amistad
+          if (upperCaseType === "FRIEND_REQUEST") {
+            // **NO MOSTRAR** la notificación si el emisor YA es nuestro amigo.
+            if (notif.emisor && amigosUsernames.has(notif.emisor.username)) {
+              return false;
+            }
+            // Si no es amigo, solo mostrar la notificación si la solicitud aún está pendiente.
             return solicitudesPendientesIds.has(notif.resourceId.toString());
           }
-          return true; // Mantenemos el resto de notificaciones
+
+          // Para todos los demás tipos de notificaciones, las mostramos.
+          return true;
         });
 
-        const historialFormateado = historialFiltrado.map((notif) => {
-          const formatted = formatNotification(notif);
-          // Si el actor de una notificación ya es nuestro amigo, la marcamos como 'FRIEND_ACCEPTED'
-          if (
-            amigosUsernames.has(formatted.actor_username) &&
-            formatted.tipo === "FRIEND_REQUEST"
-          ) {
-            return { ...formatted, tipo: "FRIEND_ACCEPTED" };
-          }
-          return formatted;
-        });
-
-        setNotifications(historialFormateado);
+        setNotifications(historialFiltrado.map(formatNotification));
       } catch (error) {
         console.error("Error al cargar el historial de notificaciones:", error);
       }
