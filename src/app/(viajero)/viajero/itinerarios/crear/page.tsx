@@ -182,16 +182,17 @@ export default function CrearItinerarioPage() {
 
   // --- 4. LÓGICA DE NEGOCIO ---
 
-  const handleReset = useCallback(() => {
-    if (
-      window.confirm(
-        "¿Reiniciar todo el planificador? Perderás los lugares no guardados."
-      )
-    ) {
-      reset();
-      setSetupOpen(true);
-      toast.info("Lienzo limpio. ¡Empieza de nuevo!");
-    }
+  const handleResetDraft = useCallback(() => {
+    reset();
+    setSelectedActivityId(null);
+    setInfoOpen(false);
+    setSearchOpen(false);
+    setSelectedDayKey(null);
+
+    // opcional: reabrir setup para que sea “empezar de cero”
+    setSetupOpen(true);
+
+    toast.info("Borrador borrado. Puedes empezar de nuevo.");
   }, [reset]);
 
   // Pre-validación antes de guardar
@@ -512,16 +513,16 @@ export default function CrearItinerarioPage() {
         {meta && (
           <ItineraryHeader
             meta={meta}
+            mode="create"
             onEditSetup={() => setSetupOpen(true)}
-            onReset={handleReset}
+            onResetDraft={handleResetDraft}
             onOptimize={handleOptimize}
-            onSave={handlePreSave} // Usamos pre-save con validación
+            onSave={handlePreSave}
             onRuta={handleRuta}
             isSaving={saving}
             canOptimize={currentDayActivities.length >= 3}
           />
         )}
-
         {/* Workspace Split */}
         <div className="flex flex-1 overflow-hidden relative group/canvas">
           {/* PANEL IZQUIERDO */}
