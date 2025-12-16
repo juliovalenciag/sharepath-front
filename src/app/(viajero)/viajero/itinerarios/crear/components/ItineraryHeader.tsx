@@ -114,7 +114,7 @@ export function ItineraryHeader({
             size="sm"
             onClick={onRuta}
             className="h-9 sm:inline-flex min-w-[110px] shadow-sm active:scale-95 transition-transform"
-            title="Completar itinerario con IA"
+            title="Completar itinerario"
           >
             <Sparkles className="mr-2 h-3.5 w-3.5 text-primary" />
             Completar

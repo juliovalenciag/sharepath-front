@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { Toaster, toast } from "sonner";
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 import { LugarData } from "@/api/interfaces/ApiRoutes";
+import { getCategoryName, getDefaultImageForCategory } from "@/lib/category-utils";
 
 // Dynamic import for MiniMap to avoid SSR issues
 const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
@@ -52,8 +53,8 @@ const ESTADOS_MEXICO = [
 ];
 
 export default function LugaresPage() {
-	const [allPlaces, setAllPlaces] = useState<LugarData[]>([]); // Todos los lugares
-	const [places, setPlaces] = useState<LugarData[]>([]); // Lugares de la página actual
+	const [allPlaces, setAllPlaces] = useState<LugarData[]>([]); 
+	const [places, setPlaces] = useState<LugarData[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [selectedCategory, setSelectedCategory] = useState("");
@@ -82,24 +83,20 @@ export default function LugaresPage() {
 
 	const api = useMemo(() => ItinerariosAPI.getInstance(), []);
 
-	// Extraer coordenadas de un link de Google Maps
 	const extractCoordinatesFromGoogleMaps = (url: string): { lat: number; lng: number } | null => {
 		try {
-			// Formato 1: https://www.google.com/maps/place/.../@lat,lng,zoom
 			const pattern1 = /@([-\d.]+),([-\d.]+),/;
 			const match1 = url.match(pattern1);
 			if (match1) {
 				return { lat: parseFloat(match1[1]), lng: parseFloat(match1[2]) };
 			}
 
-			// Formato 2: https://maps.google.com/?q=lat,lng
 			const pattern2 = /[?&]q=([-\d.]+),([-\d.]+)/;
 			const match2 = url.match(pattern2);
 			if (match2) {
 				return { lat: parseFloat(match2[1]), lng: parseFloat(match2[2]) };
 			}
 
-			// Formato 3: Google Maps compartido con /place/
 			const pattern3 = /place\/(.*?)\/([-\d.]+),([-\d.]+)/;
 			const match3 = url.match(pattern3);
 			if (match3) {
@@ -126,11 +123,9 @@ export default function LugaresPage() {
 		}
 	};
 
-	// Cargar todos los lugares una vez
 	const loadAllPlaces = async () => {
 		setLoading(true);
 		try {
-			// Cargar todos los lugares (el backend ignora la paginación, así que pedimos un límite alto)
 			const response = await api.getLugares(
 				1, 
 				10000, 
@@ -143,7 +138,6 @@ export default function LugaresPage() {
 			console.log(`Total de lugares cargados: ${lugaresArray.length}`);
 			setAllPlaces(lugaresArray);
 			
-			// Aplicar paginación en el cliente
 			paginateClientSide(lugaresArray, 1);
 		} catch (error: any) {
 			console.error("Error al cargar lugares:", error);
@@ -154,7 +148,6 @@ export default function LugaresPage() {
 		}
 	};
 
-	// Paginación del lado del cliente
 	const paginateClientSide = (data: LugarData[], page: number) => {
 		const startIndex = (page - 1) * ITEMS_PER_PAGE;
 		const endIndex = startIndex + ITEMS_PER_PAGE;
@@ -165,12 +158,7 @@ export default function LugaresPage() {
 
 	useEffect(() => {
 		loadAllPlaces();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, []);
-
-	const handleSearch = () => {
-		loadAllPlaces();
-	};
+	}, [searchTerm, selectedCategory, selectedState]);
 
 	const handlePageChange = (newPage: number) => {
 		paginateClientSide(allPlaces, newPage);
@@ -200,7 +188,6 @@ export default function LugaresPage() {
 			setAllPlaces(updatedPlaces);
 			paginateClientSide(updatedPlaces, currentPage);
 			
-			// Mostrar mensaje de éxito
 			toast.success(`Lugar eliminado exitosamente: ${placeToDelete.nombre}`);
 		} catch (error: any) {
 			console.error("Error al eliminar lugar:", error);
@@ -220,6 +207,9 @@ export default function LugaresPage() {
 	const handleCreatePlace = async (e: React.FormEvent) => {
 		e.preventDefault();
 		
+		// Generar ID aleatorio si no está presente
+		const generatedId = formData.id_api_place || `lugar_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+		
 		if (!formData.nombre.trim() || !formData.descripcion.trim() || !formData.category || !formData.mexican_state || !formData.foto_url.trim()) {
 			toast.error('Por favor completa todos los campos requeridos');
 			return;
@@ -236,7 +226,10 @@ export default function LugaresPage() {
 		}
 		
 		try {
-			const newPlace = await api.createLugar(formData);
+			const newPlace = await api.createLugar({
+				...formData,
+				id_api_place: generatedId
+			});
 			setAllPlaces((prev) => [newPlace, ...prev]);
 			paginateClientSide([newPlace, ...allPlaces], 1);
 			setIsModalOpen(false);
@@ -277,7 +270,6 @@ export default function LugaresPage() {
 				Página <span className="font-medium">{currentPage}</span> de <span className="font-medium">{totalPages || 1}</span>
 			</p>
 
-			{/* Buscador y filtros */}
 			<div className="mb-6 space-y-4">
 				<div className="flex gap-3 flex-wrap">
 					<input
@@ -294,7 +286,7 @@ export default function LugaresPage() {
 					>
 						<option value="">Todas las categorías</option>
 						{CATEGORIAS.map((cat) => (
-							<option key={cat} value={cat}>{cat}</option>
+							<option key={cat} value={cat}>{getCategoryName(cat)}</option>
 						))}
 					</select>
 					<select
@@ -309,13 +301,6 @@ export default function LugaresPage() {
 					</select>
 					<button
 						type="button"
-						onClick={handleSearch}
-						className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-					>
-						Buscar
-					</button>
-					<button
-						type="button"
 						onClick={() => setIsModalOpen(true)}
 						className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
 					>
@@ -324,21 +309,18 @@ export default function LugaresPage() {
 				</div>
 			</div>
 
-			{/* Loading state */}
 			{loading && <p className="text-center py-8">Cargando lugares...</p>}
 
-			{/* Sin lugares */}
 			{!loading && places.length === 0 && (
 				<p className="text-center py-8 text-gray-500">No se encontraron lugares. Intenta con otros filtros o añade uno nuevo.</p>
 			)}
 
-		{/* Lista de lugares */}
 		<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
 			{places.map((place, index) => (
 				<div key={`${place.id_api_place}-${currentPage}-${index}`} className="rounded-lg border bg-white/5 shadow-sm overflow-hidden flex flex-col h-full">
 					<div className="relative w-full h-44">
 						<Image
-							src={place.foto_url || "/img/placeholder.jpg"}
+							src={place.foto_url || getDefaultImageForCategory(place.category)}
 							alt={place.nombre}
 							fill
 							sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -351,7 +333,7 @@ export default function LugaresPage() {
 							<div>
 								<h2 className="text-lg font-medium">{place.nombre}</h2>
 								<p className="text-sm text-gray-600">{place.descripcion}</p>
-								<p className="text-xs text-gray-500 mt-1">{place.category} • {place.mexican_state}</p>
+								<p className="text-xs text-gray-500 mt-1">{getCategoryName(place.category)} • {place.mexican_state}</p>
 							</div>
 							<StarRating rating={place.google_score} />
 						</div>
@@ -373,7 +355,7 @@ export default function LugaresPage() {
 					</div>
 				</div>
 			))}
-		</div>			{/* Paginación */}
+		</div>			
 			{!loading && totalPages > 1 && (
 				<div className="flex justify-center items-center gap-2 mt-8">
 					<button
@@ -398,14 +380,12 @@ export default function LugaresPage() {
 							</>
 						)}
 						
-						{/* Páginas visibles alrededor de la actual */}
 						{(() => {
 							const pagesToShow = [];
 							const start = Math.max(1, currentPage - 2);
 							const end = Math.min(totalPages, currentPage + 2);
 							
 							for (let i = start; i <= end; i++) {
-								// No mostrar la página 1 o última si ya se muestran por separado
 								if (i === 1 && currentPage > 3) continue;
 								if (i === totalPages && currentPage < totalPages - 2) continue;
 								
@@ -426,7 +406,6 @@ export default function LugaresPage() {
 							return pagesToShow;
 						})()}
 						
-						{/* Última página */}
 						{currentPage < totalPages - 2 && (
 							<>
 								{currentPage < totalPages - 3 && <span className="px-2 py-2">...</span>}
@@ -450,7 +429,6 @@ export default function LugaresPage() {
 				</div>
 			)}
 
-			{/* Modal de confirmación de eliminación */}
 			{deleteConfirmOpen && placeToDelete && (
 				<div 
 					className="fixed inset-0 bg-black/50 flex items-center justify-center p-4" 
@@ -477,7 +455,7 @@ export default function LugaresPage() {
 							<p className="text-gray-700 mb-2">¿Estás seguro de que deseas eliminar este lugar?</p>
 							<div className="bg-gray-50 rounded-md p-3 border border-gray-200">
 								<p className="font-medium text-gray-900">{placeToDelete.nombre}</p>
-								<p className="text-sm text-gray-600">{placeToDelete.mexican_state} • {placeToDelete.category}</p>
+								<p className="text-sm text-gray-600">{placeToDelete.mexican_state} • {getCategoryName(placeToDelete.category)}</p>
 							</div>
 						</div>
 
@@ -501,7 +479,6 @@ export default function LugaresPage() {
 				</div>
 			)}
 
-			{/* Modal para añadir lugar */}
 			{isModalOpen && (
 				<div 
 					className="fixed inset-0 bg-black/50 flex items-center justify-center p-4" 
@@ -515,14 +492,19 @@ export default function LugaresPage() {
 						<h2 className="text-2xl font-semibold mb-4">Añadir Nuevo Lugar</h2>
 						<form onSubmit={handleCreatePlace} className="space-y-4">
 							<div>
-								<label className="block text-sm font-medium mb-1">ID API Place *</label>
+								<label className="block text-sm font-medium mb-1">ID API Place <span className="text-gray-500">(Opcional - Se genera automáticamente)</span></label>
 								<input
 									type="text"
-									required
 									value={formData.id_api_place}
 									onChange={(e) => setFormData({ ...formData, id_api_place: e.target.value })}
+									placeholder="Dejar vacío para generar automáticamente"
 									className="w-full px-3 py-2 border rounded-md"
 								/>
+								{!formData.id_api_place && (
+									<p className="text-xs text-blue-600 mt-1">
+										Se generará un ID único automáticamente al crear el lugar
+									</p>
+								)}
 							</div>
 							<div>
 								<label className="block text-sm font-medium mb-1">Nombre *</label>
@@ -554,7 +536,7 @@ export default function LugaresPage() {
 								>
 									<option value="">Seleccione una categoría</option>
 									{CATEGORIAS.map((cat) => (
-										<option key={cat} value={cat}>{cat}</option>
+										<option key={cat} value={cat}>{getCategoryName(cat)}</option>
 									))}
 								</select>
 							</div>

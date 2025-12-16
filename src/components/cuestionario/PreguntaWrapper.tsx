@@ -24,6 +24,7 @@ interface PreguntaWrapperProps {
   onSiguiente: () => void;
   onGuardar?: () => void;
   isLoading: boolean;
+  selectedCount: number; // número de opciones seleccionadas en la pregunta actual
 }
 
 export const PreguntaWrapper = ({
@@ -33,10 +34,16 @@ export const PreguntaWrapper = ({
   onSiguiente,
   onGuardar,
   isLoading,
+  selectedCount,
 }: PreguntaWrapperProps) => {
   const router = useRouter();
   const esPrimeraPregunta = preguntaActual === 1;
   const esUltimaPregunta = preguntaActual === totalPreguntas;
+
+  // Validación: mínimo 1 y máximo 3 opciones
+  const isValid = selectedCount >= 1 && selectedCount <= 3;
+  const showErrorNone = selectedCount === 0;
+  const showErrorTooMany = selectedCount > 3;
 
   const onAnterior = () => {
     if (!esPrimeraPregunta) {
@@ -57,6 +64,25 @@ export const PreguntaWrapper = ({
 
         {children}
 
+        {/* Mensajes de validación */}
+        <div className="mt-4">
+          {showErrorNone && (
+            <p className="text-sm text-red-600">
+              Debes escoger al menos 1 opción.
+            </p>
+          )}
+          {showErrorTooMany && (
+            <p className="text-sm text-red-600">
+              Selecciona máximo 3 opciones.
+            </p>
+          )}
+          {!showErrorNone && !showErrorTooMany && selectedCount >= 1 && (
+            <p className="text-sm text-emerald-700">
+              Perfecto: {selectedCount} seleccionada(s). Puedes continuar.
+            </p>
+          )}
+        </div>
+
         <div className="flex justify-between mt-10">
           <Button
             type="button"
@@ -70,18 +96,26 @@ export const PreguntaWrapper = ({
           {esUltimaPregunta ? (
             <Button
               type="submit"
-              onClick={onGuardar}
-              disabled={isLoading}
-              className="bg-secondary hover:bg-primary text-white"
+              onClick={() => {
+                if (isValid && onGuardar) onGuardar();
+              }}
+              disabled={isLoading || !isValid}
+              className={`${
+                isValid ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-300"
+              } text-white`}
             >
               {isLoading ? 'Guardando...' : 'Guardar y Finalizar'}
             </Button>
           ) : (
             <Button
               type="submit"
-              onClick={onSiguiente}
-              disabled={isLoading}
-              className="bg-secondary hover:bg-primary text-white"
+              onClick={() => {
+                if (isValid) onSiguiente();
+              }}
+              disabled={isLoading || !isValid}
+              className={`${
+                isValid ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-300"
+              } text-white`}
             >
               Siguiente
             </Button>

@@ -86,6 +86,7 @@ export default function ReportesPage() {
 	const [queryUser, setQueryUser] = React.useState("");
 	const [queryDate, setQueryDate] = React.useState(""); // yyyy-mm-dd
 	const [queryStatus, setQueryStatus] = React.useState<ReportStatus | "">("");
+	const [backendError, setBackendError] = React.useState<string | null>(null);
 
 	const api = React.useMemo(() => ItinerariosAPI.getInstance(), []);
 
@@ -94,26 +95,37 @@ export default function ReportesPage() {
 		const loadReports = async () => {
 			try {
 				setLoading(true);
+				setBackendError(null);
+				
 				// Obtener lista de reportes del backend
-				const reportesDelBackend = await api.getReports();
+				let reportesDelBackend = await api.getReports();
+				
+				// Si la lista está vacía, significa que hubo un fallback
+				if (reportesDelBackend.length === 0) {
+					setBackendError("No se pudieron cargar los reportes del servidor. Mostrando datos de demostración.");
+					setReports(sampleReports);
+					return;
+				}
 				
 				// Mapear reportes del backend al formato esperado
 				const mappedReports = reportesDelBackend.map((reporte) => ({
 					id: reporte.id,
 					description: reporte.description,
 					usuario_emitente: {
-						username: reporte.usuario_emitente.username,
-						nombre_completo: reporte.usuario_emitente.nombre_completo,
-						role: (reporte.usuario_emitente.role as "viajero" | "administrador") || "viajero",
+						username: reporte.usuario_emitente?.username || "desconocido",
+						nombre_completo: reporte.usuario_emitente?.nombre_completo || "Usuario desconocido",
+						role: (reporte.usuario_emitente?.role as "viajero" | "administrador") || "viajero",
 					},
 					date: new Date().toISOString().split('T')[0],
 					status: "pendiente" as ReportStatus,
 				}));
 				
 				setReports(mappedReports);
+				console.log(`✅ Se cargaron ${mappedReports.length} reportes del servidor`);
 			} catch (error: any) {
 				console.error("Error al cargar reportes del backend:", error);
-				console.log("Usando datos de muestra. Verifica que el endpoint esté disponible.");
+				const errorMsg = error?.message || "Error desconocido al cargar reportes";
+				setBackendError(`No se pudieron cargar los reportes: ${errorMsg}`);
 				setReports(sampleReports);
 			} finally {
 				setLoading(false);
@@ -171,11 +183,14 @@ export default function ReportesPage() {
 	const loadReportDetail = async (reportId: number) => {
 		try {
 			setDetailLoading(true);
-			const detail = await api.getReportById(reportId);
+			console.log(`📥 Cargando detalles del reporte ${reportId}...`);
+			const detail = await api.getAdminReportDetail(reportId);
+			console.log(`✅ Detalles cargados:`, detail);
 			setSelectedReport(detail);
-		} catch (error) {
-			console.error("Error al cargar detalles del reporte:", error);
-			alert("Error al cargar detalles del reporte");
+		} catch (error: any) {
+			console.error("❌ Error al cargar detalles del reporte:", error);
+			const errorMsg = error?.message || "Error desconocido";
+			alert(`Error al cargar detalles del reporte: ${errorMsg}`);
 		} finally {
 			setDetailLoading(false);
 		}
@@ -183,7 +198,7 @@ export default function ReportesPage() {
 
 	const onApprove = async (id: number) => {
 		try {
-			console.log("Baneando publicación del reporte", id);
+			console.log(`🔨 Baneando publicación del reporte ${id}...`);
 			await api.banPublication(id);
 			
 			// Actualizar estado del reporte a "en_revision"
@@ -193,10 +208,12 @@ export default function ReportesPage() {
 				)
 			);
 			
+			console.log(`✅ Publicación baneada y reporte ${id} marcado como revisado`);
 			alert(`Publicación baneada y reporte ${id} marcado como revisado`);
-		} catch (error) {
-			console.error("Error al banear publicación:", error);
-			alert("Error al procesar el reporte");
+		} catch (error: any) {
+			console.error("❌ Error al banear publicación:", error);
+			const errorMsg = error?.message || "Error desconocido";
+			alert(`Error al procesar el reporte: ${errorMsg}`);
 		}
 	};
 
@@ -206,16 +223,18 @@ export default function ReportesPage() {
 	};
 
 	const onDelete = async (id: number) => {
-		console.log("Eliminar", id);
 		const ok = confirm(`¿Eliminar reporte ${id}?`);
 		if (ok) {
 			try {
+				console.log(`🗑️ Eliminando reporte ${id}...`);
 				await api.deleteReport(id);
 				setReports((prev) => prev.filter((r) => r.id !== id));
+				console.log(`✅ Reporte ${id} eliminado`);
 				alert(`Reporte ${id} eliminado`);
-			} catch (error) {
-				console.error("Error al eliminar reporte:", error);
-				alert("Error al eliminar el reporte");
+			} catch (error: any) {
+				console.error("❌ Error al eliminar reporte:", error);
+				const errorMsg = error?.message || "Error desconocido";
+				alert(`Error al eliminar el reporte: ${errorMsg}`);
 			}
 		}
 	};
@@ -241,6 +260,22 @@ export default function ReportesPage() {
 			>
 				Reportes
 			</h1>
+
+			{backendError && (
+				<div
+					style={{
+						padding: 12,
+						marginBottom: 16,
+						backgroundColor: "#fef3c7",
+						borderLeft: "4px solid #f59e0b",
+						borderRadius: 4,
+						color: "#92400e",
+						fontSize: 14,
+					}}
+				>
+					⚠️ {backendError}
+				</div>
+			)}
 
 			{loading && <p style={{ color: "#6b7280" }}>Cargando reportes...</p>}
 

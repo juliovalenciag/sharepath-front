@@ -33,6 +33,7 @@ import {
   ListRecomen,
   Block,
   UnBlock,
+  ListBlock,
   CreateResenaRequest,
   UpdateResenaRequest,
   Resena,
@@ -190,11 +191,19 @@ export class ItinerariosAPI implements ApiRoutes {
       },
     });
 
-    const data = await request.json();
+    let data: any;
+    try {
+      data = await request.json();
+    } catch (parseError) {
+      console.warn(`No se pudo parsear JSON de ${route}:`, parseError);
+      data = {};
+    }
 
     if (!request.ok) {
-      const { message } = data as ErrorResponse;
-      throw new Error(message);
+      const errorData = data as ErrorResponse;
+      const errorMessage = errorData?.message || `Error ${request.status}: ${request.statusText}`;
+      console.warn(`[${request.status}] ${route}: ${errorMessage}`);
+      throw new Error(errorMessage);
     }
 
     return data as T;
@@ -374,6 +383,19 @@ export class ItinerariosAPI implements ApiRoutes {
     );
   }
 
+  async getAllUsers(): Promise<SearchUserResponse> {
+    try {
+     
+      return await this.get<SearchUserResponse>("/user/all", true);
+    } catch (error) {
+      const response = await this.searchUsers("");
+      if (Array.isArray(response)) {
+        return { users: response };
+      }
+      return response;
+    }
+  }
+
   async deleteUser(): Promise<{ message: string }> {
     return await this.delete<{ message: string }>("/user");
   }
@@ -420,6 +442,10 @@ export class ItinerariosAPI implements ApiRoutes {
     return await this.post<UnBlock>("/amigo/unblock", true, { user });
   }
 
+  async listblock(): Promise<ListBlock> {
+    return await this.get<ListBlock>("/amigo/listblock", true);
+  }
+  
   // ===== RECOMENDACIONES =====
   async getRecomen(): Promise<ListRecomen> {
     return await this.get<ListRecomen>("/recomendacion", true);
@@ -512,15 +538,30 @@ export class ItinerariosAPI implements ApiRoutes {
     }
 
   async getReports(): Promise<Reporte[]> {
-    return await this.get<Reporte[]>("/reporte", true);
+    try {
+      return await this.get<Reporte[]>("/reports", true);
+    } catch (error) {
+      console.warn("Endpoint /reports no disponible, intentando /Reportes...");
+      try {
+        return await this.get<Reporte[]>("/Reportes", true);
+      } catch (fallbackError) {
+        console.error("Ambos endpoints fallaron. Retornando array vacío.", fallbackError);
+        return [];
+      }
+    }
   }
 
   async getReportById(reportId: number): Promise<Reporte> {
-    return await this.get<Reporte>(`/reporte/${reportId}`, true);
+    try {
+      return await this.get<Reporte>(`/reports/${reportId}`, true);
+    } catch (error) {
+      console.warn(`Endpoint /reports/${reportId} no disponible, intentando /Reportes/${reportId}...`);
+      return await this.get<Reporte>(`/Reportes/${reportId}`, true);
+    }
   }
 
   async deleteReport(reportId: number): Promise<void> {
-    await this.delete<{ message: string }>(`/reporte/${reportId}`);
+    await this.delete<{ message: string }>(`/reports/${reportId}`);
   }
 
   // ===== RESEÑAS =====
@@ -559,17 +600,16 @@ export class ItinerariosAPI implements ApiRoutes {
      * Nota: el id es el del reporte
      */
     async banPublication(reportId: number): Promise<{ message: string }> {
-      // Enviamos un objeto vacío {} porque es un POST pero no requiere body, solo el ID en params
       return await this.post<{ message: string }>(`/admin/ban/${reportId}`, true, {});
     }
 
     /**
      * Obtiene el detalle extendido de un reporte para el admin.
-     * Ruta Back: GET /admin/detail/id
+     * Ruta Back: GET /reports/id
      * Nota: el id es el del reporte
      */
     async getAdminReportDetail(reportId: number): Promise<Reporte> {
-      return await this.get<Reporte>(`/admin/detail/${reportId}`, true);
+      return await this.get<Reporte>(`/reports/${reportId}`, true);
     }
 
 }

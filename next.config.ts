@@ -6,23 +6,14 @@ const nextConfig: NextConfig = {
   // DevTools puede desactivarse así en 15.x:
   /* config options here */
   images: {
-    domains: [
-      "images.unsplash.com",
-      "images.pexels.com",
-      "upload.wikimedia.org",
-      "www.museosdemexico.com",
-      "dynamic-media-cdn.tripadvisor.com",
-      "media.traveler.es",
-      "localhost"
-    ],
     remotePatterns: [
       {
-        hostname: "res.cloudinary.com",
         protocol: "https",
+        hostname: "**",
       },
       {
-        hostname: "harol-lovers.up.railway.app",
-        protocol: "https"
+        protocol: "http",
+        hostname: "**",
       }
     ],
   },

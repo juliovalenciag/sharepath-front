@@ -188,6 +188,19 @@ export interface Block {
 export interface UnBlock {
   message: string;
 }
+
+export interface BlockedUser {
+  username: string;
+  nombre_completo: string;
+  correo: string;
+  foto_url: string | null;
+}
+
+export interface ListBlock {
+  message: string;
+  data: BlockedUser[];
+}
+
 export interface FriendSuggestion {
   username: string;
   nombre_completo: string;
@@ -310,6 +323,7 @@ export interface ApiRoutes {
   deleteFriend: (correo: string) => Promise<{ message: string }>;
   block: (user: string) => Promise<Block>;
   unblock: (user: string) => Promise<UnBlock>;
+  listblock: () => Promise<ListBlock>;
 
   //Recomendacion de new user
   getRecomen: () => Promise<ListRecomen>;

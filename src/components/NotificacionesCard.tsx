@@ -11,6 +11,7 @@ import {
   Loader2,
   UserRoundCheck,
   UserRoundX,
+  Flag,
 } from "lucide-react";
 import { useNotificationsC } from "@/context/NotificationContext";
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
@@ -56,6 +57,11 @@ const getIconAndColor = (type: string) => {
       return {
         icon: <UserRoundX size={16} className="text-white" />,
         color: "bg-red-600",
+      };
+    case "REPORT":
+      return {
+        icon: <Flag size={16} className="text-white" />,
+        color: "bg-yellow-500",
       };
     default:
       return {

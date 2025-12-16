@@ -157,8 +157,13 @@ export default function DashboardAdmin() {
 				setLoading(true);
 				
 				// Cargar estadísticas
-				const stats = await api.getAdminStats();
-				setStatsData(stats);
+				try {
+					const stats = await api.getAdminStats();
+					setStatsData(stats);
+				} catch (statsError) {
+					console.warn("No se pudieron cargar estadísticas:", statsError);
+					// Continuar sin estadísticas
+				}
 			
 				// Cargar reportes
 				try {
@@ -417,70 +422,6 @@ export default function DashboardAdmin() {
 				</CardContent>
 			</Card>
 
-			{/* Tabla de reportes */}
-			{reportesLoaded && reportes.length > 0 && (
-				<Card>
-					<CardHeader>
-						<CardTitle>Reportes Recientes</CardTitle>
-						<CardDescription>
-							Últimos reportes de publicaciones en la plataforma
-						</CardDescription>
-					</CardHeader>
-					<CardContent>
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead>ID</TableHead>
-									<TableHead>Usuario</TableHead>
-									<TableHead>Descripción</TableHead>
-									<TableHead>Historial</TableHead>
-									<TableHead className="text-right">
-										Acciones
-									</TableHead>
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{reportes.slice(0, 5).map((reporte) => (
-									<TableRow key={reporte.id}>
-										<TableCell className="font-medium">
-											#{reporte.id}
-										</TableCell>
-										<TableCell>
-											<div className="flex flex-col">
-												<span className="font-medium">
-													{reporte.usuario_emitente.username}
-												</span>
-												<span className="text-xs text-muted-foreground">
-													{reporte.usuario_emitente.correo}
-												</span>
-											</div>
-										</TableCell>
-										<TableCell className="max-w-xs truncate">
-											{reporte.description}
-										</TableCell>
-										<TableCell>
-											<Badge variant="secondary">
-												{reporte.historial.length} accion(es)
-											</Badge>
-										</TableCell>
-										<TableCell className="text-right">
-											<Button
-												variant="outline"
-												size="sm"
-												onClick={() => {
-													console.log("Ver reporte:", reporte.id);
-												}}
-											>
-												Ver Detalle
-											</Button>
-										</TableCell>
-									</TableRow>
-								))}
-							</TableBody>
-						</Table>
-					</CardContent>
-				</Card>
-			)}
 
 			{/* Tarjetas de destinos populares con imágenes */}
 			<div>
