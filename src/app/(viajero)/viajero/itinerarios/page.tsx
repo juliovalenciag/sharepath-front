@@ -139,9 +139,9 @@ export default function MisItinerariosPage() {
                 </div>
                 <div className="flex-1 p-8 flex items-center justify-center bg-background/50">
                   <div className="flex gap-6 w-full overflow-hidden opacity-50">
-                    <Skeleton className="h-[280px] w-[240px] rounded-3xl shrink-0" />
-                    <Skeleton className="h-[280px] w-[240px] rounded-3xl shrink-0" />
-                    <Skeleton className="h-[280px] w-[240px] rounded-3xl shrink-0" />
+                    <Skeleton className="h-[280px] w-60 rounded-3xl shrink-0" />
+                    <Skeleton className="h-[280px] w-60 rounded-3xl shrink-0" />
+                    <Skeleton className="h-[280px] w-60 rounded-3xl shrink-0" />
                   </div>
                 </div>
               </div>

@@ -444,7 +444,6 @@ export default function CrearItinerarioPage() {
         currentDay={currentDay}
         allDays={days}
         onSelectDay={setSelectedDayKey}
-        // @ts-ignore
         defaultState={meta?.regions[0]}
         onAddLugarToDay={(lugar) => {
           if (!currentDay) return;
