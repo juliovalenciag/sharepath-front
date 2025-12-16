@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     }
 
     // 2. Consultar a tu backend
-    const backendRes = await fetch("http://localhost:4000/auth/google", {
+    const backendRes = await fetch("https://harol-lovers.up.railway.app/auth/google", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ correo: payload.email }),

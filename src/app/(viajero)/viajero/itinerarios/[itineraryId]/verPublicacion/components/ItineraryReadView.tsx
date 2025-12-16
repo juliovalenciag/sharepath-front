@@ -82,8 +82,8 @@ export default function ItineraryReadView({ id }: { id: string }) {
     async function fetchData() {
       try {
         const res = await fetch(
-          `http://localhost:4000/itinerario/${id}`,
-          // `http://localhost:4000/itinerario/${id}`,
+          `https://harol-lovers.up.railway.app/itinerario/${id}`,
+          // `https://harol-lovers.up.railway.app/itinerario/${id}`,
           {
             headers: { token: localStorage.getItem("authToken") || "" },
           }

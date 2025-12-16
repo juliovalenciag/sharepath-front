@@ -37,7 +37,7 @@ export function ChatsSidebar({
 
   return (
     <div className="h-full grid grid-rows-[auto_auto_minmax(0,1fr)] bg-white border-1 border-gray-800 rounded-3xl shadow-sm overflow-hidden dark:bg-[#111b21] dark:border-gray-700 transition-colors">
-      <header className="px-4 py-3 border-b bg-[#2196F3] dark:bg-[#1565C0] dark:border-gray-700 transition-colors">
+      <header className="px-4 py-5 border-b bg-[#2196F3] dark:bg-[#1565C0] dark:border-gray-700 transition-colors">
         {/* <h2 className="text-lg font-semibold">Chats</h2> */}
         <h2 className="text-xl font-bold text-white">Chats</h2>
       </header>
@@ -71,7 +71,7 @@ export function ChatsSidebar({
         </div> */}
       </div>
 
-      <ul className="overflow-y-auto">
+      <ul className="overflow-y-auto h-117"> {/* La altura h-117 se puso tomando como referencia ChatThread.tsx */}
         {filtered.map((c) => (
           <li key={c.id}>
             <button
@@ -89,7 +89,7 @@ export function ChatsSidebar({
                 {/* <div className="size-10 rounded-full bg-muted grid place-content-center border">👥</div> */}
                 <div className="size-10 rounded-full bg-muted grid place-content-center border overflow-hidden">
                   {
-                    c.members[1]?.foto_url !== "" ? (
+                    c.members[1]?.foto_url ? (
                       <img src={c.members[1].foto_url} className="aspect-square size-full" alt="Foto de perfil"></img>
                     ) : (
                       <p>{c.members[1]?.name.charAt(0)}</p>

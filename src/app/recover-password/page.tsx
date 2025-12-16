@@ -36,7 +36,7 @@ export default function RecoverPasswordPage() {
 
     setIsLoading(true);
 
-    const promise = fetch("http://localhost:4000/auth/recover", {
+    const promise = fetch("https://harol-lovers.up.railway.app/auth/recover", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -9,7 +9,7 @@ import { ChatsSidebar } from "./ChatsSidebar";
 import { ChatThread } from "./ChatThread";
 import { ChatDetails } from "./ChatDetails";
 import { useSocket } from "@/context/socketContext"; //
-import { m } from "motion/react";
+// import { m } from "react-motion";
 //import { currentUser } from "./_mock"; //
 
 //Datos que se reciben del servidor
