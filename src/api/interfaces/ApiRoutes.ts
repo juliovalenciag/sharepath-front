@@ -340,6 +340,7 @@ export interface ApiRoutes {
 
   getPublicationWithResenas: (publicacionId: number) => Promise<PublicacionConResenas>;
   deletePublication: (publicacionId: number) => Promise<{ message: string }>;
+  updatePublication: (publicacionId: number, body: UpdatePublicationRequest) => Promise<Publicacion>;
   
   // Reseñas
   createResena: (publicacionId: number, body: CreateResenaRequest) => Promise<Resena>;
@@ -355,6 +356,8 @@ export interface ApiRoutes {
 
   // Notificaciones
   getNotifications: () => Promise<RawNotification[]>;
+
+
 }
 
 export interface MarkAsReadResponse {
@@ -466,6 +469,11 @@ export interface Publicacion {
   resenas?: Resena[];
   user_shared?: Usuario;
   [key: string]: any;
+}
+
+export interface UpdatePublicationRequest {
+  descripcion?: string;
+  privacity_mode?: boolean;
 }
 
 export interface AverageRatingResponse {
