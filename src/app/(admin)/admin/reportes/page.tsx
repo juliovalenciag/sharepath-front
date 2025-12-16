@@ -1,922 +1,627 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { format, formatDistanceToNow } from "date-fns";
+import { es } from "date-fns/locale";
+import {
+  CheckCircle2,
+  XCircle,
+  Trash2,
+  Eye,
+  Search,
+  Filter,
+  AlertTriangle,
+  Loader2,
+  ShieldAlert,
+  FileText,
+  History,
+  Image as ImageIcon,
+  MapPin,
+  RefreshCw,
+  MoreHorizontal,
+  Clock,
+  User,
+  Flag,
+  AlertCircle,
+  ArrowUpRight,
+  Calendar
+} from "lucide-react";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 import { Reporte, Publicacion } from "@/api/interfaces/ApiRoutes";
+import { cn } from "@/lib/utils";
 
-type ReportStatus = "en_revision" | "pendiente";
+// --- TIPOS ---
+type ReportStatus = "en_revision" | "pendiente" | "resuelto";
 
-type ReportItem = {
-	id: number;
-	description: string;
-	usuario_emitente: {
-		username: string;
-		nombre_completo: string;
-		role: "viajero" | "administrador";
-	};
-	date: string;
-	status: ReportStatus;
+type ReportItemUI = {
+  id: number;
+  description: string;
+  usuario_emitente: {
+    username: string;
+    nombre_completo: string;
+    role: string;
+    foto_url?: string;
+  };
+  date: string;
+  status: ReportStatus;
+  originalReport?: Reporte;
 };
 
-const sampleReports: ReportItem[] = [
-	{
-		id: 1,
-		description: "Contenido inapropiado",
-		usuario_emitente: { username: "usuario1", nombre_completo: "Ana López", role: "viajero" },
-		date: "2025-12-01",
-		status: "en_revision",
-	},
-	{
-		id: 2,
-		description: "Spam",
-		usuario_emitente: { username: "admin", nombre_completo: "Equipo Admin", role: "administrador" },
-		date: "2025-11-28",
-		status: "pendiente",
-	},
-];
+// --- COMPONENTES AUXILIARES ---
 
-function formatStatus(status: ReportStatus) {
-	switch (status) {
-		case "en_revision":
-			return "En revisión";
-		case "pendiente":
-			return "Pendiente";
-		default:
-			return status;
-	}
-}
+// 1. Badge de Estado Consistente
+const StatusBadge = ({ status }: { status: ReportStatus }) => {
+  const config = {
+    pendiente: {
+        label: "Pendiente",
+        icon: Clock,
+        className: "bg-blue-50 text-blue-700 border-blue-100"
+    },
+    en_revision: {
+        label: "En Revisión",
+        icon: AlertCircle,
+        className: "bg-amber-50 text-amber-700 border-amber-100"
+    },
+    resuelto: {
+        label: "Resuelto",
+        icon: CheckCircle2,
+        className: "bg-emerald-50 text-emerald-700 border-emerald-100"
+    }
+  };
+  const { label, icon: Icon, className } = config[status] || config.pendiente;
 
-function StatusBadge({ status }: { status: ReportStatus }) {
-	const color = status === "pendiente" ? "#2563eb" : "#ca8a04"; // pendiente vs en_revision
-	const bg = status === "pendiente" ? "#dbeafe" : "#fef9c3";
-	return (
-		<span
-			style={{
-				display: "inline-flex",
-				alignItems: "center",
-				gap: 6,
-				padding: "4px 10px",
-				fontSize: 12,
-				fontWeight: 600,
-				color,
-				backgroundColor: bg,
-				borderRadius: 9999,
-				border: `1px solid ${color}20`,
-			}}
-		>
-			<span
-				style={{
-					width: 8,
-					height: 8,
-					borderRadius: 9999,
-					backgroundColor: color,
-				}}
-			/>
-			{formatStatus(status)}
-		</span>
-	);
-}
+  return (
+    <span className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border gap-1.5", className)}>
+      <Icon className="h-3 w-3" />
+      {label}
+    </span>
+  );
+};
 
+// 2. Tarjeta de Métricas (Estilo Simple)
+function StatCard({ title, value, icon: Icon, description, colorClass }: any) {
+    return (
+      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-start justify-between">
+        <div>
+            <p className="text-sm font-medium text-gray-500">{title}</p>
+            <h3 className="text-2xl font-bold text-gray-900 mt-2">{value}</h3>
+            <p className="text-xs text-gray-400 mt-1">{description}</p>
+        </div>
+        <div className={cn("p-3 rounded-lg", colorClass)}>
+            <Icon className="h-5 w-5" />
+        </div>
+      </div>
+    );
+  }
+
+// --- PÁGINA PRINCIPAL ---
 export default function ReportesPage() {
-	const [reports, setReports] = React.useState<ReportItem[]>(sampleReports);
-	const [loading, setLoading] = React.useState(true);
-	const [selectedReport, setSelectedReport] = React.useState<Reporte | null>(null);
-	const [selectedPublicacion, setSelectedPublicacion] = React.useState<Publicacion | null>(null);
-	const [detailLoading, setDetailLoading] = React.useState(false);
-	const [publicacionLoading, setPublicacionLoading] = React.useState(false);
-	const [publicacionError, setPublicacionError] = React.useState<string | null>(null);
-	const [queryId, setQueryId] = React.useState("");
-	const [queryUser, setQueryUser] = React.useState("");
-	const [queryDate, setQueryDate] = React.useState(""); // yyyy-mm-dd
-	const [queryStatus, setQueryStatus] = React.useState<ReportStatus | "">("");
-	const [backendError, setBackendError] = React.useState<string | null>(null);
+  const [reports, setReports] = useState<ReportItemUI[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  const [selectedReport, setSelectedReport] = useState<Reporte | null>(null);
+  const [selectedPublicacion, setSelectedPublicacion] = useState<Publicacion | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [publicacionLoading, setPublicacionLoading] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
-	const api = React.useMemo(() => ItinerariosAPI.getInstance(), []);
+  const [queryText, setQueryText] = useState("");
+  const [queryStatus, setQueryStatus] = useState<ReportStatus | "all">("all");
 
-	// Cargar reportes del backend
-	React.useEffect(() => {
-		const loadReports = async () => {
-			try {
-				setLoading(true);
-				setBackendError(null);
-				
-				// Obtener lista de reportes del backend
-				let reportesDelBackend = await api.getReports();
-				
-				// Si la lista está vacía, significa que hubo un fallback
-				if (reportesDelBackend.length === 0) {
-					setBackendError("No se pudieron cargar los reportes del servidor. Mostrando datos de demostración.");
-					setReports(sampleReports);
-					return;
-				}
-				
-				// Mapear reportes del backend al formato esperado
-				const mappedReports = reportesDelBackend.map((reporte) => ({
-					id: reporte.id,
-					description: reporte.description,
-					usuario_emitente: {
-						username: reporte.usuario_emitente?.username || "desconocido",
-						nombre_completo: reporte.usuario_emitente?.nombre_completo || "Usuario desconocido",
-						role: (reporte.usuario_emitente?.role as "viajero" | "administrador") || "viajero",
-					},
-					date: new Date().toISOString().split('T')[0],
-					status: "pendiente" as ReportStatus,
-				}));
-				
-				setReports(mappedReports);
-				console.log(`✅ Se cargaron ${mappedReports.length} reportes del servidor`);
-			} catch (error: any) {
-				console.error("Error al cargar reportes del backend:", error);
-				const errorMsg = error?.message || "Error desconocido al cargar reportes";
-				setBackendError(`No se pudieron cargar los reportes: ${errorMsg}`);
-				setReports(sampleReports);
-			} finally {
-				setLoading(false);
-			}
-		};
+  const api = useMemo(() => ItinerariosAPI.getInstance(), []);
 
-		loadReports();
-	}, [api]);
+  // Carga de datos
+  const loadReports = async () => {
+    try {
+      setLoading(true);
+      const reportesDelBackend = await api.getReports();
+      
+      if (reportesDelBackend.length > 0) {
+        const mappedReports: ReportItemUI[] = reportesDelBackend.map((reporte) => ({
+          id: reporte.id,
+          description: reporte.description,
+          usuario_emitente: {
+            username: reporte.usuario_emitente?.username || "Anónimo",
+            nombre_completo: reporte.usuario_emitente?.nombre_completo || "Usuario Desconocido",
+            role: reporte.usuario_emitente?.role || "viajero",
+            foto_url: reporte.usuario_emitente?.foto_url,
+          },
+          date: new Date().toISOString(), 
+          status: "pendiente",
+          originalReport: reporte
+        }));
+        setReports(mappedReports.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+      } else {
+        setReports([]);
+      }
+    } catch (error) {
+      console.error("Error cargando reportes:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-	const toYMD = (value: unknown): string => {
-		if (value == null) return "";
-		if (typeof value === "string") {
-			const s = value.trim();
-			if (s.length >= 10) return s.slice(0, 10);
-		}
-		try {
-			const d = new Date(value as any);
-			if (isNaN(d.getTime())) return "";
-			const y = d.getFullYear();
-			const m = String(d.getMonth() + 1).padStart(2, "0");
-			const day = String(d.getDate()).padStart(2, "0");
-			return `${y}-${m}-${day}`;
-		} catch {
-			return "";
-		}
-	};
+  useEffect(() => { loadReports(); }, [api]);
 
-	const formatDateDisplay = (value: string) => {
-		const ymd = toYMD(value);
-		if (!ymd) return value;
-		const [y, m, d] = ymd.split("-");
-		return `${d}/${m}/${y}`;
-	};
+  // Filtros
+  const filteredReports = useMemo(() => {
+    const lowerQuery = queryText.toLowerCase();
+    return reports.filter((r) => {
+      const matchText = 
+        r.id.toString().includes(lowerQuery) ||
+        r.usuario_emitente.nombre_completo.toLowerCase().includes(lowerQuery) ||
+        r.usuario_emitente.username.toLowerCase().includes(lowerQuery) ||
+        r.description.toLowerCase().includes(lowerQuery);
+        
+      const matchStatus = queryStatus === "all" || r.status === queryStatus;
+      return matchText && matchStatus;
+    });
+  }, [reports, queryText, queryStatus]);
 
-	const filtered = React.useMemo(() => {
-		return reports.filter((r) => {
-			const matchId = queryId
-				? r.id.toString().includes(queryId)
-				: true;
-			const matchUser = queryUser
-				? r.usuario_emitente.nombre_completo.toLowerCase().includes(queryUser.toLowerCase()) ||
-				  r.usuario_emitente.role.toLowerCase().includes(queryUser.toLowerCase())
-				: true;
-			const matchDate = queryDate ? toYMD(r.date) === toYMD(queryDate) : true;
-			const matchStatus = queryStatus ? r.status === queryStatus : true;
-			return matchId && matchUser && matchDate && matchStatus;
-		});
-	}, [reports, queryId, queryUser, queryDate, queryStatus]);
+  // Stats
+  const stats = useMemo(() => {
+    const total = reports.length;
+    const pendientes = reports.filter(r => r.status === "pendiente").length;
+    const revision = reports.filter(r => r.status === "en_revision").length;
+    return { total, pendientes, revision };
+  }, [reports]);
 
-	const onView = (id: number) => {
-		console.log("Ver detalles del reporte", id);
-		loadReportDetail(id);
-	};
+  // Acciones
+  const handleViewDetails = async (id: number) => {
+    setModalOpen(true);
+    setDetailLoading(true);
+    try {
+      const detail = await api.getAdminReportDetail(id);
+      setSelectedReport(detail);
+    } catch (error) {
+      const localReport = reports.find(r => r.id === id)?.originalReport;
+      if (localReport) setSelectedReport(localReport);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
 
-	const loadReportDetail = async (reportId: number) => {
-		try {
-			setDetailLoading(true);
-			console.log(`📥 Cargando detalles del reporte ${reportId}...`);
-			const detail = await api.getAdminReportDetail(reportId);
-			console.log(`✅ Detalles cargados:`, detail);
-			setSelectedReport(detail);
-		} catch (error: any) {
-			console.error("❌ Error al cargar detalles del reporte:", error);
-			const errorMsg = error?.message || "Error desconocido";
-			alert(`Error al cargar detalles del reporte: ${errorMsg}`);
-		} finally {
-			setDetailLoading(false);
-		}
-	};
+  const handleBanPublication = async (id: number) => {
+    if(!confirm("¿Estás seguro de banear la publicación asociada?")) return;
+    try {
+      await api.banPublication(id);
+      setReports(prev => prev.map(r => r.id === id ? { ...r, status: "en_revision" } : r));
+      setModalOpen(false);
+    } catch (error) {
+        alert("Error al banear");
+    }
+  };
 
-	// Extrae el ID de la publicación del historial o descripción
-	const extractPublicacionId = (reporte: Reporte): number | null => {
-		// Busca en el historial
-		if (reporte.historial && reporte.historial.length > 0) {
-			for (const item of reporte.historial) {
-				const match = item.action_description.match(/con id (\d+)/i);
-				if (match) {
-					return parseInt(match[1], 10);
-				}
-			}
-		}
-		// Si no encuentra en historial, intenta en descripción
-		const descMatch = reporte.description.match(/id[:\s]+(\d+)/i);
-		if (descMatch) {
-			return parseInt(descMatch[1], 10);
-		}
-		return null;
-	};
+  const handleDeleteReport = async (id: number) => {
+    if (!confirm("¿Eliminar este reporte permanentemente?")) return;
+    try {
+      await api.deleteReport(id);
+      setReports(prev => prev.filter(r => r.id !== id));
+      setModalOpen(false);
+    } catch (error) {
+      alert("Error al eliminar");
+    }
+  };
 
-	const loadPublicacionPreview = async (publicacionId: number) => {
-		try {
-			setPublicacionLoading(true);
-			setPublicacionError(null);
-			console.log(`📥 Cargando publicación ${publicacionId}...`);
-			const publicacion = await api.getPublicacion(publicacionId);
-			console.log(`✅ Publicación cargada:`, publicacion);
-			console.log(`Descripción:`, publicacion.descripcion);
-			console.log(`Fotos:`, publicacion.fotos);
-			console.log(`Itinerario:`, publicacion.itinerario);
-			
-			// Si el reporte tiene descripción, usarla como fallback
-			if (!publicacion.descripcion && selectedReport?.description) {
-				publicacion.descripcion = selectedReport.description;
-			}
-			
-			setSelectedPublicacion(publicacion);
-		} catch (error: any) {
-			console.error("❌ Error al cargar la publicación:", error);
-			const errorMsg = error?.message || "Error desconocido";
-			
-			// Determinar si es error de acceso o no encontrado
-			let userMessage = `Error al cargar la publicación: ${errorMsg}`;
-			if (errorMsg.includes("404") || errorMsg.includes("no encontrada")) {
-				userMessage = "La publicación no fue encontrada o ha sido eliminada.";
-			} else if (errorMsg.includes("403") || errorMsg.includes("acceso")) {
-				userMessage = "No tienes acceso para ver esta publicación (privada).";
-			}
-			
-			setPublicacionError(userMessage);
-		} finally {
-			setPublicacionLoading(false);
-		}
-	};
+  const extractPublicacionId = (reporte: Reporte): number | null => {
+    if (reporte.historial?.length > 0) {
+        const match = reporte.historial[0].action_description.match(/con id (\d+)/i);
+        if (match) return parseInt(match[1], 10);
+    }
+    const descMatch = reporte.description.match(/id[:\s]+(\d+)/i);
+    return descMatch ? parseInt(descMatch[1], 10) : null;
+  };
 
-	const onApprove = async (id: number) => {
-		try {
-			console.log(`🔨 Baneando publicación del reporte ${id}...`);
-			await api.banPublication(id);
-			
-			// Actualizar estado del reporte a "en_revision"
-			setReports((prev) =>
-				prev.map((r) =>
-					r.id === id ? { ...r, status: "en_revision" as ReportStatus } : r
-				)
-			);
-			
-			console.log(`✅ Publicación baneada y reporte ${id} marcado como revisado`);
-			alert(`Publicación baneada y reporte ${id} marcado como revisado`);
-		} catch (error: any) {
-			console.error("❌ Error al banear publicación:", error);
-			const errorMsg = error?.message || "Error desconocido";
-			alert(`Error al procesar el reporte: ${errorMsg}`);
-		}
-	};
+  const handleViewPublication = async () => {
+    if (!selectedReport) return;
+    const pubId = extractPublicacionId(selectedReport);
+    if (!pubId) {
+      alert("No se pudo identificar el ID de la publicación.");
+      return;
+    }
+    setPreviewOpen(true);
+    setPublicacionLoading(true);
+    try {
+      const pub = await api.getPublicationWithResenas(pubId) as any;
+      setSelectedPublicacion(pub);
+    } catch (error) {
+      setSelectedPublicacion(null);
+    } finally {
+      setPublicacionLoading(false);
+    }
+  };
 
-	const onReject = (id: number) => {
-		console.log("Rechazar", id);
-		alert(`Reporte ${id} rechazado`);
-	};
+  return (
+    <div className="min-h-screen bg-gray-50/50 p-6 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+      
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900">Centro de Moderación</h1>
+            <p className="text-gray-500 mt-2 text-sm">
+                Gestiona los reportes de contenido y usuarios de la plataforma.
+            </p>
+            </div>
+            <button 
+                onClick={loadReports} 
+                disabled={loading}
+                className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition-colors"
+            >
+            <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
+            Actualizar
+            </button>
+        </div>
 
-	const onDelete = async (id: number) => {
-		const ok = confirm(`¿Eliminar reporte ${id}?`);
-		if (ok) {
-			try {
-				console.log(`🗑️ Eliminando reporte ${id}...`);
-				await api.deleteReport(id);
-				setReports((prev) => prev.filter((r) => r.id !== id));
-				console.log(`✅ Reporte ${id} eliminado`);
-				alert(`Reporte ${id} eliminado`);
-			} catch (error: any) {
-				console.error("❌ Error al eliminar reporte:", error);
-				const errorMsg = error?.message || "Error desconocido";
-				alert(`Error al eliminar el reporte: ${errorMsg}`);
-			}
-		}
-	};
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <StatCard 
+                title="Total Reportes" 
+                value={stats.total} 
+                icon={Flag} 
+                description="Histórico completo" 
+                colorClass="bg-gray-100 text-gray-600"
+            />
+            <StatCard 
+                title="Pendientes" 
+                value={stats.pendientes} 
+                icon={Clock} 
+                description="Requieren atención" 
+                colorClass="bg-blue-50 text-blue-600"
+            />
+            <StatCard 
+                title="En Revisión" 
+                value={stats.revision} 
+                icon={ShieldAlert} 
+                description="Acciones tomadas" 
+                colorClass="bg-amber-50 text-amber-600"
+            />
+        </div>
 
-	const onToggleStatus = (id: number) => {
-		setReports((prev) =>
-			prev.map((r) =>
-				r.id === id
-					? { ...r, status: r.status === "pendiente" ? "en_revision" : "pendiente" }
-					: r
-			)
-		);
-	};
+        {/* Toolbar & Filters */}
+        <div className="bg-white p-2 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row gap-2">
+            <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                    type="text"
+                    placeholder="Buscar por ID, usuario, motivo..."
+                    value={queryText}
+                    onChange={(e) => setQueryText(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border-0 rounded-xl focus:ring-2 focus:ring-indigo-500/20 text-sm text-gray-900 placeholder:text-gray-400"
+                />
+            </div>
+            <div className="flex gap-2">
+                 <div className="relative">
+                    <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <select
+                        value={queryStatus}
+                        onChange={(e) => setQueryStatus(e.target.value as any)}
+                        className="pl-10 pr-8 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 appearance-none cursor-pointer hover:bg-gray-50 transition-colors"
+                    >
+                        <option value="all">Todos los estados</option>
+                        <option value="pendiente">Pendientes</option>
+                        <option value="en_revision">En revisión</option>
+                    </select>
+                </div>
+            </div>
+        </div>
 
-	return (
-		<div style={{ padding: 24 }}>
-			<h1
-				style={{
-					fontSize: 28,
-					fontWeight: 700,
-					marginBottom: 16,
-				}}
-			>
-				Reportes
-			</h1>
+        {/* Main Table */}
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                        <tr>
+                            <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">ID</th>
+                            <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Usuario Reportante</th>
+                            <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Motivo</th>
+                            <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Fecha</th>
+                            <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Estado</th>
+                            <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                        {loading ? (
+                            <tr>
+                                <td colSpan={6} className="px-6 py-12 text-center">
+                                    <div className="flex flex-col items-center justify-center">
+                                        <Loader2 className="h-8 w-8 text-indigo-500 animate-spin mb-2" />
+                                        <p className="text-sm text-gray-500">Cargando reportes...</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        ) : filteredReports.length === 0 ? (
+                            <tr>
+                                <td colSpan={6} className="px-6 py-12 text-center">
+                                    <div className="flex flex-col items-center justify-center">
+                                        <div className="bg-gray-100 p-3 rounded-full mb-3">
+                                            <Flag className="h-6 w-6 text-gray-400" />
+                                        </div>
+                                        <h3 className="text-gray-900 font-medium">Sin resultados</h3>
+                                        <p className="text-sm text-gray-500 mt-1">No hay reportes con los filtros actuales.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        ) : (
+                            filteredReports.map((report) => (
+                                <tr key={report.id} className="hover:bg-gray-50 transition-colors">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                        #{report.id}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="flex items-center">
+                                            <Avatar className="h-8 w-8 border border-gray-200">
+                                                <AvatarImage src={report.usuario_emitente.foto_url} />
+                                                <AvatarFallback className="bg-indigo-50 text-indigo-700 text-xs font-bold">
+                                                    {report.usuario_emitente.username.slice(0, 2).toUpperCase()}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            <div className="ml-3">
+                                                <div className="text-sm font-medium text-gray-900">{report.usuario_emitente.nombre_completo}</div>
+                                                <div className="text-xs text-gray-500 capitalize">{report.usuario_emitente.role}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <p className="text-sm text-gray-600 max-w-[250px] truncate cursor-default">
+                                                        {report.description}
+                                                    </p>
+                                                </TooltipTrigger>
+                                                <TooltipContent className="max-w-xs bg-gray-900 text-white border-0">
+                                                    {report.description}
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="flex flex-col">
+                                            <span className="text-sm text-gray-900">{format(new Date(report.date), "dd MMM yyyy", { locale: es })}</span>
+                                            <span className="text-xs text-gray-500">{formatDistanceToNow(new Date(report.date), { addSuffix: true, locale: es })}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <StatusBadge status={report.status} />
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <div className="flex items-center justify-end gap-2">
+                                            <button
+                                                onClick={() => handleViewDetails(report.id)}
+                                                className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                                title="Ver detalles"
+                                            >
+                                                <Eye className="h-4 w-4" />
+                                            </button>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-lg border-gray-100">
+                                                    <DropdownMenuLabel className="text-xs text-gray-500 uppercase tracking-wider">Acciones</DropdownMenuLabel>
+                                                    <DropdownMenuItem 
+                                                        onClick={() => handleBanPublication(report.id)} 
+                                                        className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 cursor-pointer"
+                                                    >
+                                                        <ShieldAlert className="mr-2 h-4 w-4" /> Banear Contenido
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem 
+                                                        onClick={() => handleDeleteReport(report.id)}
+                                                        className="text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
+                                                    >
+                                                        <Trash2 className="mr-2 h-4 w-4" /> Eliminar Reporte
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
+            </div>
+            
+            {/* Table Footer */}
+            <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                <span className="text-xs text-gray-500 font-medium">
+                    Mostrando {filteredReports.length} reportes
+                </span>
+                <div className="flex gap-2">
+                    <button disabled className="px-3 py-1 border border-gray-300 rounded-lg text-xs text-gray-400 bg-white cursor-not-allowed">Anterior</button>
+                    <button disabled className="px-3 py-1 border border-gray-300 rounded-lg text-xs text-gray-400 bg-white cursor-not-allowed">Siguiente</button>
+                </div>
+            </div>
+        </div>
 
-			{backendError && (
-				<div
-					style={{
-						padding: 12,
-						marginBottom: 16,
-						backgroundColor: "#fef3c7",
-						borderLeft: "4px solid #f59e0b",
-						borderRadius: 4,
-						color: "#92400e",
-						fontSize: 14,
-					}}
-				>
-					⚠️ {backendError}
-				</div>
-			)}
+      </div>
 
-			{loading && <p style={{ color: "#6b7280" }}>Cargando reportes...</p>}
+      {/* --- MODALES --- */}
 
-			<div
-				style={{
-					display: "grid",
-					gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-					gap: 12,
-					marginBottom: 16,
-				}}
-			>
-				<input
-					type="text"
-					placeholder="Buscar por ID"
-					value={queryId}
-					onChange={(e) => setQueryId(e.target.value)}
-					style={inputStyle}
-				/>
-				<input
-					type="text"
-					placeholder="Buscar por usuario/rol"
-					value={queryUser}
-					onChange={(e) => setQueryUser(e.target.value)}
-					style={inputStyle}
-				/>
-				<input
-					type="date"
-					placeholder="Fecha"
-					value={queryDate}
-					onChange={(e) => setQueryDate(e.target.value)}
-					style={inputStyle}
-				/>
-				<select
-					value={queryStatus}
-					onChange={(e) => setQueryStatus(e.target.value as ReportStatus | "")}
-					style={inputStyle}
-				>
-					<option value="">Todos los estados</option>
-					<option value="en_revision">En revisión</option>
-					<option value="pendiente">Pendiente</option>
-				</select>
-			</div>
+      {/* 1. Modal Detalle (Estilo Expediente) */}
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent className="sm:max-w-2xl p-0 gap-0 rounded-2xl border-0 shadow-2xl overflow-hidden bg-white">
+          <DialogHeader className="p-6 border-b border-gray-100 bg-gray-50/50">
+            <div className="flex items-center gap-4">
+                <div className="bg-red-50 p-3 rounded-xl border border-red-100">
+                    <AlertTriangle className="h-6 w-6 text-red-600" />
+                </div>
+                <div>
+                    <DialogTitle className="text-xl font-bold text-gray-900">Detalles del Reporte</DialogTitle>
+                    <DialogDescription className="text-gray-500 mt-1">
+                        ID: #{selectedReport?.id} • {selectedReport ? format(new Date(), "dd MMMM yyyy", { locale: es }) : "..."}
+                    </DialogDescription>
+                </div>
+            </div>
+          </DialogHeader>
+          
+          <ScrollArea className="max-h-[60vh]">
+            <div className="p-6 space-y-6">
+                {detailLoading ? (
+                    <div className="py-12 flex justify-center">
+                        <Loader2 className="h-8 w-8 animate-spin text-gray-300" />
+                    </div>
+                ) : selectedReport ? (
+                    <div className="space-y-6">
+                        {/* User Card */}
+                        <div className="flex items-center p-4 bg-gray-50 rounded-xl border border-gray-100">
+                             <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
+                                <AvatarImage src={selectedReport.usuario_emitente.foto_url} />
+                                <AvatarFallback className="bg-indigo-100 text-indigo-700 font-bold">
+                                    {selectedReport.usuario_emitente.username.slice(0,2)}
+                                </AvatarFallback>
+                             </Avatar>
+                             <div className="ml-4">
+                                <h4 className="text-sm font-bold text-gray-900">{selectedReport.usuario_emitente.nombre_completo}</h4>
+                                <p className="text-xs text-gray-500">Reportado por @{selectedReport.usuario_emitente.username}</p>
+                             </div>
+                        </div>
 
-			<div
-				style={{
-					overflowX: "auto",
-					background: "#fff",
-					border: "1px solid #e5e7eb",
-					borderRadius: 12,
-				}}
-			>
-				<table style={{ width: "100%", borderCollapse: "collapse" }}>
-				<thead>
-					<tr style={{ background: "#f9fafb" }}>
-						<th style={thStyle}>Autor</th>
-						<th style={thStyle}>ID</th>
-						<th style={thStyle}>Fecha</th>
-						<th style={thStyle}>Descripción</th>
-						<th style={thStyle}>Estado</th>
-						<th style={thStyle}>Acciones</th>
-					</tr>
-				</thead>
-					<tbody>
-						{filtered.map((r) => (
-							<tr key={r.id} style={{ borderTop: "1px solid #e5e7eb" }}>
-								<td style={tdStyle}>
-									<div style={{ display: "flex", flexDirection: "column" }}>
-										<span style={{ fontWeight: 600 }}>{r.usuario_emitente.nombre_completo}</span>
-										<span style={{ fontSize: 12, color: "#6b7280" }}>
-											Usuario {r.usuario_emitente.role}
-										</span>
-									</div>
-								</td>
-								<td style={tdStyle}>
-									<code style={{ fontSize: 12 }}>{r.id}</code>
-								</td>
-								<td style={tdStyle}>{formatDateDisplay(r.date)}</td>
-								<td style={tdStyle}>
-									<button
-										onClick={() => onView(r.id)}
-										style={buttonStyle}
-									>
-										Ver detalles
-									</button>
-								</td>
-								<td style={tdStyle}>
-									<button
-										onClick={() => onToggleStatus(r.id)}
-										style={{ border: "none", background: "transparent", padding: 0, cursor: "pointer" }}
-										title="Cambiar estado"
-									>
-										<StatusBadge status={r.status} />
-									</button>
-								</td>
-								<td style={tdStyle}>
-									<div style={{ display: "flex", gap: 8 }}>
-										<IconButton
-											title="Banear publicación"
-											color="#16a34a"
-											onClick={() => onApprove(r.id)}
-										>
-											<CheckIcon />
-										</IconButton>
-										<IconButton
-											title="Rechazar"
-											color="#dc2626"
-											onClick={() => onReject(r.id)}
-										>
-											<XIcon />
-										</IconButton>
-										<IconButton
-											title="Eliminar reporte"
-											color="#6b7280"
-											onClick={() => onDelete(r.id)}
-										>
-											<TrashIcon />
-										</IconButton>
-									</div>
-								</td>
-							</tr>
-						))}
-					</tbody>
-				</table>
-			</div>
+                        {/* Description */}
+                        <div>
+                            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Motivo del reporte</h4>
+                            <div className="bg-white p-4 border border-gray-200 rounded-xl text-sm text-gray-700 leading-relaxed shadow-sm">
+                                {selectedReport.description}
+                            </div>
+                        </div>
 
-		{/* Modal de Detalles del Reporte */}
-		{selectedReport && (
-			<div style={{
-				position: "fixed",
-				top: 0,
-				left: 0,
-				right: 0,
-				bottom: 0,
-				background: "rgba(0, 0, 0, 0.5)",
-				display: "flex",
-				alignItems: "center",
-				justifyContent: "center",
-				zIndex: 9999,
-			}} onClick={() => setSelectedReport(null)}>
-				<div style={{
-					background: "white",
-					borderRadius: 12,
-					padding: 24,
-					maxWidth: 600,
-					width: "90%",
-					maxHeight: "80vh",
-					overflowY: "auto",
-				}} onClick={(e) => e.stopPropagation()}>
-					<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-						<h2 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>Detalles del Reporte #{selectedReport.id}</h2>
-						<button onClick={() => setSelectedReport(null)} style={{
-							background: "transparent",
-							border: "none",
-							fontSize: 24,
-							cursor: "pointer",
-						}}>×</button>
-					</div>
+                        {/* History */}
+                        {selectedReport.historial && selectedReport.historial.length > 0 && (
+                            <div>
+                                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Historial</h4>
+                                <div className="border-l-2 border-gray-200 ml-2 pl-4 space-y-3">
+                                    {selectedReport.historial.map((h, i) => (
+                                        <div key={i} className="relative text-sm text-gray-600">
+                                            <div className="absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-full bg-gray-300 ring-4 ring-white"></div>
+                                            {h.action_description}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                ) : null}
+            </div>
+          </ScrollArea>
 
-					{detailLoading ? (
-						<p style={{ color: "#6b7280" }}>Cargando detalles...</p>
-					) : (
-						<div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-							<div style={{ marginBottom: 16 }}>
-								<h3 style={{ fontSize: 14, fontWeight: 600, color: "#6b7280", margin: "0 0 8px 0" }}>Descripción</h3>
-								<p style={{ margin: 0, fontSize: 14, color: "#111827" }}>{selectedReport.description}</p>
-							</div>
+          <DialogFooter className="p-4 bg-gray-50 border-t border-gray-100 flex-col sm:flex-row gap-3">
+            <button 
+                onClick={() => setModalOpen(false)}
+                className="w-full sm:w-auto px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors"
+            >
+                Cerrar
+            </button>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <button 
+                onClick={handleViewPublication}
+                className="flex-1 sm:flex-none px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 shadow-sm transition-colors flex items-center justify-center gap-2"
+              >
+                <Eye className="h-4 w-4" /> Ver Contenido
+              </button>
+              <button 
+                onClick={() => handleBanPublication(selectedReport!.id)}
+                className="flex-1 sm:flex-none px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 shadow-sm transition-colors flex items-center justify-center gap-2"
+              >
+                <ShieldAlert className="h-4 w-4" /> Sancionar
+              </button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-							<div style={{ marginBottom: 16 }}>
-								<h3 style={{ fontSize: 14, fontWeight: 600, color: "#6b7280", margin: "0 0 8px 0" }}>Usuario que reportó</h3>
-								<div style={{ 
-									background: "#f9fafb", 
-									padding: 12, 
-									borderRadius: 8,
-									fontSize: 14,
-									color: "#111827"
-								}}>
-									<p style={{ margin: "0 0 4px 0" }}>
-										<strong>{selectedReport.usuario_emitente.nombre_completo}</strong> (@{selectedReport.usuario_emitente.username})
-									</p>
-									<p style={{ margin: 0, color: "#6b7280", fontSize: 12 }}>
-										Rol: {selectedReport.usuario_emitente.role}
-									</p>
-								</div>
-							</div>
+      {/* 2. Modal Preview (Estilo Red Social) */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl border-0 shadow-2xl bg-white">
+            {publicacionLoading ? (
+                <div className="py-20 flex flex-col items-center">
+                    <Loader2 className="h-10 w-10 text-indigo-500 animate-spin" />
+                    <p className="text-sm text-gray-500 mt-4">Cargando publicación...</p>
+                </div>
+            ) : selectedPublicacion ? (
+                <div>
+                    <div className="p-4 flex items-center justify-between border-b border-gray-100">
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600">
+                                <FileText className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-bold text-gray-900">Publicación #{selectedPublicacion.id}</h3>
+                                <p className="text-xs text-gray-500">Vista de moderación</p>
+                            </div>
+                        </div>
+                        <button onClick={() => setPreviewOpen(false)} className="text-gray-400 hover:text-gray-600">
+                            <XCircle className="h-6 w-6" />
+                        </button>
+                    </div>
 
-							{selectedReport.historial && selectedReport.historial.length > 0 && (
-								<div style={{ marginBottom: 16 }}>
-									<h3 style={{ fontSize: 14, fontWeight: 600, color: "#6b7280", margin: "0 0 8px 0" }}>Historial</h3>
-									<div style={{ 
-										background: "#f9fafb", 
-										padding: 12, 
-										borderRadius: 8,
-										fontSize: 12,
-										color: "#111827"
-									}}>
-										{selectedReport.historial.map((item, idx) => (
-											<p key={idx} style={{ margin: "0 0 4px 0" }}>
-												• {item.action_description}
-											</p>
-										))}
-									</div>
-								</div>
-							)}
+                    <div className="bg-gray-900 aspect-square flex items-center justify-center relative">
+                        {selectedPublicacion.fotos && selectedPublicacion.fotos.length > 0 ? (
+                            <img 
+                                src={selectedPublicacion.fotos[0].foto_url} 
+                                className="w-full h-full object-contain" 
+                                alt="Evidencia"
+                            />
+                        ) : (
+                            <div className="text-gray-500 flex flex-col items-center">
+                                <ImageIcon className="h-8 w-8 mb-2 opacity-50" />
+                                <span className="text-sm">Sin imagen</span>
+                            </div>
+                        )}
+                    </div>
 
-							<div style={{ 
-								display: "flex", 
-								gap: 8, 
-								marginTop: 24,
-								paddingTop: 16,
-								borderTop: "1px solid #e5e7eb"
-							}}>
-								<button onClick={() => setSelectedReport(null)} style={{
-									flex: 1,
-									padding: "10px 16px",
-									borderRadius: 8,
-									border: "1px solid #e5e7eb",
-									background: "#ffffff",
-									fontSize: 14,
-									fontWeight: 600,
-									cursor: "pointer",
-								}}>
-									Cerrar
-								</button>
-								<button onClick={() => {
-									const pubId = extractPublicacionId(selectedReport);
-									if (pubId) {
-										loadPublicacionPreview(pubId);
-									} else {
-										alert("No se pudo obtener el ID de la publicación del reporte");
-									}
-								}} style={{
-									flex: 1,
-									padding: "10px 16px",
-									borderRadius: 8,
-									border: "1px solid #3b82f6",
-									background: "#eff6ff",
-									color: "#1e40af",
-									fontSize: 14,
-									fontWeight: 600,
-									cursor: "pointer",
-								}}>
-									Ver Publicación
-								</button>
-								<button onClick={() => {
-									onApprove(selectedReport.id);
-									setSelectedReport(null);
-								}} style={{
-									flex: 1,
-									padding: "10px 16px",
-									borderRadius: 8,
-									border: "none",
-									background: "#10b981",
-									color: "white",
-									fontSize: 14,
-									fontWeight: 600,
-									cursor: "pointer",
-								}}>
-									Banear Publicación
-								</button>
-							</div>
-						</div>
-					)}
-				</div>
-			</div>
-		)}
-
-		{/* Modal de Vista Previa de Publicación */}
-		{selectedPublicacion && (
-			<div style={{
-				position: "fixed",
-				top: 0,
-				left: 0,
-				right: 0,
-				bottom: 0,
-				background: "rgba(0, 0, 0, 0.5)",
-				display: "flex",
-				alignItems: "center",
-				justifyContent: "center",
-				zIndex: 10000,
-			}} onClick={() => setSelectedPublicacion(null)}>
-				<div style={{
-					background: "white",
-					borderRadius: 12,
-					padding: 24,
-					maxWidth: 700,
-					width: "90%",
-					maxHeight: "80vh",
-					overflowY: "auto",
-				}} onClick={(e) => e.stopPropagation()}>
-					<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-						<h2 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>Vista Previa de Publicación</h2>
-						<button onClick={() => setSelectedPublicacion(null)} style={{
-							background: "transparent",
-							border: "none",
-							fontSize: 24,
-							cursor: "pointer",
-						}}>×</button>
-					</div>
-
-				{publicacionLoading ? (
-					<p style={{ color: "#6b7280" }}>Cargando publicación...</p>
-				) : publicacionError ? (
-					<div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-						<div style={{
-							padding: 16,
-							backgroundColor: "#fee2e2",
-							borderLeft: "4px solid #dc2626",
-							borderRadius: 4,
-							color: "#991b1b",
-							fontSize: 14,
-						}}>
-							⚠️ {publicacionError}
-						</div>
-						<div style={{ 
-							display: "flex", 
-							gap: 8, 
-							marginTop: 24,
-							paddingTop: 16,
-							borderTop: "1px solid #e5e7eb"
-						}}>
-							<button onClick={() => setSelectedPublicacion(null)} style={{
-								flex: 1,
-								padding: "10px 16px",
-								borderRadius: 8,
-								border: "1px solid #e5e7eb",
-								background: "#ffffff",
-								fontSize: 14,
-								fontWeight: 600,
-								cursor: "pointer",
-							}}>
-								Cerrar
-							</button>
-							<button onClick={() => {
-								const pubId = extractPublicacionId(selectedReport!);
-								if (pubId) {
-									loadPublicacionPreview(pubId);
-								}
-							}} style={{
-								flex: 1,
-								padding: "10px 16px",
-								borderRadius: 8,
-								border: "1px solid #3b82f6",
-								background: "#eff6ff",
-								color: "#1e40af",
-								fontSize: 14,
-								fontWeight: 600,
-								cursor: "pointer",
-							}}>
-								Intentar de Nuevo
-							</button>
-						</div>
-					</div>
-				) : selectedPublicacion ? (
-						<div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-							<div style={{ marginBottom: 16 }}>
-								<h3 style={{ fontSize: 14, fontWeight: 600, color: "#6b7280", margin: "0 0 8px 0" }}>ID</h3>
-								<p style={{ margin: 0, fontSize: 14, color: "#111827" }}>
-									<code>{selectedPublicacion.id}</code>
-								</p>
-							</div>
-
-							<div style={{ marginBottom: 16 }}>
-								<h3 style={{ fontSize: 14, fontWeight: 600, color: "#6b7280", margin: "0 0 8px 0" }}>Descripción</h3>
-								<p style={{ margin: 0, fontSize: 14, color: "#111827", whiteSpace: "pre-wrap" }}>
-									{selectedPublicacion.descripcion && selectedPublicacion.descripcion !== "undefined" 
-										? selectedPublicacion.descripcion 
-										: "Sin descripción"}
-								</p>
-							</div>
-
-							{selectedPublicacion.itinerario && (
-								<div style={{ marginBottom: 16 }}>
-									<h3 style={{ fontSize: 14, fontWeight: 600, color: "#6b7280", margin: "0 0 8px 0" }}>Itinerario Relacionado</h3>
-									<div style={{ 
-										background: "#f9fafb", 
-										padding: 12, 
-										borderRadius: 8,
-										fontSize: 14,
-										color: "#111827"
-									}}>
-										<p style={{ margin: 0 }}>
-											<strong>{(selectedPublicacion.itinerario as any).title || (selectedPublicacion.itinerario as any).nombre || "Sin nombre"}</strong> (ID: {selectedPublicacion.itinerario.id})
-										</p>
-									</div>
-								</div>
-							)}
-
-							{selectedPublicacion.fotos && selectedPublicacion.fotos.length > 0 && (
-								<div style={{ marginBottom: 16 }}>
-									<h3 style={{ fontSize: 14, fontWeight: 600, color: "#6b7280", margin: "0 0 8px 0" }}>Fotos ({selectedPublicacion.fotos.length})</h3>
-									<div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 12 }}>
-										{selectedPublicacion.fotos.map((foto) => (
-											<div key={foto.id} style={{ position: "relative", width: "100%", paddingBottom: "100%", background: "#f0f0f0", borderRadius: 12, overflow: "hidden", border: "1px solid #e5e7eb" }}>
-												<img 
-													src={foto.foto_url} 
-													alt={`Foto ${foto.id}`}
-													style={{
-														position: "absolute",
-														top: 0,
-														left: 0,
-														width: "100%",
-														height: "100%",
-														objectFit: "cover"
-													}}
-													onError={(e) => {
-														const elem = e.target as HTMLImageElement;
-														elem.style.display = "none";
-														const parent = elem.parentElement;
-														if (parent) {
-															parent.style.background = "#fee2e2";
-														}
-													}}
-												/>
-											</div>
-										))}
-									</div>
-								</div>
-							)}
-
-							{(!selectedPublicacion.fotos || selectedPublicacion.fotos.length === 0) && (
-								<div style={{ marginBottom: 16, padding: 16, background: "#f3f4f6", borderRadius: 8, textAlign: "center", color: "#6b7280", fontSize: 14 }}>
-									📸 No hay fotos en esta publicación
-								</div>
-							)}
-
-							<div style={{ marginBottom: 16 }}>
-								<h3 style={{ fontSize: 14, fontWeight: 600, color: "#6b7280", margin: "0 0 8px 0" }}>Privacidad</h3>
-								<p style={{ margin: 0, fontSize: 14, color: "#111827" }}>
-									{selectedPublicacion.privacity_mode ? "🔒 Privada" : "🌍 Pública"}
-								</p>
-							</div>
-
-							<div style={{ 
-								display: "flex", 
-								gap: 8, 
-								marginTop: 24,
-								paddingTop: 16,
-								borderTop: "1px solid #e5e7eb"
-							}}>
-								<button onClick={() => setSelectedPublicacion(null)} style={{
-									flex: 1,
-									padding: "10px 16px",
-									borderRadius: 8,
-									border: "1px solid #e5e7eb",
-									background: "#ffffff",
-									fontSize: 14,
-									fontWeight: 600,
-									cursor: "pointer",
-								}}>
-									Cerrar
-								</button>
-							</div>
-						</div>
-					) : (
-						<p style={{ color: "#dc2626" }}>Error: No se pudo cargar la publicación</p>
-					)}
-				</div>
-			</div>
-		)}
-	</div>
-	);
+                    <div className="p-6">
+                        <h4 className="text-xs font-bold text-gray-400 uppercase mb-2">Descripción</h4>
+                        <p className="text-sm text-gray-800 leading-relaxed">
+                            {selectedPublicacion.descripcion || <span className="italic text-gray-400">Sin descripción</span>}
+                        </p>
+                        
+                        {selectedPublicacion.itinerario && (
+                            <div className="mt-4 flex items-center gap-2 p-3 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium border border-blue-100">
+                                <MapPin className="h-3.5 w-3.5" />
+                                <span className="truncate">Vinculado a: {(selectedPublicacion.itinerario as any).title || selectedPublicacion.itinerario.id}</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            ) : (
+                <div className="p-10 text-center">
+                    <AlertTriangle className="h-12 w-12 text-amber-400 mx-auto mb-4" />
+                    <h3 className="text-gray-900 font-bold">No disponible</h3>
+                    <p className="text-gray-500 text-sm mt-2">El contenido ha sido eliminado o no es accesible.</p>
+                </div>
+            )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 }
-
-const thStyle: React.CSSProperties = {
-	textAlign: "left",
-	padding: "12px 16px",
-	fontSize: 12,
-	color: "#6b7280",
-	fontWeight: 600,
-	whiteSpace: "nowrap",
-};
-
-const tdStyle: React.CSSProperties = {
-	padding: "14px 16px",
-	fontSize: 14,
-	color: "#111827",
-	verticalAlign: "middle",
-};
-
-const buttonStyle: React.CSSProperties = {
-	padding: "6px 12px",
-	borderRadius: 8,
-	border: "1px solid #e5e7eb",
-	background: "#f9fafb",
-	fontSize: 12,
-	fontWeight: 600,
-};
-
-const inputStyle: React.CSSProperties = {
-	padding: "8px 10px",
-	borderRadius: 8,
-	border: "1px solid #e5e7eb",
-	background: "#ffffff",
-	fontSize: 14,
-};
-
-function IconButton({
-	children,
-	onClick,
-	title,
-	color,
-}: {
-	children: React.ReactNode;
-	onClick: () => void;
-	title: string;
-	color?: string;
-}) {
-	return (
-		<button
-			title={title}
-			onClick={onClick}
-			style={{
-				display: "inline-flex",
-				alignItems: "center",
-				justifyContent: "center",
-				width: 32,
-				height: 32,
-				borderRadius: 8,
-				border: "1px solid #e5e7eb",
-				background: "#ffffff",
-				color: color || "#374151",
-			}}
-		>
-			{children}
-		</button>
-	);
-}
-
-function CheckIcon() {
-	return (
-		<svg
-			xmlns="http://www.w3.org/2000/svg"
-			width="18"
-			height="18"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="2"
-			strokeLinecap="round"
-			strokeLinejoin="round"
-		>
-			<path d="M20 6L9 17l-5-5" />
-		</svg>
-	);
-}
-
-function XIcon() {
-	return (
-		<svg
-			xmlns="http://www.w3.org/2000/svg"
-			width="18"
-			height="18"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="2"
-			strokeLinecap="round"
-			strokeLinejoin="round"
-		>
-			<path d="M18 6L6 18" />
-			<path d="M6 6l12 12" />
-		</svg>
-	);
-}
-
-function TrashIcon() {
-	return (
-		<svg
-			xmlns="http://www.w3.org/2000/svg"
-			width="18"
-			height="18"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="2"
-			strokeLinecap="round"
-			strokeLinejoin="round"
-		>
-			<path d="M3 6h18" />
-			<path d="M8 6V4h8v2" />
-			<path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-			<path d="M10 11v6" />
-			<path d="M14 11v6" />
-		</svg>
-	);
-}
-

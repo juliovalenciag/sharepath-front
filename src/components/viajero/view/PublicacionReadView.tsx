@@ -82,6 +82,8 @@ import {
   Send,
   Image as ImageIcon,
   Plus,
+  Route,
+  CalendarDays,
 } from "lucide-react";
 
 // ---------------- VALIDACIONES ----------------
@@ -139,6 +141,34 @@ function detectErrorKind(e: any): ReadErrorKind {
     return "notfound";
   return "generic";
 }
+
+function isValidHttpUrl(url: string) {
+  return /^https?:\/\/.+/i.test(url.trim());
+}
+
+// ---------------- TIPOS RESUMEN ITINERARIO ----------------
+type ItineraryPlaceSummary = {
+  id: string;
+  nombre: string;
+  foto_url: string | null;
+  category?: string | null;
+  mexican_state?: string | null;
+};
+
+type ItineraryDaySummary = {
+  dayIndex: number;
+  dateISO: string; // yyyy-mm-dd
+  places: ItineraryPlaceSummary[];
+};
+
+type ItinerarySummary = {
+  itineraryId: number;
+  title: string;
+  days: ItineraryDaySummary[];
+  totalPlaces: number;
+  startDate: Date | null;
+  endDate: Date | null;
+};
 
 // ---------------- UI: RATING ----------------
 function RatingStars({
@@ -294,13 +324,21 @@ function PhotoViewerDialog({
 }) {
   const [idx, setIdx] = React.useState(initialIndex);
 
+  const total = fotos?.length ?? 0;
+
+  const next = React.useCallback(() => {
+    if (!total) return;
+    setIdx((p) => (p + 1) % total);
+  }, [total]);
+
+  const prev = React.useCallback(() => {
+    if (!total) return;
+    setIdx((p) => (p - 1 + total) % total);
+  }, [total]);
+
   React.useEffect(() => {
     if (open) setIdx(initialIndex);
   }, [open, initialIndex]);
-
-  const current = fotos?.[idx];
-  const next = () => setIdx((p) => (p + 1) % fotos.length);
-  const prev = () => setIdx((p) => (p - 1 + fotos.length) % fotos.length);
 
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -311,7 +349,9 @@ function PhotoViewerDialog({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, fotos.length]);
+  }, [open, onOpenChange, next, prev]);
+
+  const current = fotos?.[idx];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -336,7 +376,7 @@ function PhotoViewerDialog({
           )}
         </div>
 
-        {fotos.length > 1 && (
+        {total > 1 && (
           <>
             <button
               onClick={prev}
@@ -355,12 +395,162 @@ function PhotoViewerDialog({
               <ArrowLeft className="h-6 w-6 rotate-180" />
             </button>
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/50 px-4 py-1.5 rounded-full text-white text-sm backdrop-blur-md border border-white/10">
-              {idx + 1} / {fotos.length}
+              {idx + 1} / {total}
             </div>
           </>
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ---------------- UI: RESUMEN ITINERARIO ----------------
+function ItinerarySummaryPanel({
+  summary,
+  loading,
+  onOpenItinerary,
+}: {
+  summary: ItinerarySummary | null;
+  loading: boolean;
+  onOpenItinerary?: () => void;
+}) {
+  if (loading) {
+    return (
+      <Card className="rounded-3xl border-border/60 shadow-sm">
+        <CardContent className="p-6 space-y-3">
+          <div className="flex items-center gap-2">
+            <Route className="h-4 w-4 text-primary" />
+            <p className="text-sm font-bold">Resumen del itinerario</p>
+          </div>
+          <Skeleton className="h-4 w-1/2" />
+          <Skeleton className="h-20 w-full rounded-2xl" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!summary || summary.days.length === 0) {
+    return (
+      <Card className="rounded-3xl border-border/60 shadow-sm">
+        <CardContent className="p-6 space-y-3">
+          <div className="flex items-center gap-2">
+            <Route className="h-4 w-4 text-primary" />
+            <p className="text-sm font-bold">Resumen del itinerario</p>
+          </div>
+          <div className="rounded-2xl border border-dashed border-border/60 p-4 text-sm text-muted-foreground">
+            No pudimos generar el resumen (sin actividades o sin acceso).
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const startLabel = summary.startDate
+    ? format(summary.startDate, "d MMM yyyy", { locale: es })
+    : null;
+  const endLabel = summary.endDate
+    ? format(summary.endDate, "d MMM yyyy", { locale: es })
+    : null;
+
+  return (
+    <Card className="rounded-3xl border-border/60 shadow-sm">
+      <CardContent className="p-6 space-y-4">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Route className="h-4 w-4 text-primary" />
+            <p className="text-sm font-bold">Resumen del itinerario</p>
+          </div>
+
+          {onOpenItinerary ? (
+            <Button
+              variant="outline"
+              className="rounded-full h-8 px-3 text-xs"
+              onClick={onOpenItinerary}
+              type="button"
+            >
+              <ExternalLink className="h-3.5 w-3.5 mr-2" />
+              abrir
+            </Button>
+          ) : null}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="secondary" className="rounded-full">
+            {summary.days.length} días
+          </Badge>
+          <Badge variant="secondary" className="rounded-full">
+            {summary.totalPlaces} paradas
+          </Badge>
+          {startLabel && endLabel ? (
+            <Badge variant="outline" className="rounded-full">
+              <CalendarDays className="h-3.5 w-3.5 mr-2" />
+              {startLabel} – {endLabel}
+            </Badge>
+          ) : null}
+        </div>
+
+        <Separator />
+
+        <ScrollArea className="h-[340px] pr-3">
+          <div className="space-y-3">
+            {summary.days.map((d) => (
+              <div
+                key={d.dateISO}
+                className="rounded-2xl border border-border/50 bg-muted/10 overflow-hidden"
+              >
+                <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-border/40 bg-background/60">
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold truncate">
+                      Día {d.dayIndex}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(d.dateISO), "EEEE d MMM", { locale: es })}
+                    </p>
+                  </div>
+                  <Badge variant="secondary" className="rounded-full shrink-0">
+                    {d.places.length} lugares
+                  </Badge>
+                </div>
+
+                <div className="p-3 space-y-2">
+                  {d.places.map((p) => (
+                    <div
+                      key={p.id}
+                      className="flex items-center gap-3 rounded-xl border border-border/40 bg-background px-3 py-2"
+                    >
+                      <div className="relative h-10 w-10 rounded-lg overflow-hidden bg-muted shrink-0">
+                        {p.foto_url ? (
+                          <Image
+                            src={p.foto_url}
+                            alt={p.nombre}
+                            fill
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="h-full w-full flex items-center justify-center text-muted-foreground">
+                            <MapPin className="h-4 w-4 opacity-50" />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold truncate">
+                          {p.nombre}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {p.mexican_state ? p.mexican_state : " "}
+                          {p.category ? ` · ${p.category}` : ""}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -447,7 +637,7 @@ export function PublicacionReadView({
   const [deleting, setDeleting] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
 
-  // Reseñas: estados (crear/editar/borrar)
+  // Reseñas: estados
   const [resenas, setResenas] = React.useState<Resena[]>([]);
   const [loadingResenas, setLoadingResenas] = React.useState(false);
   const [submittingResena, setSubmittingResena] = React.useState(false);
@@ -456,16 +646,22 @@ export function PublicacionReadView({
     null
   );
 
-  // Draft de reseña del usuario actual
+  // Draft de reseña
   const [myResena, setMyResena] = React.useState<Resena | null>(null);
   const [editingResena, setEditingResena] = React.useState(false);
 
-  // Draft de fotos (propietario)
+  // Draft de fotos
   const [photoDraft, setPhotoDraft] = React.useState<{
     removeIds: Set<number>;
     addUrls: string[];
     urlInput: string;
   }>({ removeIds: new Set(), addUrls: [], urlInput: "" });
+
+  // Resumen itinerario
+  const [itSummary, setItSummary] = React.useState<ItinerarySummary | null>(
+    null
+  );
+  const [loadingItSummary, setLoadingItSummary] = React.useState(false);
 
   // Usuario actual
   const currentUser = React.useMemo(() => {
@@ -514,11 +710,10 @@ export function PublicacionReadView({
       const res = await api.getPublicationWithResenas(publicacionId);
       setData(res);
 
-      // reseñas locales
       const rs = (res as any)?.reseñas ?? [];
       setResenas(rs);
 
-      // detectar reseña del usuario actual
+      // reseña del usuario actual
       if (currentUser?.username) {
         const mine =
           rs.find(
@@ -552,7 +747,6 @@ export function PublicacionReadView({
       setData(null);
       setErrorKind(kind);
 
-      // toast SOLO para genérico
       if (kind === "generic") {
         toast.error("No pudimos cargar la publicación.", {
           description: e instanceof Error ? e.message : "Error desconocido",
@@ -562,7 +756,7 @@ export function PublicacionReadView({
       setLoading(false);
       setRefreshing(false);
     }
-  }, [publicacionId, currentUser?.username]);
+  }, [publicacionId, currentUser?.username, editForm, reviewForm]);
 
   React.useEffect(() => {
     fetchOne();
@@ -572,6 +766,79 @@ export function PublicacionReadView({
     () => averageScore(resenas ?? []),
     [resenas]
   );
+
+  // --------- cargar resumen del itinerario (días/lugares) ----------
+  React.useEffect(() => {
+    const itineraryId = data?.itinerario?.id;
+    if (!itineraryId) {
+      setItSummary(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadSummary() {
+      setLoadingItSummary(true);
+      try {
+        const api = ItinerariosAPI.getInstance();
+        const raw: any = await api.getItinerarioById(String(itineraryId));
+
+        const actividades = (raw?.actividades ?? []).slice().sort((a: any, b: any) => {
+          return new Date(a.fecha).getTime() - new Date(b.fecha).getTime();
+        });
+
+        const grouped: Record<string, ItineraryPlaceSummary[]> = {};
+
+        for (const act of actividades) {
+          const fechaKey = new Date(act.fecha).toISOString().split("T")[0];
+          if (!grouped[fechaKey]) grouped[fechaKey] = [];
+
+          const lugar = act?.lugar ?? {};
+          grouped[fechaKey].push({
+            id: String(act._id ?? act.id ?? lugar.id ?? Math.random()),
+            nombre: String(lugar.nombre ?? "Lugar"),
+            foto_url: lugar.foto_url ?? null,
+            category: lugar.category ?? null,
+            mexican_state: lugar.mexican_state ?? null,
+          });
+        }
+
+        const daysISO = Object.keys(grouped).sort();
+        const days: ItineraryDaySummary[] = daysISO.map((dateISO, idx) => ({
+          dayIndex: idx + 1,
+          dateISO,
+          places: grouped[dateISO],
+        }));
+
+        const totalPlaces = days.reduce((acc, d) => acc + d.places.length, 0);
+        const startDate = days[0]?.dateISO ? new Date(days[0].dateISO) : null;
+        const endDate = days[days.length - 1]?.dateISO
+          ? new Date(days[days.length - 1].dateISO)
+          : null;
+
+        const nextSummary: ItinerarySummary = {
+          itineraryId: Number(itineraryId),
+          title: String(raw?.title ?? data?.itinerario?.title ?? "Itinerario"),
+          days,
+          totalPlaces,
+          startDate,
+          endDate,
+        };
+
+        if (!cancelled) setItSummary(nextSummary);
+      } catch (e) {
+        console.error(e);
+        if (!cancelled) setItSummary(null);
+      } finally {
+        if (!cancelled) setLoadingItSummary(false);
+      }
+    }
+
+    loadSummary();
+    return () => {
+      cancelled = true;
+    };
+  }, [data?.itinerario?.id, data?.itinerario?.title]);
 
   // ---------- acciones de reseñas ----------
   const reloadResenas = React.useCallback(async () => {
@@ -600,7 +867,7 @@ export function PublicacionReadView({
     } finally {
       setLoadingResenas(false);
     }
-  }, [data, currentUser?.username]);
+  }, [data, currentUser?.username, reviewForm]);
 
   const submitResena = async () => {
     if (!data) return;
@@ -684,7 +951,7 @@ export function PublicacionReadView({
     }
   };
 
-  // ---------- edición publicación (detalles) ----------
+  // ---------- edición publicación (detalles + fotos) ----------
   const onSaveDetails = async (values: EditForm) => {
     if (!data) return;
 
@@ -693,7 +960,6 @@ export function PublicacionReadView({
       nextDescripcion === (data.descripcion ?? "").trim() &&
       values.privacity_mode === data.privacity_mode;
 
-    // si además hay cambios en fotos, igual dejamos pasar
     const hasPhotoChanges =
       photoDraft.addUrls.length > 0 || photoDraft.removeIds.size > 0;
 
@@ -709,7 +975,6 @@ export function PublicacionReadView({
     try {
       const api = ItinerariosAPI.getInstance();
 
-      // 1) detalles
       if (!unchanged) {
         await api.updatePublication(data.id, {
           descripcion: nextDescripcion,
@@ -717,11 +982,10 @@ export function PublicacionReadView({
         });
       }
 
-      // 2) fotos (si el backend lo soporta)
+      // Fotos (si tu backend lo soporta)
       if (hasPhotoChanges) {
         const apiAny: any = api;
 
-        // a) borrar fotos existentes (por id)
         if (photoDraft.removeIds.size > 0) {
           if (typeof apiAny.deletePublicationPhoto === "function") {
             await Promise.all(
@@ -734,7 +998,6 @@ export function PublicacionReadView({
           }
         }
 
-        // b) agregar fotos por URL
         if (photoDraft.addUrls.length > 0) {
           if (typeof apiAny.addPublicationPhotoUrl === "function") {
             await Promise.all(
@@ -743,7 +1006,6 @@ export function PublicacionReadView({
               )
             );
           } else if (typeof apiAny.updatePublicationPhotos === "function") {
-            // opción alternativa: manda el arreglo completo
             const current = (data.fotos ?? []).filter(
               (f) => !photoDraft.removeIds.has(f.id)
             );
@@ -798,27 +1060,12 @@ export function PublicacionReadView({
     }
   };
 
-  // ---------- RENDER ----------
-  if (loading) return <SkeletonView />;
-
-  if (!data) {
-    return (
-      <ErrorView
-        kind={errorKind}
-        onRetry={() => {
-          setRefreshing(true);
-          fetchOne();
-        }}
-        onBack={() => router.back()}
-      />
-    );
-  }
-
-  const publishedLabel = `Publicado recientemente · ${format(
-    new Date(),
-    "dd MMM yyyy",
-    { locale: es }
-  )}`;
+  // ---------- helpers UI ----------
+  const publishedLabel = React.useMemo(() => {
+    return `Publicado recientemente · ${format(new Date(), "dd MMM yyyy", {
+      locale: es,
+    })}`;
+  }, []);
 
   const openPhoto = (idx: number) => {
     setPhotoIndex(idx);
@@ -828,7 +1075,7 @@ export function PublicacionReadView({
   const onAddPhotoUrl = () => {
     const url = (photoDraft.urlInput ?? "").trim();
     if (!url) return;
-    if (!/^https?:\/\/.+/i.test(url)) {
+    if (!isValidHttpUrl(url)) {
       toast.error("Ingresa una URL válida (http/https).");
       return;
     }
@@ -847,6 +1094,22 @@ export function PublicacionReadView({
       return { ...p, removeIds: next };
     });
   };
+
+  // ---------- RENDER ----------
+  if (loading) return <SkeletonView />;
+
+  if (!data) {
+    return (
+      <ErrorView
+        kind={errorKind}
+        onRetry={() => {
+          setRefreshing(true);
+          fetchOne();
+        }}
+        onBack={() => router.back()}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20 animate-in fade-in duration-500">
@@ -960,14 +1223,12 @@ export function PublicacionReadView({
             </div>
 
             <div className="flex items-center gap-3">
-              {/* Rating */}
               <div className="flex items-center gap-2 px-3 py-2 rounded-full border border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800">
                 <Star className="h-4 w-4 fill-current" />
                 <span className="text-sm font-bold">{avg.toFixed(1)}</span>
                 <span className="text-xs opacity-80">({count})</span>
               </div>
 
-              {/* CTA */}
               {itineraryHref && (
                 <Button
                   className="rounded-full h-10 px-4"
@@ -983,7 +1244,7 @@ export function PublicacionReadView({
           <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-border/40">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <MapPin className="h-4 w-4" />
-              proyecto social de itinerarios · comparte, opina y guarda rutas
+              comparte, opina y guarda rutas
             </div>
 
             <Button
@@ -1038,6 +1299,21 @@ export function PublicacionReadView({
               </div>
             </section>
 
+            {/* RESUMEN DÍAS/LUGARES (NUEVO) */}
+            <section className="space-y-4">
+              <h3 className="text-xl font-bold flex items-center gap-2">
+                <Route className="h-5 w-5 text-primary" /> Resumen del itinerario
+              </h3>
+
+              <ItinerarySummaryPanel
+                summary={itSummary}
+                loading={loadingItSummary}
+                onOpenItinerary={
+                  itineraryHref ? () => router.push(itineraryHref) : undefined
+                }
+              />
+            </section>
+
             <Separator />
 
             {/* Reseñas + comentario */}
@@ -1077,7 +1353,7 @@ export function PublicacionReadView({
                         <div className="flex items-center gap-3">
                           <Avatar className="h-9 w-9">
                             <AvatarImage
-                              src={currentUser.foto_url || undefined}
+                              src={(currentUser as any)?.foto_url || undefined}
                             />
                             <AvatarFallback>
                               {currentUser.username?.[0]?.toUpperCase()}
@@ -1292,6 +1568,25 @@ export function PublicacionReadView({
                   Ver Perfil
                 </Button>
               </CardContent>
+            </Card>
+
+            {/* Mini resumen en sidebar */}
+            <Card className="rounded-3xl border-border/60 shadow-sm p-6 space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Resumen rápido
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="secondary" className="rounded-full">
+                  {itSummary?.days?.length ?? 0} días
+                </Badge>
+                <Badge variant="secondary" className="rounded-full">
+                  {itSummary?.totalPlaces ?? 0} paradas
+                </Badge>
+                <Badge variant="outline" className="rounded-full">
+                  <Star className="h-3.5 w-3.5 mr-2 fill-amber-400 text-amber-400" />
+                  {avg.toFixed(1)} ({count})
+                </Badge>
+              </div>
             </Card>
 
             {/* Itinerario */}
@@ -1532,9 +1827,7 @@ export function PublicacionReadView({
                             onClick={() =>
                               setPhotoDraft((p) => ({
                                 ...p,
-                                addUrls: p.addUrls.filter(
-                                  (_, idx) => idx !== i
-                                ),
+                                addUrls: p.addUrls.filter((_, idx) => idx !== i),
                               }))
                             }
                           >
