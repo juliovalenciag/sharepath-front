@@ -91,7 +91,7 @@ export default function MisItinerariosPage() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <div className="container max-w-7xl mx-auto px-4 sm:px-6 py-10 space-y-8">
+      <div className="container max-w-7xl mx-auto px-4 sm:px-6 py-10 space-y-8 grid grid-cols-1">
         
         {/* === HEADER === */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
