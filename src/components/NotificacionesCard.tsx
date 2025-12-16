@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   UserPlus,
@@ -105,6 +105,21 @@ export const NotificationCard = ({ notification }: { notification: any }) => {
   const removeNotification = () => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
+
+  // Efecto para auto-eliminar la notificación después de una acción.
+  useEffect(() => {
+    // Si se ha aceptado o rechazado la solicitud...
+    if (actionResult) {
+      // ...esperamos 2 segundos para que el usuario vea el mensaje de confirmación...
+      const timer = setTimeout(() => {
+        // ...y luego eliminamos la notificación de la lista.
+        removeNotification();
+      }, 2000);
+
+      // Importante: Limpiamos el temporizador si el componente se desmonta.
+      return () => clearTimeout(timer);
+    }
+  }, [actionResult]); // Este efecto se dispara solo cuando `actionResult` cambia.
 
   const handleAction = async (
     e: React.MouseEvent,
