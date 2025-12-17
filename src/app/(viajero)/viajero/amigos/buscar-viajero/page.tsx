@@ -51,6 +51,10 @@ async function sendFriendRequest(receiving: string) {
   return await api.sendFriendRequest(receiving);
 }
 
+async function cancelFriendRequest(receiving: string) {
+  return await api.cancelFriendRequest(receiving);
+}
+
 // ===== Componentes Internos =====
 
 function ViajeroCard({
@@ -75,13 +79,26 @@ function ViajeroCard({
     if (isSending || status === 2) return;
 
     // LÓGICA PARA CANCELAR (Status 0)
-    if (status === 0) {
-        // AQUÍ VA TU LÓGICA PARA CANCELAR LA SOLICITUD
-        // Como no tengo el endpoint de cancelar, por ahora solo muestro un mensaje visual
-        // Ejemplo: await api.cancelRequest(data.username);
-        toast.info("Para cancelar, implementa la función de backend aquí");
-        return;
-    }
+  if (status === 0) {
+  try {
+    setIsSending(true);
+
+    console.log("Cancelando solicitud a:", data.username);
+
+    await cancelFriendRequest(data.username);
+
+    toast.success("Solicitud cancelada");
+
+    setStatus(undefined); // vuelve a "Agregar"
+
+  } catch (error) {
+    console.error("No se pudo cancelar la solicitud:", error);
+    toast.error("No se pudo cancelar la solicitud");
+  } finally {
+    setIsSending(false);
+  }
+  return;
+}
 
     // LÓGICA PARA ENVIAR (Status != 0 y != 2)
     try {

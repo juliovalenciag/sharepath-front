@@ -19,6 +19,8 @@ import {
   VerifyPasswordRequest,
   SearchUserResponse,
   SendFriend,
+  CountFriendsResponse, 
+  CancelRequest,
   RespondFriend,
   ListRequest,
   ListFriend,
@@ -414,9 +416,12 @@ export class ItinerariosAPI implements ApiRoutes {
     return await this.post<SendFriend>("/amigo/solicitud", true, { receiving });
   }
 
-  async cancelRequest(receiving: string): Promise<{ message: string }> {
-  return await this.post<{ message: string }>("/amigo/cancelar",true, { receiving });
+  async cancelFriendRequest(receiving: string): Promise<CancelRequest> {
+    return await this.post<CancelRequest>("/amigo/cancelar", true, { receiving });
   }
+  async countFriends(correo: string): Promise<CountFriendsResponse> {
+  return await this.get<CountFriendsResponse>(`/amigo/cont/${correo}`, true);
+}
 
   async respondFriendRequest(
     id: number,
