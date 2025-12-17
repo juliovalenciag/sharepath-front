@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 
 const CATEGORY_CONFIG: Record<string, string> = {
-  Atracciones: "tourist_attraction",
+  "Atracciones turísticas": "tourist_attraction",
   Museos: "museum",
   Parques: "park",
   Zoológicos: "zoo",
@@ -45,7 +45,7 @@ const CATEGORY_CONFIG: Record<string, string> = {
 
 const CATEGORY_ICONS: Record<string, { icon: typeof Sparkles; color: string }> =
   {
-    "Atracciones turísticas": { icon: Landmark, color: "text-amber-600" },
+    "Atracciones turísticas": { icon: Sparkles, color: "text-amber-600" },
     Museos: { icon: Landmark, color: "text-purple-600" },
     Parques: { icon: Trees, color: "text-green-600" },
     Zoológicos: { icon: PawPrint, color: "text-orange-600" },
