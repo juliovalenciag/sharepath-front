@@ -669,13 +669,8 @@ export class ItinerariosAPI implements ApiRoutes {
         return await this.get<AdminReportPreview[]>("/reporte/admin/preview", true);
     }
 
-    /**
-     * Elimina un usuario (y toda su basura: fotos, posts, itinerarios) buscando por username.
-     * Ruta Back: DELETE /user/admin/:username
-     */
     async deleteUserByUsername(username: string): Promise<DeleteUserResponse> {
-        // Codificamos el username por si tiene espacios o caracteres raros
-        return await this.delete<DeleteUserResponse>(`/user/admin/${encodeURIComponent(username)}`);
+        return await this.delete<DeleteUserResponse>(`/user/admin/delete/${encodeURIComponent(username)}`);
     }
 
   /**
