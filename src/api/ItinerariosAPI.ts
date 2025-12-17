@@ -217,6 +217,7 @@ export class ItinerariosAPI implements ApiRoutes {
 
   private async delete<T>(route: string): Promise<T> {
     const token = localStorage.getItem("authToken") || "";
+    console.log('DELETE request to:', `${this.HOST}${route}`);
     const request = await fetch(`${this.HOST}${route}`, {
       method: "DELETE",
       headers: {
@@ -225,10 +226,23 @@ export class ItinerariosAPI implements ApiRoutes {
       },
     });
 
-    const data = await request.json();
+    // Verificar si la respuesta tiene contenido antes de intentar parsear JSON
+    const text = await request.text();
+    let data;
+    
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch (e) {
+      // Si el parsing falla y la respuesta fue exitosa, asumir que no hay body
+      if (request.ok) {
+        return {} as T;
+      }
+      throw new Error("Respuesta inválida del servidor");
+    }
 
     if (!request.ok) {
-      console.log(data);
+      console.error('DELETE failed. Status:', request.status);
+      console.error('Response data:', data);
       const { message } = data as ErrorResponse;
       throw new Error(message);
     }
@@ -675,7 +689,7 @@ export class ItinerariosAPI implements ApiRoutes {
      * Ruta Back: GET /reporte/admin/preview
      */
     async getAdminReportsPreview(): Promise<AdminReportPreview[]> {
-        return await this.get<AdminReportPreview[]>("/reporte/admin/preview", true);
+        return await this.get<AdminReportPreview[]>("/reports/", true);
     }
 
     async deleteUserByUsername(username: string): Promise<DeleteUserResponse> {
