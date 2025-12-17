@@ -128,7 +128,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       audioRef.current?.play();
 
       const fromSelf = message.from === userID; //Mensajes a mi mismo
-      console.warn(fromSelf, typeof fromSelf);
+      // console.warn(fromSelf, typeof fromSelf);
       if(!fromSelf)
       {
         newSocket.emit("mark messages received", { withUserID: message.from });
