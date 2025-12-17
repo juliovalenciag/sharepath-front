@@ -215,6 +215,7 @@ export class ItinerariosAPI implements ApiRoutes {
 
   private async delete<T>(route: string): Promise<T> {
     const token = localStorage.getItem("authToken") || "";
+    console.log('DELETE request to:', `${this.HOST}${route}`);
     const request = await fetch(`${this.HOST}${route}`, {
       method: "DELETE",
       headers: {
@@ -226,7 +227,8 @@ export class ItinerariosAPI implements ApiRoutes {
     const data = await request.json();
 
     if (!request.ok) {
-      console.log(data);
+      console.error('DELETE failed. Status:', request.status);
+      console.error('Response data:', data);
       const { message } = data as ErrorResponse;
       throw new Error(message);
     }
@@ -666,16 +668,15 @@ export class ItinerariosAPI implements ApiRoutes {
      * Ruta Back: GET /reporte/admin/preview
      */
     async getAdminReportsPreview(): Promise<AdminReportPreview[]> {
-        return await this.get<AdminReportPreview[]>("/reporte/admin/preview", true);
+        return await this.get<AdminReportPreview[]>("/reports/", true);
     }
 
     /**
      * Elimina un usuario (y toda su basura: fotos, posts, itinerarios) buscando por username.
-     * Ruta Back: DELETE /user/admin/:username
+     * Ruta Back: DELETE /user/admin/delete/:username
      */
     async deleteUserByUsername(username: string): Promise<DeleteUserResponse> {
-        // Codificamos el username por si tiene espacios o caracteres raros
-        return await this.delete<DeleteUserResponse>(`/user/admin/${encodeURIComponent(username)}`);
+        return await this.delete<DeleteUserResponse>(`/user/admin/delete/${encodeURIComponent(username)}`);
     }
 
   /**
