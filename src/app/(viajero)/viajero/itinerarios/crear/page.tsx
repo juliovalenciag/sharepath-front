@@ -182,16 +182,17 @@ export default function CrearItinerarioPage() {
 
   // --- 4. LÓGICA DE NEGOCIO ---
 
-  const handleReset = useCallback(() => {
-    if (
-      window.confirm(
-        "¿Reiniciar todo el planificador? Perderás los lugares no guardados."
-      )
-    ) {
-      reset();
-      setSetupOpen(true);
-      toast.info("Lienzo limpio. ¡Empieza de nuevo!");
-    }
+  const handleResetDraft = useCallback(() => {
+    reset();
+    setSelectedActivityId(null);
+    setInfoOpen(false);
+    setSearchOpen(false);
+    setSelectedDayKey(null);
+
+    // opcional: reabrir setup para que sea “empezar de cero”
+    setSetupOpen(true);
+
+    toast.info("Borrador borrado. Puedes empezar de nuevo.");
   }, [reset]);
 
   // Pre-validación antes de guardar
@@ -245,7 +246,92 @@ export default function CrearItinerarioPage() {
       setSaving(false);
     }
   };
+  const handleRuta = useCallback(async () => {
+    console.log("Generando ruta automática...");
+    const toastId = toast.loading("Buscando recomendaciones...");
 
+    try {
+      // 1. Calcular cuántos lugares faltan para tener 5 por día
+      const dailyCounts: Record<string, number> = {};
+      for (const day of days) {
+        dailyCounts[day.key] = 0;
+      }
+      for (const activity of actividades) {
+        const dayKey = format(activity.fecha, "yyyy-MM-dd");
+        if (dayKey in dailyCounts) {
+          dailyCounts[dayKey]++;
+        }
+      }
+
+      let neededPlaces = 0;
+      const slotsToFill: Date[] = [];
+      for (const day of days) {
+        const count = dailyCounts[day.key] || 0;
+        if (count < 5) {
+          const diff = 5 - count;
+          neededPlaces += diff;
+          for (let i = 0; i < diff; i++) {
+            slotsToFill.push(day.date);
+          }
+        }
+      }
+
+      if (neededPlaces === 0) {
+        toast.info("¡Itinerario completo!", {
+          id: toastId,
+          description: "Todos los días tienen 5 o más lugares.",
+        });
+        return;
+      }
+
+      // 2. Pedir recomendaciones
+      const api = ItinerariosAPI.getInstance();
+      const existingLugarIds = actividades.map((a) => a.lugar.id_api_place);
+
+      const recommendations = await api.getRecommendations({
+        lugarIds: existingLugarIds,
+        limit: neededPlaces,
+      });
+
+      if (!recommendations || recommendations.length === 0) {
+        toast.warning("No se encontraron recomendaciones", {
+          id: toastId,
+          description:
+            "Intenta agregar más lugares para mejorar las sugerencias.",
+        });
+        return;
+      }
+
+      // 3. Asignar las recomendaciones a los días que faltan
+      const newActivities: BuilderActivity[] = recommendations
+        .slice(0, neededPlaces) // Asegurarse de no agregar más de lo necesario
+        .map((lugar, index) => {
+          const dateForActivity = slotsToFill[index];
+          const newActivity: BuilderActivity = {
+            id: crypto.randomUUID(),
+            fecha: dateForActivity,
+            descripcion: "Lugar recomendado automáticamente.",
+            lugar: lugar as any, // RecommendedLugar es compatible con BuilderPlace
+            start_time: null,
+            end_time: null,
+          };
+          return newActivity;
+        });
+
+      // 4. Actualizar el store
+      setActivities([...actividades, ...newActivities]);
+
+      toast.success("Itinerario completado", {
+        id: toastId,
+        description: `Se agregaron ${newActivities.length} nuevos lugares.`,
+      });
+    } catch (error: any) {
+      toast.error("Error al buscar recomendaciones", {
+        id: toastId,
+        description: error?.message || "No se pudo conectar con el servidor.",
+      });
+    }
+  }, [days, actividades, setActivities]);
   const handleOptimize = useCallback(async () => {
     if (!currentDay || currentDayActivities.length < 3) {
       toast.warning("Optimización no disponible", {
@@ -358,7 +444,6 @@ export default function CrearItinerarioPage() {
         currentDay={currentDay}
         allDays={days}
         onSelectDay={setSelectedDayKey}
-        // @ts-ignore
         defaultState={meta?.regions[0]}
         onAddLugarToDay={(lugar) => {
           if (!currentDay) return;
@@ -427,15 +512,16 @@ export default function CrearItinerarioPage() {
         {meta && (
           <ItineraryHeader
             meta={meta}
+            mode="create"
             onEditSetup={() => setSetupOpen(true)}
-            onReset={handleReset}
+            onResetDraft={handleResetDraft}
             onOptimize={handleOptimize}
-            onSave={handlePreSave} // Usamos pre-save con validación
+            onSave={handlePreSave}
+            onRuta={handleRuta}
             isSaving={saving}
             canOptimize={currentDayActivities.length >= 3}
           />
         )}
-
         {/* Workspace Split */}
         <div className="flex flex-1 overflow-hidden relative group/canvas">
           {/* PANEL IZQUIERDO */}

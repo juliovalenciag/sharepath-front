@@ -130,10 +130,10 @@ export function SortableActivityCard({
             </div>
 
             {/* INFO TEXTUAL */}
-            <div className="flex flex-col justify-center flex-1 min-w-0">
+            <div className="grid grid-cols-1 justify-center flex-1 min-w-0">
                 <div className="flex justify-between items-start gap-2">
                     <h4
-                        className="font-semibold text-sm text-foreground truncate cursor-pointer hover:text-primary transition-colors leading-tight"
+                        className="font-semibold text-sm text-foreground cursor-pointer hover:text-primary transition-colors leading-tight"
                         onClick={() => onViewDetails(activity.id)}
                     >
                         {activity.lugar.nombre}

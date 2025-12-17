@@ -10,7 +10,6 @@ import {
   getDefaultImageForCategory,
 } from "@/lib/category-utils";
 
-
 // Carga dinámica en cliente para evitar SSR
 const ItineraryMap = dynamic(
   () => import("@/components/viajero/view/ItineraryMap"),
@@ -104,9 +103,7 @@ export default function ItineraryReadView({ id }: { id: string }) {
             new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
         );
 
-        const fechas = actividadesOrdenadas.map(
-          (a: any) => new Date(a.fecha)
-        );
+        const fechas = actividadesOrdenadas.map((a: any) => new Date(a.fecha));
         const fechaInicio = new Date(Math.min(...fechas));
         const fechaFin = new Date(Math.max(...fechas));
 
@@ -199,16 +196,12 @@ export default function ItineraryReadView({ id }: { id: string }) {
         <div className="lg:col-span-1 space-y-6">
           {/* Título + botón Editar */}
           <div className="flex items-center justify-between gap-4 border-b-4 border-primary pb-2">
-            <h1 className="text-3xl font-extrabold">
-              {itinerario.titulo}
-            </h1>
+            <h1 className="text-3xl font-extrabold">{itinerario.titulo}</h1>
             <Button
               size="sm"
               variant="outline"
               className="shrink-0"
-              onClick={() =>
-                router.push(`/viajero/itinerarios/${id}/editar`)
-              }
+              onClick={() => router.push(`/viajero/itinerarios/${id}/editar`)}
             >
               <Edit3 className="w-4 h-4 mr-1" />
               Editar
@@ -256,12 +249,8 @@ export default function ItineraryReadView({ id }: { id: string }) {
                       {getCategoryName(lugar.categoria)}
                     </span>
                   </h4>
-                  <p className="text-sm text-gray-700">
-                    {lugar.descripcion}
-                  </p>
-                  <p className="text-xs text-gray-500 italic">
-                    {lugar.estado}
-                  </p>
+                  <p className="text-sm text-gray-700">{lugar.descripcion}</p>
+                  <p className="text-xs text-gray-500 italic">{lugar.estado}</p>
                 </div>
               </Card>
             );

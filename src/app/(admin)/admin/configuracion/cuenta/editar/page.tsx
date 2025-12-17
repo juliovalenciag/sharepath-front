@@ -146,6 +146,7 @@ export default function EditAccountPage() {
     }
   };
 
+  // --- Handlers Seguridad ---
   const handleVerifyCurrent = async () => {
     try {
       verifySchema.parse(currentPassword);

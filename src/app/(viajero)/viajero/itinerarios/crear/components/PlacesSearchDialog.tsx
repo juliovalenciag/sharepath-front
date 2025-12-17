@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import Fuse from "fuse.js";
 
 import {
   Loader2,
@@ -201,7 +202,8 @@ export function PlaceSearchDialog({
   async function handleSearch() {
     setLoading(true);
 
-    // Feedback visual rápido: si escribes algo nuevo, limpia la lista momentáneamente
+    // UX: Si el usuario escribe algo nuevo (más de 2 letras), limpiamos la vista
+    // para que sepa que se está procesando una nueva búsqueda.
     if (query.length > 2) setResults([]);
 
     try {
@@ -211,68 +213,103 @@ export function PlaceSearchDialog({
       const categoryFilter =
         activeCategory !== "__all__" ? activeCategory : undefined;
 
-      // 1. Preparar texto (Mayúscula inicial para intentar coincidir con la BD)
+      // ---------------------------------------------------------
+      // FASE 1: INTENTO DE BÚSQUEDA DIRECTA (BACKEND)
+      // ---------------------------------------------------------
+
+      // Intentamos "adivinar" el formato (Title Case) para la BD
       const nombreParaBuscar = query.trim()
         ? formatQueryForDatabase(query.trim())
         : undefined;
 
-      // 2. Pedimos los datos (Traemos hasta 100 para tener margen de ordenamiento)
+      // Si no hay búsqueda de texto, pedimos orden por 'reviews' (Popularidad).
+      // Si hay búsqueda, dejamos que la API decida (generalmente por coincidencia).
+      const ordenApi = nombreParaBuscar ? "score" : "reviews";
+
       const resp = await api.getLugares(
         1,
         100,
         stateFilter,
         categoryFilter,
-        nombreParaBuscar
+        nombreParaBuscar,
+        ordenApi // <--- Asegúrate de haber agregado este param en tu clase API
       );
 
       let rawData = Array.isArray(resp) ? resp : (resp as any).lugares || [];
 
-      // 3. Fallback: Si buscamos algo y la API trajo 0 (por culpa de las mayúsculas/acentos),
-      // hacemos una búsqueda genérica y filtramos en React.
+      // Variable para saber si los datos vienen de Fuse (búsqueda difusa)
+      let isFuzzyResult = false;
+
+      // ---------------------------------------------------------
+      // FASE 2: EL RESCATE (FUSE.JS / FUZZY SEARCH)
+      // ---------------------------------------------------------
       if (query.trim() && rawData.length === 0) {
+        
+        // Esto crea nuestro "pool" de datos donde buscar coincidencias.
         const respBackup = await api.getLugares(
           1,
           100,
           stateFilter,
           categoryFilter,
-          undefined
+          undefined, // Sin nombre
+          "reviews"
         );
+
         const backupData = Array.isArray(respBackup)
           ? respBackup
           : (respBackup as any).lugares || [];
 
-        const q = query.toLowerCase();
-        rawData = backupData.filter(
-          (l: LugarData) =>
-            l.nombre?.toLowerCase().includes(q) ||
-            l.category?.toLowerCase().includes(q)
-        );
+        // B. Configuración de Fuse.js (El cerebro de la búsqueda)
+        const fuseOptions = {
+          keys: [
+            { name: "nombre", weight: 0.7 }, // Prioridad alta al nombre
+            { name: "category", weight: 0.2 }, // Prioridad media a categoría
+            { name: "mexican_state", weight: 0.1 }, // Prioridad baja al estado
+          ],
+          threshold: 0.4, // 0.0=Exacto, 0.4=Tolera typos ("myseo"), 1.0=Coincide todo
+          ignoreLocation: true, // Busca en cualquier parte del string
+          includeScore: true,
+        };
+
+        const fuse = new Fuse(backupData, fuseOptions);
+        const fuzzyResults = fuse.search(query);
+
+        // C. Extraemos los items. Fuse ya los devuelve ordenados por "Similitud"
+        rawData = fuzzyResults.map((result) => result.item);
+        isFuzzyResult = true; // Marcamos que usamos búsqueda difusa
       }
 
-      // 4. ORDENAMIENTO DEFINITIVO (Reviews > Ranking)
-      // Este bloque se ejecuta SIEMPRE, haya búsqueda o no.
-      rawData.sort((a: LugarData, b: LugarData) => {
-        const reviewsA = a.total_reviews || 0;
-        const reviewsB = b.total_reviews || 0;
+      // ---------------------------------------------------------
+      // FASE 3: ORDENAMIENTO FINAL INTELIGENTE
+      // ---------------------------------------------------------
 
-        // Criterio 1: Cantidad de Opiniones (Mayor a menor)
-        if (reviewsB !== reviewsA) {
-          return reviewsB - reviewsA;
-        }
+      // Lógica:
+      // 1. Si NO buscamos texto (Vista inicial) -> Ordenar por POPULARIDAD.
+      // 2. Si buscamos texto y fue directo a API -> Ordenar por POPULARIDAD (refinamiento).
+      // 3. Si usamos Fuse.js -> NO REORDENAR. Fuse ya ordenó por relevancia.
 
-        // Criterio 2: Desempate por Calificación (si tienen las mismas reviews)
-        return (b.google_score || 0) - (a.google_score || 0);
-      });
+      if (!isFuzzyResult) {
+        rawData.sort((a: LugarData, b: LugarData) => {
+          const reviewsA = a.total_reviews || 0;
+          const reviewsB = b.total_reviews || 0;
+
+          // Criterio 1: Cantidad de Opiniones (Mayor a menor)
+          if (reviewsB !== reviewsA) {
+            return reviewsB - reviewsA;
+          }
+          // Criterio 2: Desempate por Calificación
+          return (b.google_score || 0) - (a.google_score || 0);
+        });
+      }
 
       setResults(rawData);
     } catch (e) {
-      console.error(e);
-      toast.error("Error al cargar lugares");
+      console.error("Search error:", e);
+      toast.error("No se pudieron cargar los lugares");
     } finally {
       setLoading(false);
     }
   }
-
   // Sugerencias Locales
   const nearbySuggestions = useMemo(() => {
     if (!selectedPlace || results.length === 0) return [];

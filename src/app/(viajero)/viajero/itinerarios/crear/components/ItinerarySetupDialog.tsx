@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation"; // Importar useRouter
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -80,16 +80,22 @@ const schema = z
     regions: z
       .array(z.string())
       .min(1, { message: "Selecciona al menos un destino" }),
-    start: z.date(),
-    end: z.date(),
+
+    start: z.date({
+      message: "La fecha de inicio es requerida.",
+    }),
+    end: z.date({
+      message: "La fecha de fin es requerida.",
+    }),
   })
   .refine(
     (v) => {
+      // Validación extra para asegurar que las fechas existen antes de comparar
       if (!v.start || !v.end) return false;
       if (isAfter(v.start, v.end)) return false;
 
       const days = differenceInCalendarDays(v.end, v.start) + 1;
-      return days >= 1 && days <= 15; // Ajustado a 15 días para flexibilidad
+      return days >= 1 && days <= 15;
     },
     {
       message: "Selecciona un rango válido (1 a 15 días).",
@@ -108,7 +114,7 @@ export function ItinerarySetupDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const router = useRouter(); // Hook de navegación
+  const router = useRouter();
   const { meta, setMeta } = useItineraryBuilderStore();
 
   // Estados locales
@@ -164,7 +170,10 @@ export function ItinerarySetupDialog({
   // 2. Sugerir nombre
   useEffect(() => {
     if (meta && meta.title === watchedNombre) return;
-    if (watchedNombre?.trim().length > 0 && !watchedNombre.startsWith("Viaje a"))
+    if (
+      watchedNombre?.trim().length > 0 &&
+      !watchedNombre.startsWith("Viaje a")
+    )
       return;
 
     if (!watchedRegions.length) return;
@@ -256,11 +265,9 @@ export function ItinerarySetupDialog({
     toast.success(meta ? "Configuración actualizada" : "¡A planear!");
   };
 
-  // --- LÓGICA DE CIERRE / REDIRECCIÓN ---
   const handleOpenChange = (val: boolean) => {
-    // Si se intenta cerrar (val === false) y NO existe meta (no se ha creado el itinerario)
     if (!val && !meta) {
-      router.push("/viajero"); // Redirigir a la lista
+      router.push("/viajero");
       return;
     }
     onOpenChange(val);
@@ -316,7 +323,10 @@ export function ItinerarySetupDialog({
           >
             {/* NOMBRE */}
             <div className="space-y-2">
-              <Label htmlFor="nombre" className="font-semibold text-sm dark:text-white">
+              <Label
+                htmlFor="nombre"
+                className="font-semibold text-sm dark:text-white"
+              >
                 Nombre del viaje
               </Label>
               <Input
@@ -336,7 +346,9 @@ export function ItinerarySetupDialog({
             {/* DESTINOS */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label className="font-semibold text-sm dark:text-white">Destinos</Label>
+                <Label className="font-semibold text-sm dark:text-white">
+                  Destinos
+                </Label>
                 <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
                   {watchedRegions.length} Seleccionados
                 </span>
@@ -433,7 +445,9 @@ export function ItinerarySetupDialog({
             {/* FECHAS */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label className="font-semibold text-sm dark:text-white">Fechas</Label>
+                <Label className="font-semibold text-sm dark:text-white">
+                  Fechas
+                </Label>
                 {dateRange?.from && dateRange?.to && (
                   <span className="text-[10px] text-muted-foreground">
                     {differenceInCalendarDays(dateRange.to, dateRange.from) + 1}{" "}
@@ -479,10 +493,13 @@ export function ItinerarySetupDialog({
                 </PopoverContent>
               </Popover>
 
+              {/* Ajuste pequeño aquí para asegurar que se muestre el mensaje de error personalizado */}
               {(errors.start || errors.end) && (
                 <div className="flex items-center gap-1.5 text-xs text-red-500 font-medium mt-1">
                   <Info className="h-3 w-3 " />
-                  {errors.end?.message || "Selecciona un rango válido."}
+                  {errors.end?.message ||
+                    errors.start?.message ||
+                    "Selecciona un rango válido."}
                 </div>
               )}
             </div>

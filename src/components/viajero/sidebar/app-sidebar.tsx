@@ -93,7 +93,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             : null;
 
         const res = await fetch("https://harol-lovers.up.railway.app/user", {
-        //const res = await fetch("https://harol-lovers.up.railway.app/user", {
+          //const res = await fetch("https://harol-lovers.up.railway.app/user", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

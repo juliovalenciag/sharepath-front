@@ -2,601 +2,538 @@
 
 import { useState, useEffect } from "react";
 import {
-	Card,
-	CardContent,
-	CardHeader,
-	CardTitle,
-	CardDescription,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+    Users,
+    MapPin,
+    TrendingUp,
+    AlertTriangle,
+    Route,
+    Calendar,
+    ArrowUpRight,
+    Star,
+    Map,
+    Activity,
+    Info
+} from "lucide-react";
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import {
-	IconUsers,
-	IconMapPin,
-	IconStar,
-	IconTrendingUp,
-	IconAlertTriangle,
-	IconRoute,
-} from "@tabler/icons-react";
-import {
-	Area,
-	AreaChart,
-	CartesianGrid,
-	XAxis,
-	YAxis,
-	Tooltip,
-	ResponsiveContainer,
+    Area,
+    AreaChart,
+    CartesianGrid,
+    XAxis,
+    YAxis,
+    Tooltip,
+    ResponsiveContainer,
+    TooltipProps
 } from "recharts";
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 import type { DashboardStatsResponse, Reporte } from "@/api/interfaces/ApiRoutes";
 
-// Datos para la gráfica de usuarios por mes
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
+
+// --- Tipos y Datos Mock ---
+
+type LugarCard = {
+    id: number | string;
+    nombre: string;
+    visitas: number;
+    calificacion: number;
+    imagen: string;
+    descripcion: string;
+    categoria?: string;
+    estado?: string;
+    latitud?: number;
+    longitud?: number;
+};
+
 const usuariosPorMes2024 = [
-	{ mes: "Ene", usuarios: 45 },
-	{ mes: "Feb", usuarios: 52 },
-	{ mes: "Mar", usuarios: 68 },
-	{ mes: "Abr", usuarios: 73 },
-	{ mes: "May", usuarios: 85 },
-	{ mes: "Jun", usuarios: 92 },
-	{ mes: "Jul", usuarios: 105 },
-	{ mes: "Ago", usuarios: 118 },
-	{ mes: "Sep", usuarios: 125 },
-	{ mes: "Oct", usuarios: 142 },
-	{ mes: "Nov", usuarios: 158 },
-	{ mes: "Dic", usuarios: 165 },
+    { mes: "Ene", usuarios: 45 }, { mes: "Feb", usuarios: 52 }, { mes: "Mar", usuarios: 68 },
+    { mes: "Abr", usuarios: 73 }, { mes: "May", usuarios: 85 }, { mes: "Jun", usuarios: 92 },
+    { mes: "Jul", usuarios: 105 }, { mes: "Ago", usuarios: 118 }, { mes: "Sep", usuarios: 125 },
+    { mes: "Oct", usuarios: 142 }, { mes: "Nov", usuarios: 158 }, { mes: "Dic", usuarios: 165 },
 ];
 
 const usuariosPorMes2025 = [
-	{ mes: "Ene", usuarios: 178 },
-	{ mes: "Feb", usuarios: 192 },
-	{ mes: "Mar", usuarios: 205 },
-	{ mes: "Abr", usuarios: 218 },
-	{ mes: "May", usuarios: 235 },
-	{ mes: "Jun", usuarios: 248 },
-	{ mes: "Jul", usuarios: 265 },
-	{ mes: "Ago", usuarios: 282 },
-	{ mes: "Sep", usuarios: 298 },
-	{ mes: "Oct", usuarios: 315 },
-	{ mes: "Nov", usuarios: 332 },
-	{ mes: "Dic", usuarios: 350 },
+    { mes: "Ene", usuarios: 178 }, { mes: "Feb", usuarios: 192 }, { mes: "Mar", usuarios: 205 },
+    { mes: "Abr", usuarios: 218 }, { mes: "May", usuarios: 235 }, { mes: "Jun", usuarios: 248 },
+    { mes: "Jul", usuarios: 265 }, { mes: "Ago", usuarios: 282 }, { mes: "Sep", usuarios: 298 },
+    { mes: "Oct", usuarios: 315 }, { mes: "Nov", usuarios: 332 }, { mes: "Dic", usuarios: 350 },
 ];
 
-type LugarCard = {
-	id: number | string;
-	nombre: string;
-	visitas: number;
-	calificacion: number;
-	imagen: string;
-	descripcion: string;
-	categoria?: string;
-	estado?: string;
-	latitud?: number;
-	longitud?: number;
+const destinosPopulares: LugarCard[] = [
+    {
+        id: 1, nombre: "Teotihuacán", visitas: 1250, calificacion: 4.8,
+        imagen: "https://images.unsplash.com/photo-1518105779142-d975f22f1b0a?auto=format&fit=crop&q=80&w=1000",
+        descripcion: "Zona arqueológica con pirámides del Sol y la Luna", categoria: "Arqueológico", estado: "Estado de México",
+    },
+    {
+        id: 2, nombre: "Chapultepec", visitas: 2100, calificacion: 4.6,
+        imagen: "https://images.unsplash.com/photo-1585464231875-d9cae93555ce?auto=format&fit=crop&q=80&w=1000",
+        descripcion: "Parque urbano más grande de América", categoria: "Parque", estado: "Ciudad de México",
+    },
+    {
+        id: 3, nombre: "Centro Histórico", visitas: 1850, calificacion: 4.9,
+        imagen: "https://images.unsplash.com/photo-1565671192534-7db3dfa2f431?auto=format&fit=crop&q=80&w=1000",
+        descripcion: "Patrimonio de la Humanidad UNESCO", categoria: "Cultural", estado: "Ciudad de México",
+    },
+    {
+        id: 4, nombre: "Xochimilco", visitas: 980, calificacion: 4.5,
+        imagen: "https://images.unsplash.com/photo-1584824486509-112e4181ff6b?auto=format&fit=crop&q=80&w=1000",
+        descripcion: "Canales tradicionales y trajineras", categoria: "Natural", estado: "Ciudad de México",
+    },
+];
+
+// Componente Custom Tooltip para la gráfica
+const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
+    if (active && payload && payload.length) {
+        return (
+            <div className="bg-white p-3 border border-gray-100 shadow-xl rounded-xl">
+                <p className="text-sm font-bold text-gray-900 mb-1">{label}</p>
+                <div className="flex items-center gap-2 text-sm text-indigo-600 font-medium">
+                    <Users className="h-3 w-3" />
+                    <span>{payload[0].value} Usuarios</span>
+                </div>
+            </div>
+        );
+    }
+    return null;
 };
 
-// Fallback de destinos populares (se usa si la API falla)
-const destinosPopulares: LugarCard[] = [
-	{
-		id: 1,
-		nombre: "Teotihuacán",
-		visitas: 1250,
-		calificacion: 4.8,
-		imagen:
-			"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ0eOqiCnR48ykeWdoQSvhnWdO6jTLEfmFnfQ&s",
-		descripcion: "Zona arqueológica con pirámides del Sol y la Luna",
-		categoria: "Arqueológico",
-		estado: "Estado de México",
-	},
-	{
-		id: 2,
-		nombre: "Chapultepec",
-		visitas: 2100,
-		calificacion: 4.6,
-		imagen:
-			"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTUB4eDXywgdKuPz6V6BEBIV2xp_9vjB-LYuQ&s",
-		descripcion: "Parque urbano más grande de América",
-		categoria: "Parque",
-		estado: "Ciudad de México",
-	},
-	{
-		id: 3,
-		nombre: "Centro Histórico",
-		visitas: 1850,
-		calificacion: 4.9,
-		imagen:
-			"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS9_0FMj_pljb1LpjvUvlO6xymKT8itvIfwSg&s",
-		descripcion: "Patrimonio de la Humanidad UNESCO",
-		categoria: "Cultural",
-		estado: "Ciudad de México",
-	},
-	{
-		id: 4,
-		nombre: "Xochimilco",
-		visitas: 980,
-		calificacion: 4.5,
-		imagen:
-			"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSIikF5Tbzn3zKiv7E5TpGAW4BNmZK7HK7YtA&s",
-		descripcion: "Canales tradicionales y trajineras",
-		categoria: "Natural",
-		estado: "Ciudad de México",
-	},
-];
+// --- Componente Principal ---
 
-// Componente principal
 export default function DashboardAdmin() {
-	const [añoSeleccionado, setAñoSeleccionado] = useState("2025");
-	const [destinoSeleccionado, setDestinoSeleccionado] =
-		useState<null | LugarCard>(null);
-	const [modalAbierto, setModalAbierto] = useState(false);
-	const [statsData, setStatsData] = useState<DashboardStatsResponse | null>(null);
-	const [reportes, setReportes] = useState<Reporte[]>([]);
-	const [reportesLoaded, setReportesLoaded] = useState(false);
-	const [lugares, setLugares] = useState<LugarCard[]>([]);
-	const [loading, setLoading] = useState(true);
+    const [añoSeleccionado, setAñoSeleccionado] = useState("2025");
+    const [destinoSeleccionado, setDestinoSeleccionado] = useState<null | LugarCard>(null);
+    const [modalAbierto, setModalAbierto] = useState(false);
+    const [statsData, setStatsData] = useState<DashboardStatsResponse | null>(null);
+    const [reportes, setReportes] = useState<Reporte[]>([]);
+    const [lugares, setLugares] = useState<LugarCard[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [saludo, setSaludo] = useState("");
 
-	const api = ItinerariosAPI.getInstance();
+    const api = ItinerariosAPI.getInstance();
 
-	useEffect(() => {
-		const fetchData = async () => {
-			try {
-				setLoading(true);
-				
-				// Cargar estadísticas
-				const stats = await api.getAdminStats();
-				setStatsData(stats);
-			
-				// Cargar reportes
-				try {
-					const reportesData = await api.getReports();
-					setReportes(reportesData);
-					setReportesLoaded(true);
-				} catch (error) {
-					console.warn("No se pudieron cargar los reportes:", error);
-					setReportes([]);
-					setReportesLoaded(true);
-				}
+    useEffect(() => {
+        // Determinar saludo según la hora
+        const hour = new Date().getHours();
+        if (hour < 12) setSaludo("Buenos días");
+        else if (hour < 18) setSaludo("Buenas tardes");
+        else setSaludo("Buenas noches");
 
-				// Cargar lugares recomendados de la API
-				try {
-					// Pedimos recomendaciones (limit 8) y luego tomamos los 4 mejores calificados
-					const recs = await api.getRecommendations({ limit: 8 });
-					const lugaresData = Array.isArray(recs) ? recs : [];
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                
+                // Cargar estadísticas
+                try {
+                    const stats = await api.getAdminStats();
+                    setStatsData(stats);
+                } catch (e) { console.warn("Error stats", e); }
+            
+                // Cargar reportes
+                try {
+                    const reportesData = await api.getReports();
+                    setReportes(reportesData);
+                } catch (e) { console.warn("Error reportes", e); }
 
-					const lugaresOrdenados = [...lugaresData].sort((a: any, b: any) => {
-						const scoreA = parseFloat(a.google_score) || 0;
-						const scoreB = parseFloat(b.google_score) || 0;
-						return scoreB - scoreA;
-					});
+                // Cargar lugares recomendados
+                try {
+                    const recs = await api.getRecommendations({ limit: 8 });
+                    const lugaresData = Array.isArray(recs) ? recs : [];
+                    const mejoresLugares = [...lugaresData]
+                        .sort((a: any, b: any) => (parseFloat(b.google_score) || 0) - (parseFloat(a.google_score) || 0))
+                        .slice(0, 4);
 
-					const mejoresLugares = lugaresOrdenados.slice(0, 4);
+                    const lugaresFormateados: LugarCard[] = mejoresLugares.map((lugar: any) => ({
+                        id: lugar.id_api_place || Math.random(),
+                        nombre: lugar.nombre,
+                        visitas: lugar.total_reviews || 0,
+                        calificacion: parseFloat(lugar.google_score) || 4.5,
+                        imagen: lugar.foto_url,
+                        descripcion: lugar.descripcion || lugar.category || "Destino turístico",
+                        categoria: lugar.category,
+                        estado: lugar.mexican_state,
+                        latitud: lugar.latitud,
+                        longitud: lugar.longitud,
+                    }));
+                    setLugares(lugaresFormateados.length > 0 ? lugaresFormateados : destinosPopulares);
+                } catch (e) {
+                     console.warn("Error lugares", e);
+                     setLugares(destinosPopulares);
+                }
+            } catch (error) {
+                console.error("Error general dashboard", error);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-					const lugaresFormateados: LugarCard[] = mejoresLugares.map((lugar: any) => ({
-						id: lugar.id_api_place || Math.random(),
-						nombre: lugar.nombre,
-						visitas: lugar.total_reviews || 0,
-						calificacion: parseFloat(lugar.google_score) || 4.5,
-						imagen: lugar.foto_url,
-						descripcion: lugar.descripcion || lugar.category || "Destino turístico",
-						categoria: lugar.category,
-						estado: lugar.mexican_state,
-						latitud: lugar.latitud,
-						longitud: lugar.longitud,
-					}));
+        fetchData();
+    }, []);
 
-					setLugares(lugaresFormateados);
-				} catch (error) {
-					console.warn("No se pudieron cargar recomendaciones; se usarán lugares populares por defecto:", error);
-					setLugares(destinosPopulares);
-				}
-			} catch (error) {
-				console.error("Error al cargar datos del dashboard:", error);
-			} finally {
-				setLoading(false);
-			}
-		};
+    const datosGrafica = añoSeleccionado === "2024" ? usuariosPorMes2024 : usuariosPorMes2025;
 
-		fetchData();
-	}, []);
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50/50">
+                <div className="flex flex-col items-center gap-4">
+                     <div className="h-12 w-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
+                     <p className="text-gray-500 font-medium">Cargando tu panel...</p>
+                </div>
+            </div>
+        );
+    }
 
-	function abrirModal(destino: LugarCard) {
-		setDestinoSeleccionado(destino);
-		setModalAbierto(true);
-	}
-	function cerrarModal() {
-		setModalAbierto(false);
-		setDestinoSeleccionado(null);
-	}
+    return (
+        <div className="min-h-screen bg-gray-50/50 p-6 md:p-8">
+            <div className="max-w-[1600px] mx-auto space-y-8">
+                
+                {/* 1. Header Section */}
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+                            {saludo}, Administrador
+                        </h1>
+                        <p className="text-gray-500 mt-2 flex items-center gap-2 text-sm">
+                            <Calendar className="h-4 w-4" />
+                            {new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                        </p>
+                    </div>
+                    <div className="flex gap-3">
+                         <div className="bg-white px-4 py-2 rounded-xl border border-gray-200 shadow-sm flex items-center gap-2 text-sm font-medium text-gray-600">
+                             <span className="relative flex h-2.5 w-2.5 mr-1">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                            </span>
+                            Sistema Operativo
+                         </div>
+                    </div>
+                </div>
 
-	const datosGrafica =
-		añoSeleccionado === "2024" ? usuariosPorMes2024 : usuariosPorMes2025;
+                {/* 2. KPI Cards Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {/* Usuarios */}
+                    <Card className="border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <CardTitle className="text-sm font-medium text-gray-500">Total Usuarios</CardTitle>
+                            <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+                                <Users className="h-4 w-4" />
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-gray-900">{statsData?.usuarios.total ?? 0}</div>
+                            <div className="flex items-center text-xs mt-1 text-green-600 font-medium">
+                                <ArrowUpRight className="h-3 w-3 mr-1" />
+                                +{statsData?.usuarios.crecimiento ?? "0%"} vs mes anterior
+                            </div>
+                        </CardContent>
+                    </Card>
 
-	
-	const totalUsuarios = statsData?.usuarios.total ?? datosGrafica.reduce(
-		(acc, mes) => acc + mes.usuarios,
-		0
-	);
-	const promedioUsuarios = Math.round(totalUsuarios / datosGrafica.length);
-	const crecimiento = statsData?.usuarios.crecimiento ?? (
-		datosGrafica.length > 1
-			? Math.round(
-					((
-						datosGrafica[datosGrafica.length - 1].usuarios -
-						datosGrafica[0].usuarios
-					) / datosGrafica[0].usuarios) *
-						100
-			  )
-			: 0
-	);
+                    {/* Itinerarios */}
+                    <Card className="border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <CardTitle className="text-sm font-medium text-gray-500">Itinerarios Activos</CardTitle>
+                            <div className="p-2 bg-purple-50 rounded-lg text-purple-600">
+                                <Route className="h-4 w-4" />
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-gray-900">{statsData?.metricasGenerales.totalItinerarios ?? 0}</div>
+                            <p className="text-xs text-gray-500 mt-1">Rutas compartidas por usuarios</p>
+                        </CardContent>
+                    </Card>
 
-	if (loading) {
-		return (
-			<div className="container mx-auto py-6 px-4">
-				<div className="flex items-center justify-center min-h-[400px]">
-					<div className="text-center space-y-3">
-						<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-						<p className="text-muted-foreground">Cargando datos del dashboard...</p>
-					</div>
-				</div>
-			</div>
-		);
-	}
+                    {/* Lugares */}
+                    <Card className="border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <CardTitle className="text-sm font-medium text-gray-500">Destinos</CardTitle>
+                            <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
+                                <MapPin className="h-4 w-4" />
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-gray-900">{statsData?.metricasGenerales.totalLugares ?? 0}</div>
+                            <p className="text-xs text-gray-500 mt-1">Puntos de interés registrados</p>
+                        </CardContent>
+                    </Card>
 
-	return (
-		<div className="container mx-auto py-6 px-4 space-y-6">
-			{/* Header */}
-			<div className="flex flex-col gap-2">
-				<h1 className="text-3xl font-bold">Dashboard Administrador</h1>
-				<p className="text-muted-foreground">
-					Bienvenido al panel de administración
-					{statsData?.timestamp && (
-						<span className="ml-2 text-xs">
-							(Última actualización: {new Date(statsData.timestamp).toLocaleString("es-MX")})
-						</span>
-					)}
-				</p>
-			</div>
+                    {/* Reportes (Alerta) */}
+                    <Card className="border-orange-200 bg-orange-50/30 shadow-sm hover:shadow-md transition-shadow">
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <CardTitle className="text-sm font-medium text-orange-700">Reportes Pendientes</CardTitle>
+                            <div className="p-2 bg-white rounded-lg text-orange-600 shadow-sm border border-orange-100">
+                                <AlertTriangle className="h-4 w-4" />
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-orange-700">{statsData?.metricasGenerales.reportesPendientes ?? 0}</div>
+                            <p className="text-xs text-orange-600/80 mt-1 font-medium">Requieren atención inmediata</p>
+                        </CardContent>
+                    </Card>
+                </div>
 
-			{/* Tarjetas de estadísticas */}
-			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-				<Card>
-					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-						<CardTitle className="text-sm font-medium">
-							Total Usuarios
-						</CardTitle>
-						<IconUsers className="h-4 w-4 text-muted-foreground" />
-					</CardHeader>
-					<CardContent>
-						<div className="text-2xl font-bold">
-							{statsData?.usuarios.total ?? 0}
-						</div>
-						<p className="text-xs text-muted-foreground">
-							Usuarios registrados
-						</p>
-					</CardContent>
-				</Card>
+                {/* 3. Main Chart & Secondary Info Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    {/* Columna Izquierda: Gráfica (Ocupa 2/3) */}
+                    <Card className="lg:col-span-2 border-gray-200 shadow-sm">
+                        <CardHeader className="border-b border-gray-50 bg-gray-50/30 pb-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <CardTitle className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                        <Activity className="h-5 w-5 text-indigo-500" />
+                                        Crecimiento de Usuarios
+                                    </CardTitle>
+                                    <CardDescription>Registro de nuevos usuarios en la plataforma</CardDescription>
+                                </div>
+                                <Select value={añoSeleccionado} onValueChange={setAñoSeleccionado}>
+                                    <SelectTrigger className="w-[100px] bg-white">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="2024">2024</SelectItem>
+                                        <SelectItem value="2025">2025</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="pt-6 pl-0">
+                            <div className="h-[350px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={datosGrafica} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                        <defs>
+                                            <linearGradient id="colorU" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.1}/>
+                                                <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
+                                            </linearGradient>
+                                        </defs>
+                                        <XAxis 
+                                            dataKey="mes" 
+                                            axisLine={false} 
+                                            tickLine={false} 
+                                            tick={{ fill: '#6b7280', fontSize: 12 }} 
+                                            dy={10}
+                                        />
+                                        <YAxis 
+                                            axisLine={false} 
+                                            tickLine={false} 
+                                            tick={{ fill: '#6b7280', fontSize: 12 }} 
+                                        />
+                                        <CartesianGrid vertical={false} stroke="#f3f4f6" />
+                                        <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#4f46e5', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                                        <Area 
+                                            type="monotone" 
+                                            dataKey="usuarios" 
+                                            stroke="#4f46e5" 
+                                            strokeWidth={3} 
+                                            fillOpacity={1} 
+                                            fill="url(#colorU)" 
+                                            activeDot={{ r: 6, strokeWidth: 0, fill: '#4f46e5' }}
+                                        />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-				<Card>
-					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-						<CardTitle className="text-sm font-medium">
-							Total Itinerarios
-						</CardTitle>
-						<IconRoute className="h-4 w-4 text-muted-foreground" />
-					</CardHeader>
-					<CardContent>
-						<div className="text-2xl font-bold">
-							{statsData?.metricasGenerales.totalItinerarios ?? 0}
-						</div>
-						<p className="text-xs text-muted-foreground">
-							Itinerarios creados
-						</p>
-					</CardContent>
-				</Card>
+                    {/* Columna Derecha: Resumen Rápido */}
+                    <div className="space-y-6">
+                        <Card className="border-gray-200 shadow-sm h-full flex flex-col">
+                            <CardHeader>
+                                <CardTitle className="text-lg font-bold text-gray-900">Estado del Sistema</CardTitle>
+                            </CardHeader>
+                            <CardContent className="flex-1 space-y-6">
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-sm font-medium">
+                                        <span className="text-gray-600">Servidor API</span>
+                                        <span className="text-green-600">En línea</span>
+                                    </div>
+                                    <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                                        <div className="h-full bg-green-500 w-[98%] rounded-full"></div>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-sm font-medium">
+                                        <span className="text-gray-600">Base de Datos</span>
+                                        <span className="text-green-600">Estable</span>
+                                    </div>
+                                    <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                                        <div className="h-full bg-green-500 w-[100%] rounded-full"></div>
+                                    </div>
+                                </div>
+                                <div className="pt-4 border-t border-gray-100">
+                                    <h4 className="text-sm font-bold text-gray-900 mb-3">Última Actividad</h4>
+                                    <div className="space-y-3">
+                                        {[1, 2, 3].map((i) => (
+                                            <div key={i} className="flex gap-3 items-start">
+                                                <div className="h-2 w-2 mt-1.5 rounded-full bg-indigo-500 shrink-0"></div>
+                                                <p className="text-xs text-gray-500">
+                                                    Nuevo usuario registrado desde Ciudad de México <span className="text-gray-300 mx-1">•</span> Hace {i * 5} min
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
 
-				<Card>
-					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-						<CardTitle className="text-sm font-medium">Crecimiento</CardTitle>
-						<IconTrendingUp className="h-4 w-4 text-muted-foreground" />
-					</CardHeader>
-					<CardContent>
-						<div className="text-2xl font-bold">
-							{statsData?.usuarios.crecimiento ?? "0%"}
-						</div>
-						<p className="text-xs text-muted-foreground">Este año</p>
-					</CardContent>
-				</Card>
+                {/* 4. Destinos Populares Grid */}
+                <div>
+                    <div className="flex items-center justify-between mb-4">
+                         <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                            <TrendingUp className="h-5 w-5 text-rose-500" />
+                            Destinos en Tendencia
+                         </h2>
+                         <Button variant="ghost" size="sm" className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50">
+                            Ver todos los lugares <ArrowUpRight className="ml-1 h-4 w-4" />
+                         </Button>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {(lugares.length > 0 ? lugares : destinosPopulares).map((destino) => (
+                            <div 
+                                key={destino.id}
+                                onClick={() => { setDestinoSeleccionado(destino); setModalAbierto(true); }}
+                                className="group relative bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden h-[300px] flex flex-col"
+                            >
+                                <div className="h-[180px] w-full relative overflow-hidden">
+                                    <div className="absolute top-3 left-3 z-10">
+                                        <Badge className="bg-white/90 text-gray-900 hover:bg-white backdrop-blur-sm shadow-sm border-0 font-bold">
+                                            {destino.calificacion} ★
+                                        </Badge>
+                                    </div>
+                                    <img
+                                        src={destino.imagen}
+                                        alt={destino.nombre}
+                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                        onError={(e) => { (e.target as HTMLImageElement).src = "https://via.placeholder.com/400x225?text=Sin+Imagen"; }}
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60"></div>
+                                </div>
+                                
+                                <div className="p-4 flex flex-col flex-1 justify-between">
+                                    <div>
+                                        <h3 className="text-lg font-bold text-gray-900 line-clamp-1 group-hover:text-indigo-600 transition-colors">
+                                            {destino.nombre}
+                                        </h3>
+                                        <div className="flex items-center gap-1 text-xs text-gray-500 mt-1 mb-2">
+                                            <MapPin className="h-3 w-3" />
+                                            {destino.estado || "México"}
+                                        </div>
+                                        <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
+                                            {destino.descripcion}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
 
-				<Card>
-					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-						<CardTitle className="text-sm font-medium">
-							Lugares Registrados
-						</CardTitle>
-						<IconMapPin className="h-4 w-4 text-muted-foreground" />
-					</CardHeader>
-					<CardContent>
-						<div className="text-2xl font-bold">
-							{statsData?.metricasGenerales.totalLugares ?? 0}
-						</div>
-						<p className="text-xs text-muted-foreground">
-							Destinos disponibles
-						</p>
-					</CardContent>
-				</Card>
-			</div>
+                {/* 5. Modal Detalle Destino */}
+                {modalAbierto && destinoSeleccionado && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) { setModalAbierto(false); setDestinoSeleccionado(null); }}}>
+                        <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" />
+                        
+                        <div className="relative z-10 w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                            
+                            {/* Imagen Header */}
+                            <div className="relative h-56 w-full">
+                                <img
+                                    src={destinoSeleccionado.imagen}
+                                    alt={destinoSeleccionado.nombre}
+                                    className="w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                                <Button 
+                                    size="icon" 
+                                    variant="secondary" 
+                                    className="absolute top-4 right-4 rounded-full bg-white/20 hover:bg-white/40 text-white border-0 backdrop-blur-md"
+                                    onClick={() => { setModalAbierto(false); setDestinoSeleccionado(null); }}
+                                >
+                                    <span className="sr-only">Cerrar</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                                </Button>
+                                <div className="absolute bottom-4 left-6 text-white">
+                                    <Badge className="bg-indigo-500 hover:bg-indigo-600 border-0 mb-2">{destinoSeleccionado.categoria || "Turismo"}</Badge>
+                                    <h2 className="text-2xl font-bold">{destinoSeleccionado.nombre}</h2>
+                                </div>
+                            </div>
 
-			{/* Nueva tarjeta de reportes pendientes */}
-			<Card className="border-orange-200 dark:border-orange-900">
-				<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-					<div>
-						<CardTitle className="text-lg font-medium">
-							Reportes Pendientes
-						</CardTitle>
-						<CardDescription>
-							Reportes que requieren atención
-						</CardDescription>
-					</div>
-					<IconAlertTriangle className="h-5 w-5 text-orange-500" />
-				</CardHeader>
-				<CardContent>
-					<div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
-						{statsData?.metricasGenerales.reportesPendientes ?? 0}
-					</div>
-					<p className="text-xs text-muted-foreground mt-1">
-						{reportesLoaded
-							? `${reportes.length || statsData?.metricasGenerales.reportesPendientes || 0} reportes en total`
-							: "Cargando reportes..."}
-					</p>
-				</CardContent>
-			</Card>			{/* Gráfica de nuevos usuarios */}
-			<Card>
-				<CardHeader>
-					<div className="flex items-center justify-between">
-						<div>
-							<CardTitle>Nuevos Usuarios</CardTitle>
-							<CardDescription>
-								Registro de usuarios por mes
-							</CardDescription>
-						</div>
-						<Select
-							value={añoSeleccionado}
-							onValueChange={setAñoSeleccionado}
-						>
-							<SelectTrigger className="w-32">
-								<SelectValue placeholder="Año" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="2024">2024</SelectItem>
-								<SelectItem value="2025">2025</SelectItem>
-							</SelectContent>
-						</Select>
-					</div>
-				</CardHeader>
-				<CardContent>
-					<ResponsiveContainer width="100%" height={350}>
-						<AreaChart data={datosGrafica}>
-							<defs>
-								<linearGradient
-									id="colorUsuarios"
-									x1="0"
-									y1="0"
-									x2="0"
-									y2="1"
-								>
-									<stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
-									<stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-								</linearGradient>
-							</defs>
-							<CartesianGrid strokeDasharray="3 3" />
-							<XAxis dataKey="mes" />
-							<YAxis />
-							<Tooltip />
-							<Area
-								type="monotone"
-								dataKey="usuarios"
-								stroke="#2563eb"
-								strokeWidth={2}
-								fillOpacity={1}
-								fill="url(#colorUsuarios)"
-							/>
-						</AreaChart>
-					</ResponsiveContainer>
-				</CardContent>
-			</Card>
+                            <div className="p-6 space-y-6">
+                                {/* Stats Row */}
+                                <div className="flex items-center gap-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                    <div className="flex flex-col items-center flex-1 border-r border-gray-200 last:border-0">
+                                        <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">Calificación</span>
+                                        <div className="flex items-center gap-1 mt-1">
+                                            <span className="text-xl font-bold text-gray-900">{destinoSeleccionado.calificacion}</span>
+                                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col items-center flex-1">
+                                        <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">Popularidad</span>
+                                        <div className="flex items-center gap-1 mt-1">
+                                            <span className="text-xl font-bold text-gray-900">{destinoSeleccionado.visitas.toLocaleString()}</span>
+                                            <Users className="h-4 w-4 text-indigo-500" />
+                                        </div>
+                                    </div>
+                                </div>
 
-			{/* Tabla de reportes */}
-			{reportesLoaded && reportes.length > 0 && (
-				<Card>
-					<CardHeader>
-						<CardTitle>Reportes Recientes</CardTitle>
-						<CardDescription>
-							Últimos reportes de publicaciones en la plataforma
-						</CardDescription>
-					</CardHeader>
-					<CardContent>
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead>ID</TableHead>
-									<TableHead>Usuario</TableHead>
-									<TableHead>Descripción</TableHead>
-									<TableHead>Historial</TableHead>
-									<TableHead className="text-right">
-										Acciones
-									</TableHead>
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{reportes.slice(0, 5).map((reporte) => (
-									<TableRow key={reporte.id}>
-										<TableCell className="font-medium">
-											#{reporte.id}
-										</TableCell>
-										<TableCell>
-											<div className="flex flex-col">
-												<span className="font-medium">
-													{reporte.usuario_emitente.username}
-												</span>
-												<span className="text-xs text-muted-foreground">
-													{reporte.usuario_emitente.correo}
-												</span>
-											</div>
-										</TableCell>
-										<TableCell className="max-w-xs truncate">
-											{reporte.description}
-										</TableCell>
-										<TableCell>
-											<Badge variant="secondary">
-												{reporte.historial.length} accion(es)
-											</Badge>
-										</TableCell>
-										<TableCell className="text-right">
-											<Button
-												variant="outline"
-												size="sm"
-												onClick={() => {
-													console.log("Ver reporte:", reporte.id);
-												}}
-											>
-												Ver Detalle
-											</Button>
-										</TableCell>
-									</TableRow>
-								))}
-							</TableBody>
-						</Table>
-					</CardContent>
-				</Card>
-			)}
+                                {/* Descripción */}
+                                <div className="space-y-2">
+                                    <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                                        <Info className="h-4 w-4 text-gray-400" /> 
+                                        Acerca del lugar
+                                    </h4>
+                                    <p className="text-sm text-gray-600 leading-relaxed">
+                                        {destinoSeleccionado.descripcion}
+                                    </p>
+                                </div>
 
-			{/* Tarjetas de destinos populares con imágenes */}
-			<div>
-				<h2 className="text-2xl font-bold mb-4">Destinos Populares</h2>
-				<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-					{(lugares.length > 0 ? lugares : destinosPopulares).map((destino) => (
-						<Card
-							key={destino.id}
-							className="overflow-hidden cursor-pointer"
-							onClick={() => abrirModal(destino)}
-						>
-							<div className="aspect-video relative">
-								<img
-									src={destino.imagen}
-									alt={destino.nombre}
-									className="w-full h-full object-cover"
-									onError={(e) => {
-										(e.target as HTMLImageElement).src = "https://via.placeholder.com/400x225?text=Destino";
-									}}
-								/>
-							</div>
-							<CardHeader>
-								<CardTitle className="text-lg">
-									{destino.nombre}
-								</CardTitle>
-								<CardDescription className="line-clamp-2">
-									{destino.descripcion}
-								</CardDescription>
-							</CardHeader>
-							<CardContent className="space-y-2">
-								<div className="flex items-center justify-between text-sm">
-									<div className="flex items-center gap-1">
-										<IconStar className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-										<span className="font-medium">
-											{destino.calificacion}
-										</span>
-									</div>
-									<div className="flex items-center gap-1 text-muted-foreground">
-										<IconUsers className="h-4 w-4" />
-										<span>{destino.visitas} visitas</span>
-									</div>
-								</div>
-							</CardContent>
-						</Card>
-					))}
-				</div>
-			</div>
-
-			{/* Modal de destino seleccionado */}
-			{modalAbierto && destinoSeleccionado && (
-				<div
-					className="fixed inset-0 z-50 flex items-center justify-center p-4"
-					onClick={(e) => {
-						if (e.target === e.currentTarget) cerrarModal();
-					}}
-				>
-					{/* Fondo */}
-					<div className="absolute inset-0 bg-black/40" />
-
-					{/* Contenido */}
-					<div className="relative z-10 w-full max-w-md rounded-xl bg-white shadow-2xl dark:bg-neutral-900">
-						<div className="flex items-center justify-between border-b px-4 py-3">
-							<h3 className="text-lg font-semibold">
-								{destinoSeleccionado.nombre}
-							</h3>
-							<Button variant="ghost" size="sm" onClick={cerrarModal}>
-								Cerrar
-							</Button>
-						</div>
-
-						<div className="px-4 py-3 space-y-3">
-							<div className="flex items-center gap-2">
-								<Badge variant="secondary">
-									{destinoSeleccionado.calificacion} ★
-								</Badge>
-								<Badge variant="outline">
-									{destinoSeleccionado.visitas} visitas
-								</Badge>
-							</div>
-
-							<p className="text-sm text-muted-foreground">
-								{destinoSeleccionado.descripcion}
-							</p>
-
-							{/* Datos adicionales reales: ubicación y categoría */}
-							<div className="grid grid-cols-2 gap-3 text-sm">
-								<div className="rounded-lg border p-3">
-									<p className="text-xs text-muted-foreground">Ubicación</p>
-									<p className="font-medium">
-										{destinoSeleccionado.estado ?? "Ubicación no disponible"}
-									</p>
-								</div>
-								<div className="rounded-lg border p-3">
-									<p className="text-xs text-muted-foreground">Categoría</p>
-									<p className="font-medium">
-										{destinoSeleccionado.categoria ?? "Sin categoría"}
-									</p>
-								</div>
-							</div>
-
-							<div className="rounded-lg overflow-hidden border">
-								<img
-									src={destinoSeleccionado.imagen}
-									alt={destinoSeleccionado.nombre}
-									className="w-full h-40 object-cover"
-								/>
-							</div>
-						</div>
-
-						<div className="flex justify-end gap-2 border-t px-4 py-3">
-
-						</div>
-					</div>
-				</div>
-			)}
-		</div>
-	);
+                                {/* Ubicación */}
+                                <div className="space-y-2">
+                                     <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                                        <Map className="h-4 w-4 text-gray-400" /> 
+                                        Ubicación
+                                    </h4>
+                                    <div className="flex items-center justify-between p-3 border border-gray-100 rounded-lg bg-gray-50/50">
+                                        <span className="text-sm font-medium text-gray-700">{destinoSeleccionado.estado || "Ubicación general"}</span>
+                                        {destinoSeleccionado.latitud && (
+                                            <Badge variant="outline" className="text-xs font-mono text-gray-500 bg-white">
+                                                {destinoSeleccionado.latitud.toFixed(4)}, {destinoSeleccionado.longitud?.toFixed(4)}
+                                            </Badge>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+                                <Button className="bg-indigo-600 hover:bg-indigo-700 text-white w-full sm:w-auto">
+                                    Ver Detalles Completos
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
 }
-

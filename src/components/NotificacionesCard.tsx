@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   UserPlus,
@@ -11,6 +11,7 @@ import {
   Loader2,
   UserRoundCheck,
   UserRoundX,
+  Flag,
 } from "lucide-react";
 import { useNotificationsC } from "@/context/NotificationContext";
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
@@ -57,6 +58,11 @@ const getIconAndColor = (type: string) => {
         icon: <UserRoundX size={16} className="text-white" />,
         color: "bg-red-600",
       };
+    case "REPORT":
+      return {
+        icon: <Flag size={16} className="text-white" />,
+        color: "bg-yellow-500",
+      };
     default:
       return {
         icon: <Bell size={16} className="text-white" />,
@@ -99,6 +105,21 @@ export const NotificationCard = ({ notification }: { notification: any }) => {
   const removeNotification = () => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
+
+  // Efecto para auto-eliminar la notificación después de una acción.
+  useEffect(() => {
+    // Si se ha aceptado o rechazado la solicitud...
+    if (actionResult) {
+      // ...esperamos 2 segundos para que el usuario vea el mensaje de confirmación...
+      const timer = setTimeout(() => {
+        // ...y luego eliminamos la notificación de la lista.
+        removeNotification();
+      }, 2000);
+
+      // Importante: Limpiamos el temporizador si el componente se desmonta.
+      return () => clearTimeout(timer);
+    }
+  }, [actionResult]); // Este efecto se dispara solo cuando `actionResult` cambia.
 
   const handleAction = async (
     e: React.MouseEvent,
@@ -146,10 +167,13 @@ export const NotificationCard = ({ notification }: { notification: any }) => {
       case "FRIEND_REJECTED":
         return `/viajero/perfil/${actor_username}`;
       case "NEW_POST":
-        return `/viajero/perfil/${actor_username}`;
+        return `/viajero/itinerarios/${linkId}/verPublicacion`;
       case "COMMENT":
       case "LIKE":
         return `/viajero/publicacion/${linkId}`; // Asumiendo una ruta para ver una publicación específica
+
+      case "REPORT":
+        return `/admin/reportes`; // Asumiendo una ruta para ver el reporte en admin
       default:
         return "#";
     }
