@@ -405,6 +405,10 @@ export class ItinerariosAPI implements ApiRoutes {
     return await this.post<SendFriend>("/amigo/solicitud", true, { receiving });
   }
 
+  async cancelRequest(receiving: string): Promise<{ message: string }> {
+  return await this.post<{ message: string }>("/amigo/cancelar",true, { receiving });
+  }
+
   async respondFriendRequest(
     id: number,
     state: number
@@ -445,7 +449,7 @@ export class ItinerariosAPI implements ApiRoutes {
   async listblock(): Promise<ListBlock> {
     return await this.get<ListBlock>("/amigo/listblock", true);
   }
-  
+
   // ===== RECOMENDACIONES =====
   async getRecomen(): Promise<ListRecomen> {
     return await this.get<ListRecomen>("/recomendacion", true);

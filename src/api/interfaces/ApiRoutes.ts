@@ -160,6 +160,10 @@ export interface SendFriend {
   data: Amigo;
 }
 
+export interface CancelRequestResponse {
+  message: string;
+}
+
 export interface RespondFriend {
   message: string;
   data: Amigo;
