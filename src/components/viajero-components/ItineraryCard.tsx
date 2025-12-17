@@ -76,7 +76,7 @@ export default function ItinerarioCard({
           )}
 
           {/* Gradiente sutil */}
-          <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent lg:hidden" />
+          <div className="absolute inset-0 bg-linear-to-t from-background/90 to-transparent lg:hidden" />
 
           {/* Badge de Duración */}
           <div className="absolute top-4 left-4">

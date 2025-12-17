@@ -1,11 +1,22 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Pencil, Lock, Trash2, Loader2 } from 'lucide-react';
+import { 
+  Pencil, 
+  Lock, 
+  Unlock,
+  Trash2, 
+  Search, 
+  Filter, 
+  UserPlus, 
+  MoreVertical,
+  Shield,
+  User as UserIcon,
+  AlertCircle
+} from 'lucide-react';
 import { ItinerariosAPI } from '@/api/ItinerariosAPI';
-import { Usuario } from '@/api/interfaces/ApiRoutes';
 
-
+// --- Interfaces (Sin cambios en lógica, solo visual) ---
 interface User {
   id: string;
   nombre: string;
@@ -20,6 +31,9 @@ export default function UsuariosPage() {
   const [usuarios, setUsuarios] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Estado visual para búsqueda (solo UI por ahora)
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     loadUsuarios();
@@ -31,19 +45,15 @@ export default function UsuariosPage() {
       setError(null);
       const response = await ItinerariosAPI.getInstance().getAllUsers();
       
-      console.log('Respuesta de la API:', response);
-      // Aceptar múltiples formatos de respuesta: array directo, { users }, { data: users }
       const usersArray = Array.isArray(response)
         ? response
         : (response as any)?.users || (response as any)?.data?.users || (response as any)?.data;
 
       if (!usersArray || !Array.isArray(usersArray)) {
-        console.warn('La API no devolvió usuarios en el formato esperado:', response);
         setUsuarios([]);
         return;
       }
       
-      // Mapear los datos de Usuario a nuestro formato User
       const mappedUsers: User[] = usersArray.map((u: any) => {
         const correo = u?.correo || u?.email || u?.mail || u?.user_email || "";
         const username = u?.username || u?.user || u?.nick || u?.login || "";
@@ -57,7 +67,7 @@ export default function UsuariosPage() {
           nombre,
           username,
           correo,
-          ultimoAcceso: 'N/A',
+          ultimoAcceso: 'N/A', // Podríamos formatear fecha aquí si la API la trajera
           role,
           account_status: Boolean(account_status),
         } as User;
@@ -66,15 +76,16 @@ export default function UsuariosPage() {
       setUsuarios(mappedUsers);
     } catch (err) {
       console.error('Error al cargar usuarios:', err);
-      setError('No se pudieron cargar los usuarios. Por favor, intenta de nuevo.');
+      setError('No se pudieron cargar los usuarios. Por favor, verifica tu conexión.');
     } finally {
       setLoading(false);
     }
   };
 
+  // --- Lógica original intacta ---
   const handleEdit = (id: string) => {
     console.log('Editar usuario:', id);
-    // TODO: Implementar modal de edición
+    // TODO: Implementar modal
   };
 
   const handleBlock = async (id: string) => {
@@ -93,165 +104,250 @@ export default function UsuariosPage() {
       } else {
         await ItinerariosAPI.getInstance().unblock(usuario.correo);
       }
-      
-      // Recargar la lista de usuarios
       await loadUsuarios();
-      alert(`Usuario ${usuario.account_status ? 'bloqueado' : 'desbloqueado'} exitosamente`);
     } catch (error) {
-      console.error('Error al cambiar estado del usuario:', error);
+      console.error('Error:', error);
       alert('Error al cambiar el estado del usuario');
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Estás seguro de que deseas eliminar este usuario? Esta acción no se puede deshacer.')) {
-      return;
-    }
-
+    if (!confirm('¿Eliminar usuario permanentemente?')) return;
     try {
-      // TODO: Implementar endpoint de eliminación de usuario por admin
-      // Por ahora solo mostramos mensaje
-      console.log('Eliminar usuario:', id);
-      alert('Función de eliminación pendiente de implementación en el backend');
+      console.log('Eliminar:', id);
+      alert('Función de eliminación pendiente en backend');
     } catch (error) {
-      console.error('Error al eliminar usuario:', error);
-      alert('Error al eliminar el usuario');
+      console.error(error);
     }
   };
 
+  // --- Helper UI: Generar iniciales para Avatar ---
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+  };
+
+  // --- Renderizado Condicional: Skeleton Loader ---
   if (loading) {
     return (
-      <div className="container mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-6">Gestionar usuarios</h1>
-        <div className="flex justify-center items-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-          <span className="ml-2 text-gray-600">Cargando usuarios...</span>
+      <div className="container mx-auto p-6 max-w-7xl">
+        <div className="flex justify-between items-center mb-8">
+          <div className="h-8 w-48 bg-gray-200 rounded animate-pulse"></div>
+          <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="flex items-center p-4 border-b border-gray-100 last:border-0">
+              <div className="h-10 w-10 rounded-full bg-gray-200 animate-pulse mr-4"></div>
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-1/4 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-3 w-1/3 bg-gray-100 rounded animate-pulse"></div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
   }
 
+  // --- Renderizado Condicional: Error State ---
   if (error) {
     return (
-      <div className="container mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-6">Gestionar usuarios</h1>
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
-          <button 
-            onClick={loadUsuarios}
-            className="ml-4 text-red-800 underline hover:text-red-900"
-          >
-            Reintentar
-          </button>
+      <div className="container mx-auto p-6 flex flex-col items-center justify-center min-h-[50vh]">
+        <div className="bg-red-50 p-6 rounded-full mb-4">
+          <AlertCircle className="w-10 h-10 text-red-500" />
         </div>
+        <h2 className="text-xl font-semibold text-gray-800 mb-2">Algo salió mal</h2>
+        <p className="text-gray-500 mb-6">{error}</p>
+        <button 
+          onClick={loadUsuarios}
+          className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+        >
+          Reintentar cargar
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Gestionar usuarios</h1>
-        <div className="text-sm text-gray-600">
-          Total de usuarios: <span className="font-semibold">{usuarios.length}</span>
+    <div className="min-h-screen bg-gray-50/50 p-6">
+      <div className="container mx-auto max-w-7xl">
+        
+        {/* --- Header Section --- */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Usuarios</h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Gestiona los accesos y roles de los miembros del sistema.
+            </p>
+          </div>
+          <button className="inline-flex items-center justify-center px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-100 transition-all shadow-sm">
+            <UserPlus size={18} className="mr-2" />
+            Nuevo Usuario
+          </button>
         </div>
-      </div>
-      
-      <div className="overflow-x-auto bg-white rounded-lg shadow">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Nombre
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Username
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Correo
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Rol
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Estado
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Acciones
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {usuarios.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
-                  No hay usuarios registrados
-                </td>
-              </tr>
-            ) : (
-              usuarios.map((usuario) => (
-                <tr key={usuario.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {usuario.nombre}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {usuario.username}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {usuario.correo}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      usuario.role === 'admin' 
-                        ? 'bg-purple-100 text-purple-800' 
-                        : 'bg-blue-100 text-blue-800'
-                    }`}>
-                      {usuario.role}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      usuario.account_status 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {usuario.account_status ? 'Activo' : 'Bloqueado'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => handleEdit(usuario.id)}
-                        className="text-blue-600 hover:text-blue-800 transition"
-                        title="Editar"
-                      >
-                        <Pencil size={18} />
-                      </button>
-                      <button
-                        onClick={() => handleBlock(usuario.id)}
-                        className={`transition ${
-                          usuario.account_status 
-                            ? 'text-yellow-600 hover:text-yellow-800' 
-                            : 'text-green-600 hover:text-green-800'
-                        }`}
-                        title={usuario.account_status ? 'Bloquear' : 'Desbloquear'}
-                      >
-                        <Lock size={18} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(usuario.id)}
-                        className="text-red-600 hover:text-red-800 transition"
-                        title="Eliminar"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </td>
+
+        {/* --- Controls & Filter Section (Visual UI) --- */}
+        <div className="bg-white p-4 rounded-t-xl border border-b-0 border-gray-200 flex flex-col sm:flex-row gap-4 justify-between items-center">
+          <div className="relative w-full sm:w-96">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search size={18} className="text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Buscar por nombre, correo o username..."
+              className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg leading-5 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all sm:text-sm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+             <button className="inline-flex items-center px-3 py-2 border border-gray-200 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none">
+               <Filter size={16} className="mr-2 text-gray-500" />
+               Filtros
+             </button>
+             <div className="text-sm text-gray-500 font-medium px-2">
+                Total: {usuarios.length}
+             </div>
+          </div>
+        </div>
+
+        {/* --- Table Section --- */}
+        <div className="bg-white border border-gray-200 rounded-b-xl shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Usuario
+                  </th>
+                  <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                    Rol
+                  </th>
+                  <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Estado
+                  </th>
+                  <th scope="col" className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Acciones
+                  </th>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {usuarios.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-12 text-center">
+                      <div className="flex flex-col items-center justify-center text-gray-400">
+                        <UserIcon size={48} className="mb-4 text-gray-200" />
+                        <p className="text-lg font-medium text-gray-900">No hay usuarios</p>
+                        <p className="text-sm">Intenta ajustar los filtros de búsqueda.</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  usuarios.map((usuario) => (
+                    <tr key={usuario.id} className="group hover:bg-gray-50/80 transition-colors duration-150">
+                      
+                      {/* Columna Usuario: Avatar + Nombre + Email */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10">
+                            <div className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-sm
+                              ${usuario.role === 'admin' ? 'bg-gradient-to-br from-purple-500 to-indigo-600' : 'bg-gradient-to-br from-blue-400 to-cyan-500'}
+                            `}>
+                              {getInitials(usuario.nombre || usuario.username)}
+                            </div>
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-semibold text-gray-900">{usuario.nombre || 'Sin Nombre'}</div>
+                            <div className="text-sm text-gray-500">{usuario.correo}</div>
+                            <div className="text-xs text-gray-400 md:hidden">@{usuario.username}</div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Columna Rol */}
+                      <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
+                        <div className="flex flex-col">
+                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium w-fit
+                            ${usuario.role === 'admin' 
+                              ? 'bg-purple-100 text-purple-800 border border-purple-200' 
+                              : 'bg-blue-50 text-blue-700 border border-blue-100'
+                            }`}>
+                            {usuario.role === 'admin' && <Shield size={12} className="mr-1" />}
+                            {usuario.role.toUpperCase()}
+                          </span>
+                          <span className="text-xs text-gray-400 mt-1 pl-1">@{usuario.username}</span>
+                        </div>
+                      </td>
+
+                      {/* Columna Estado */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium
+                          ${usuario.account_status 
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
+                            : 'bg-rose-50 text-rose-700 border border-rose-100'
+                          }`}>
+                          <span className={`h-1.5 w-1.5 rounded-full ${usuario.account_status ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
+                          {usuario.account_status ? 'Activo' : 'Bloqueado'}
+                        </span>
+                      </td>
+
+                      {/* Columna Acciones */}
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex items-center justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                          
+                          <button
+                            onClick={() => handleEdit(usuario.id)}
+                            className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                            title="Editar detalles"
+                          >
+                            <Pencil size={18} />
+                          </button>
+
+                          <button
+                            onClick={() => handleBlock(usuario.id)}
+                            className={`p-2 rounded-lg transition-colors ${
+                              usuario.account_status 
+                                ? 'text-gray-400 hover:text-amber-600 hover:bg-amber-50' 
+                                : 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100'
+                            }`}
+                            title={usuario.account_status ? 'Bloquear acceso' : 'Desbloquear acceso'}
+                          >
+                            {usuario.account_status ? <Lock size={18} /> : <Unlock size={18} />}
+                          </button>
+
+                          <div className="h-4 w-px bg-gray-200 mx-1"></div>
+
+                          <button
+                            onClick={() => handleDelete(usuario.id)}
+                            className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                            title="Eliminar usuario"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          
+          {/* Footer de la tabla (Paginación visual placeholder) */}
+          <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+             <span className="text-xs text-gray-500">Mostrando {usuarios.length} resultados</span>
+             <div className="flex gap-1">
+                <button disabled className="px-3 py-1 border border-gray-300 rounded text-xs text-gray-400 bg-white cursor-not-allowed">Anterior</button>
+                <button disabled className="px-3 py-1 border border-gray-300 rounded text-xs text-gray-400 bg-white cursor-not-allowed">Siguiente</button>
+             </div>
+          </div>
+        </div>
       </div>
     </div>
   );

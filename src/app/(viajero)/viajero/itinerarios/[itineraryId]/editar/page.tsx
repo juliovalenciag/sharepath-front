@@ -29,7 +29,6 @@ import {
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 import type { ItinerarioData } from "@/api/interfaces/ApiRoutes";
 
-
 // Constantes / Utils
 import { REGIONS_DATA, RegionKey } from "@/lib/constants/regions";
 import { cn } from "@/lib/utils";
@@ -46,7 +45,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-// ✅ Reutiliza componentes de "crear"
+// Reutiliza componentes de "crear"
 import { ItineraryHeader } from "../../crear/components/ItineraryHeader";
 import { DaySelector } from "../../crear/components/DaySelector";
 import { ActivityListPanel } from "../../crear/components/ActivityListPanel";
@@ -104,7 +103,7 @@ export default function EditarItinerarioPage() {
   const router = useRouter();
   const params = useParams<{ itineraryId: string }>();
 
-  // ✅ OJO: tu folder se llama [itineraryId], así que el param es itineraryId
+  //tu folder se llama [itineraryId], así que el param es itineraryId
   const itineraryId = params?.itineraryId ? String(params.itineraryId) : "";
 
   // --- STORE ---
@@ -134,6 +133,29 @@ export default function EditarItinerarioPage() {
 
   const [saving, setSaving] = useState(false);
   const [loadingItinerary, setLoadingItinerary] = useState(true);
+
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteItinerary = useCallback(async () => {
+    if (!itineraryId) return;
+
+    setDeleting(true);
+    try {
+      const api = ItinerariosAPI.getInstance();
+
+      //ajusta el nombre del método si en tu API se llama distinto
+      await api.deleteItinerario(itineraryId);
+
+      toast.success("Itinerario eliminado");
+      router.push("/viajero/itinerarios");
+    } catch (e: any) {
+      toast.error("No se pudo eliminar", {
+        description: e?.message || "Error de conexión con el servidor.",
+      });
+    } finally {
+      setDeleting(false);
+    }
+  }, [itineraryId, router]);
 
   // Snapshot para "Descartar cambios"
   const originalSnapshotRef = useRef<{
@@ -390,7 +412,7 @@ export default function EditarItinerarioPage() {
   };
 
   const handleRuta = useCallback(async () => {
-    console.log ("Generando ruta automática...");
+    console.log("Generando ruta automática...");
     const toastId = toast.loading("Buscando recomendaciones...");
 
     try {
@@ -477,32 +499,37 @@ export default function EditarItinerarioPage() {
   }, [days, actividades, setActivities]);
 
   const executeSave = async () => {
-    if (!meta || !itineraryId) return;
-    setSaveAlertOpen(false);
-    setSaving(true);
+  if (!meta || !itineraryId) return;
+  setSaveAlertOpen(false);
+  setSaving(true);
 
-    try {
-      const payload = buildItineraryPayload(meta, actividades);
-      await ItinerariosAPI.getInstance().updateItinerario(itineraryId, payload);
+  try {
+    const payload = buildItineraryPayload(meta, actividades);
+    await ItinerariosAPI.getInstance().updateItinerario(itineraryId, payload);
 
-      toast.success("¡Itinerario actualizado!", {
-        description: "Tus cambios se guardaron correctamente.",
-        duration: 2500,
-      });
+    toast.success("¡Itinerario actualizado!", {
+      description: "Tus cambios se guardaron correctamente.",
+      duration: 2500,
+    });
 
-      // Actualiza snapshot (para que “Descartar cambios” regrese a lo guardado)
-      originalSnapshotRef.current = {
-        meta,
-        actividades,
-      };
-    } catch (error: any) {
-      toast.error("No se pudo guardar", {
-        description: error?.message || "Error de conexión con el servidor.",
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
+    // Actualiza snapshot
+    originalSnapshotRef.current = {
+      meta,
+      actividades,
+    };
+
+    //  REDIRECCIÓN A "MIS ITINERARIOS"
+    router.push("/viajero/itinerarios");
+
+  } catch (error: any) {
+    toast.error("No se pudo guardar", {
+      description: error?.message || "Error de conexión con el servidor.",
+    });
+  } finally {
+    setSaving(false);
+  }
+};
+
 
   // Drag & Drop
   const handleDragEnd = (event: any) => {
@@ -628,8 +655,11 @@ export default function EditarItinerarioPage() {
         {meta && (
           <ItineraryHeader
             meta={meta}
+            mode="edit"
             onEditSetup={() => setSetupOpen(true)}
-            onReset={handleDiscardChanges} // ✅ aquí es “Descartar cambios”
+            onDiscardChanges={handleDiscardChanges}
+            onDeleteItinerary={handleDeleteItinerary}
+            isDeleting={deleting}
             onOptimize={handleOptimize}
             onSave={handlePreSave}
             onRuta={handleRuta}

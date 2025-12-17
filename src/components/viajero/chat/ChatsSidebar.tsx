@@ -4,6 +4,20 @@ import * as React from "react";
 import { Conversation } from "./_types";
 import { cn } from "@/lib/utils";
 
+const formatoFecha = (fechaMsg?: string | null) => {
+  if(!fechaMsg) return "";
+
+  const fecha = new Date(fechaMsg);
+  const ahora = new Date();
+
+  if(fecha.toDateString() === ahora.toDateString()){ //Si es hoy, pone la hora
+    return fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  //Si fue ayer o antes, muestra la fecha del mensaje
+  return fecha.toLocaleDateString([], { day: '2-digit', month: '2-digit', year: '2-digit' });
+};
+
 export function ChatsSidebar({
   conversations,
   activeId,
@@ -23,7 +37,7 @@ export function ChatsSidebar({
 
   return (
     <div className="h-full grid grid-rows-[auto_auto_minmax(0,1fr)] bg-white border-1 border-gray-800 rounded-3xl shadow-sm overflow-hidden dark:bg-[#111b21] dark:border-gray-700 transition-colors">
-      <header className="px-4 py-3 border-b bg-[#2196F3] dark:bg-[#1565C0] dark:border-gray-700 transition-colors">
+      <header className="px-4 py-5 border-b bg-[#2196F3] dark:bg-[#1565C0] dark:border-gray-700 transition-colors">
         {/* <h2 className="text-lg font-semibold">Chats</h2> */}
         <h2 className="text-xl font-bold text-white">Chats</h2>
       </header>
@@ -57,7 +71,7 @@ export function ChatsSidebar({
         </div> */}
       </div>
 
-      <ul className="overflow-y-auto">
+      <ul className="overflow-y-auto h-117"> {/* La altura h-117 se puso tomando como referencia ChatThread.tsx */}
         {filtered.map((c) => (
           <li key={c.id}>
             <button
@@ -75,7 +89,7 @@ export function ChatsSidebar({
                 {/* <div className="size-10 rounded-full bg-muted grid place-content-center border">👥</div> */}
                 <div className="size-10 rounded-full bg-muted grid place-content-center border overflow-hidden">
                   {
-                    c.members[1]?.foto_url !== "" ? (
+                    c.members[1]?.foto_url ? (
                       <img src={c.members[1].foto_url} className="aspect-square size-full" alt="Foto de perfil"></img>
                     ) : (
                       <p>{c.members[1]?.name.charAt(0)}</p>
@@ -98,10 +112,14 @@ export function ChatsSidebar({
                   {c.lastMessage?.text ?? "Sin mensajes"}
                 </p> */}
                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                  {c.lastMessage?.text ?? "Sin mensajes"}
+                  {c.lastMessage ?? "Sin mensajes"}
                 </p>
               </div>
-              <div className="text-right">
+              <div className="text-right flex flex-col items-end space-y-1">
+                <span className="text-[10px] text-gray-400 font-medium whitespace-nowrap">
+                  {formatoFecha(c.lastMessageHora)}
+                </span>
+
                 {!!c.unread && (
                   <span className="inline-flex items-center justify-center min-w-[1.5rem] h-6 px-1.5 rounded-full text-xs font-semibold bg-[var(--palette-blue)] text-[var(--primary-foreground)]">
                     {c.unread}

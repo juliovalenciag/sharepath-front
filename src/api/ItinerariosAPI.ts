@@ -42,22 +42,22 @@ import {
   Reporte,
   ItinerarioData,
   DashboardStatsResponse,
-  UserInfoResponse
+  UserInfoResponse,
+  AdminReportPreview, 
+  DeleteUserResponse,  
+  UpdatePublicationRequest
 } from "./interfaces/ApiRoutes";
 
 export class ItinerariosAPI implements ApiRoutes {
+  private static instance: ItinerariosAPI;
 
-  private static instance: ItinerariosAPI
-
-  private HOST = "https://harol-lovers.up.railway.app"
+  private HOST = "https://harol-lovers.up.railway.app";
   // private HOST = "https://harol-lovers.up.railway.app"
 
-
-  private constructor() { }
+  private constructor() {}
 
   static getInstance(): ItinerariosAPI {
-    if (!ItinerariosAPI.instance)
-      this.instance = new ItinerariosAPI();
+    if (!ItinerariosAPI.instance) this.instance = new ItinerariosAPI();
     return this.instance;
   }
 
@@ -201,9 +201,13 @@ export class ItinerariosAPI implements ApiRoutes {
 
     if (!request.ok) {
       const errorData = data as ErrorResponse;
-      const errorMessage = errorData?.message || `Error ${request.status}: ${request.statusText}`;
+      const errorMessage =
+        errorData?.message || `Error ${request.status}: ${request.statusText}`;
       console.warn(`[${request.status}] ${route}: ${errorMessage}`);
-      throw new Error(errorMessage);
+      const err: any = new Error(errorMessage);
+      err.status = request.status;
+      err.route = route;
+      throw err;
     }
 
     return data as T;
@@ -232,8 +236,10 @@ export class ItinerariosAPI implements ApiRoutes {
 
   // ===== AUTH =====
   async doLogin(correo: string, password: string): Promise<Usuario> {
-
-    const { token, usuario } = await this.put<LoginResponse>("/auth", false, { correo, password });
+    const { token, usuario } = await this.put<LoginResponse>("/auth", false, {
+      correo,
+      password,
+    });
 
     localStorage.setItem("authToken", token);
     localStorage.setItem("user", JSON.stringify(usuario));
@@ -242,7 +248,11 @@ export class ItinerariosAPI implements ApiRoutes {
     return usuario;
   }
   async doRegister(body: RegisterRequest): Promise<RegisterResponse> {
-    const resp = await this.post<RegisterResponse>("/auth/register", false, body);
+    const resp = await this.post<RegisterResponse>(
+      "/auth/register",
+      false,
+      body
+    );
     return resp;
   }
 
@@ -385,7 +395,6 @@ export class ItinerariosAPI implements ApiRoutes {
 
   async getAllUsers(): Promise<SearchUserResponse> {
     try {
-     
       return await this.get<SearchUserResponse>("/user/all", true);
     } catch (error) {
       const response = await this.searchUsers("");
@@ -514,18 +523,35 @@ export class ItinerariosAPI implements ApiRoutes {
     return await this.get<Publicacion[]>("/publicacion/", true);
   }
 
-  async getPublicationWithResenas(publicacionId: number): Promise<PublicacionConResenas> {
-      return await this.get<PublicacionConResenas>(`/publicacion/${publicacionId}`, true);
+  async getPublicationWithResenas(
+    publicacionId: number
+  ): Promise<PublicacionConResenas> {
+    return await this.get<PublicacionConResenas>(
+      `/publicacion/${publicacionId}`,
+      true
+    );
+
+  }
+
+  async updatePublication(
+    publicacionId: number,
+    body: UpdatePublicationRequest
+  ): Promise<Publicacion> {
+    return await this.put<Publicacion>(
+      `/publicacion/${publicacionId}`,
+      true,
+      body
+    );
   }
 
   async deletePublication(publicacionId: number): Promise<{ message: string }> {
-      return await this.delete<{ message: string }>(`/publicacion/${publicacionId}`);
+    return await this.delete<{ message: string }>(
+      `/publicacion/${publicacionId}`
+    );
   }
 
   // ===== NOTIFICACIONES =====
-  async markNotificationAsRead(
-    notificationId: string | number,
-  ): Promise<void> {
+  async markNotificationAsRead(notificationId: string | number): Promise<void> {
     return await this.patchEmpty(`/notificacion/read/${notificationId}`, true);
   }
 
@@ -533,13 +559,16 @@ export class ItinerariosAPI implements ApiRoutes {
     return await this.get<RawNotification[]>("/notificacion", true);
   }
 
-    // ===== REPORTES =====
-    async createReport(publicationId: number, reason: string): Promise<CreateReportResponse> {
-        return await this.post<CreateReportResponse>("/reports", true, {
-            entity_id: publicationId,
-            description: reason
-        });
-    }
+  // ===== REPORTES =====
+  async createReport(
+    publicationId: number,
+    reason: string
+  ): Promise<CreateReportResponse> {
+    return await this.post<CreateReportResponse>("/reports", true, {
+      entity_id: publicationId,
+      description: reason,
+    });
+  }
 
   async getReports(): Promise<Reporte[]> {
     try {
@@ -549,7 +578,10 @@ export class ItinerariosAPI implements ApiRoutes {
       try {
         return await this.get<Reporte[]>("/Reportes", true);
       } catch (fallbackError) {
-        console.error("Ambos endpoints fallaron. Retornando array vacío.", fallbackError);
+        console.error(
+          "Ambos endpoints fallaron. Retornando array vacío.",
+          fallbackError
+        );
         return [];
       }
     }
@@ -559,7 +591,9 @@ export class ItinerariosAPI implements ApiRoutes {
     try {
       return await this.get<Reporte>(`/reports/${reportId}`, true);
     } catch (error) {
-      console.warn(`Endpoint /reports/${reportId} no disponible, intentando /Reportes/${reportId}...`);
+      console.warn(
+        `Endpoint /reports/${reportId} no disponible, intentando /Reportes/${reportId}...`
+      );
       return await this.get<Reporte>(`/Reportes/${reportId}`, true);
     }
   }
@@ -570,50 +604,93 @@ export class ItinerariosAPI implements ApiRoutes {
 
   // ===== RESEÑAS =====
 
-  async createResena(publicacionId: number, body: CreateResenaRequest): Promise<Resena> {
-      return await this.post<Resena>(`/resena/publicacion/${publicacionId}`, true, body);
+  async createResena(
+    publicacionId: number,
+    body: CreateResenaRequest
+  ): Promise<Resena> {
+    return await this.post<Resena>(
+      `/resena/publicacion/${publicacionId}`,
+      true,
+      body
+    );
   }
 
-  async updateResena(resenaId: number, body: UpdateResenaRequest): Promise<Resena> {
-      return await this.put<Resena>(`/resena/${resenaId}`, true, body);
+  async updateResena(
+    resenaId: number,
+    body: UpdateResenaRequest
+  ): Promise<Resena> {
+    return await this.put<Resena>(`/resena/${resenaId}`, true, body);
   }
 
   async deleteResena(resenaId: number): Promise<Resena> {
-      return await this.delete<Resena>(`/resena/${resenaId}`);
+    return await this.delete<Resena>(`/resena/${resenaId}`);
   }
 
   async getResenasByPublicacion(publicacionId: number): Promise<Resena[]> {
-      return await this.get<Resena[]>(`/resena/publicacion/${publicacionId}`, true);
+    return await this.get<Resena[]>(
+      `/resena/publicacion/${publicacionId}`,
+      true
+    );
   }
-  
+
   async getOtherUserInfo(username: string): Promise<UserInfoResponse> {
-    return await this.get<UserInfoResponse>(`/user/profile/${encodeURIComponent(username)}`, true);
+    return await this.get<UserInfoResponse>(
+      `/user/profile/${encodeURIComponent(username)}`,
+      true
+    );
   }
-  
+
   /**
    * Obtiene las estadísticas para el dashboard de administrador.
    * Ruta Back: GET /admin/dashboard/stats
    */
   async getAdminStats(): Promise<DashboardStatsResponse> {
-      return await this.get<DashboardStatsResponse>("/admin/dashboard/stats", true);
-    }
+    return await this.get<DashboardStatsResponse>(
+      "/admin/dashboard/stats",
+      true
+    );
+  }
+
+  /**
+   * Ejecuta la acción de Baneo basada en un reporte.
+
+   * Nota: el id es el del reporte
+   */
+  async banPublication(reportId: number): Promise<{ message: string }> {
+    return await this.post<{ message: string }>(
+      `/reports/admin/ban/${reportId}`,
+      true,
+      {}
+    );
+  }
 
     /**
-     * Ejecuta la acción de Baneo basada en un reporte.
-     * Ruta Back: POST /admin/ban/id
-     * Nota: el id es el del reporte
+     * Trae todos los reportes con la info de la publicación ya "poblada"
+     * (fotos, titulo itinerario, descripcion) para armar la card rápido.
+     * Ruta Back: GET /reporte/admin/preview
      */
-    async banPublication(reportId: number): Promise<{ message: string }> {
-      return await this.post<{ message: string }>(`/admin/ban/${reportId}`, true, {});
+    async getAdminReportsPreview(): Promise<AdminReportPreview[]> {
+        return await this.get<AdminReportPreview[]>("/reporte/admin/preview", true);
     }
 
-    /**
-     * Obtiene el detalle extendido de un reporte para el admin.
-     * Ruta Back: GET /reports/id
-     * Nota: el id es el del reporte
-     */
-    async getAdminReportDetail(reportId: number): Promise<Reporte> {
-      return await this.get<Reporte>(`/reports/${reportId}`, true);
+    async deleteUserByUsername(username: string): Promise<DeleteUserResponse> {
+        return await this.delete<DeleteUserResponse>(`/user/admin/delete/${encodeURIComponent(username)}`);
     }
 
+  /**
+   * Obtiene el detalle extendido de un reporte para el admin.
+   * Ruta Back: GET /reports/id
+   * Nota: el id es el del reporte
+   */
+  async getAdminReportDetail(reportId: number): Promise<Reporte> {
+    return await this.get<Reporte>(`/reports/${reportId}`, true);
+  }
+
+  /**
+   * Obtiene los detalles de una publicación.
+   * Ruta Back: GET /publicacion/id
+   */
+  async getPublicacion(publicacionId: number): Promise<Publicacion> {
+    return await this.get<Publicacion>(`/publicacion/${publicacionId}`, true);
+  }
 }

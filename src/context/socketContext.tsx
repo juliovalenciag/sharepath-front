@@ -1,7 +1,13 @@
 //socketCOntext original
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useRef } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useRef,
+} from "react";
 import { io, Socket } from "socket.io-client";
 
 //Datos del contexto
@@ -19,7 +25,7 @@ const SocketContext = createContext<ISocketContext>({
   isConnected: false,
   userID: null,
   username: null,
-  recargarUsuario: () => {}
+  recargarUsuario: () => {},
 });
 
 export const useSocket = () => useContext(SocketContext);
@@ -34,11 +40,11 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     const storedUser = localStorage.getItem("user");
     const token = localStorage.getItem("authToken");
 
-    if(!token){
+    if (!token) {
       setUserID(null);
       // setIsConnected(false);
       setUsername(null);
-      if(socket){
+      if (socket) {
         socket.disconnect();
         setSocket(null);
       }
@@ -47,13 +53,12 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     }
     // console.log("Ya hay token, generando socket");
 
-    if(storedUser) {
+    if (storedUser) {
       // console.log("hola desde stored user");
       const datosUsuario = JSON.parse(storedUser);
       setUserID(datosUsuario.correo);
       setUsername(datosUsuario.username);
-    }
-    else{
+    } else {
       setUserID(null);
       setUsername(null);
     }
@@ -80,13 +85,13 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     const token = localStorage.getItem("authToken");
     const sessionID = localStorage.getItem("sessionID");
 
-    if (!token) { 
-      console.log('No se encontró token');
+    if (!token) {
+      console.log("No se encontró token");
       return;
     }
 
     const newSocket = io("https://harol-lovers.up.railway.app", {
-    //const newSocket = io("https://harol-lovers.up.railway.app", {
+      //const newSocket = io("https://harol-lovers.up.railway.app", {
       //withCredentials: true,
       path: "/socket.io/",
       autoConnect: false,
@@ -98,14 +103,14 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
     newSocket.connect();
     setSocket(newSocket);
-    // newSocket.auth = { 
+    // newSocket.auth = {
     //     sessionID: sessionID,
     //     token: token
     // };
 
     // newSocket.on("session", ({ sessionID, userID, username }) => {
     //   console.log(`Evento session - SocketContext: Sesión recibida. ID: ${userID}, Nombre: ${username}, Sesion ID: ${sessionID}`);
-    //   newSocket.auth = { sessionID, token }; 
+    //   newSocket.auth = { sessionID, token };
     //   localStorage.setItem("sessionID", sessionID);
     //   setUserID(userID);
     //   setUsername(username);//Guarda el username en el navegador y estado de react
@@ -139,40 +144,41 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
     //Guardar el socket en el estado de react
     setSocket(newSocket);
-      newSocket.on("session", ({ sessionID, userID, username }) => {
-        //console.log("Sesion valida, actualizando datos...");
-        localStorage.setItem("sessionID", sessionID);
-        newSocket.auth = { sessionID, token };
-        setUserID(userID);
-        setUsername(username);
+    newSocket.on("session", ({ sessionID, userID, username }) => {
+      //console.log("Sesion valida, actualizando datos...");
+      localStorage.setItem("sessionID", sessionID);
+      newSocket.auth = { sessionID, token };
+      setUserID(userID);
+      setUsername(username);
 
-        //Pedir amigos aqui
-        // console.log("Pidiendo lista de amigos...");
-        newSocket.emit("get friends list");
-      });
+      //Pedir amigos aqui
+      // console.log("Pidiendo lista de amigos...");
+      newSocket.emit("get friends list");
+    });
 
-      // newSocket.on("users", (users) => {
-        // console.log("Contexto: Recibida lista de amigos: ", users.length);
-      // });
+    // newSocket.on("users", (users) => {
+    // console.log("Contexto: Recibida lista de amigos: ", users.length);
+    // });
 
-      newSocket.on("disconnect", () => setIsConnected(false));
-      // newSocket.off("session");
-      // newSocket.off("connect");
-      // newSocket.off("connect_error");
-      // newSocket.off("disconnect");
-      //Se pueden poner los .off aqui?
+    newSocket.on("disconnect", () => setIsConnected(false));
+    // newSocket.off("session");
+    // newSocket.off("connect");
+    // newSocket.off("connect_error");
+    // newSocket.off("disconnect");
+    //Se pueden poner los .off aqui?
 
     return () => {
       //console.log("SocketContext: Desconectando usuario...")
       newSocket.off("connect");
       newSocket.off("session");
-      newSocket.off("disconnect"),
-      newSocket.disconnect();
+      newSocket.off("disconnect"), newSocket.disconnect();
     };
   }, [userID]);
 
   return (
-    <SocketContext.Provider value={{ socket, isConnected, userID, username, recargarUsuario }}>
+    <SocketContext.Provider
+      value={{ socket, isConnected, userID, username, recargarUsuario }}
+    >
       {children}
     </SocketContext.Provider>
   );

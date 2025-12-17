@@ -344,6 +344,7 @@ export interface ApiRoutes {
 
   getPublicationWithResenas: (publicacionId: number) => Promise<PublicacionConResenas>;
   deletePublication: (publicacionId: number) => Promise<{ message: string }>;
+  updatePublication: (publicacionId: number, body: UpdatePublicationRequest) => Promise<Publicacion>;
   
   // Reseñas
   createResena: (publicacionId: number, body: CreateResenaRequest) => Promise<Resena>;
@@ -359,6 +360,8 @@ export interface ApiRoutes {
 
   // Notificaciones
   getNotifications: () => Promise<RawNotification[]>;
+
+
 }
 
 export interface MarkAsReadResponse {
@@ -433,12 +436,6 @@ export interface UsuarioEmitente {
 }
 
 
-export interface Publicacion {
-    id:             number;
-    descripcion:    string;
-    privacity_mode: boolean;
-}
-
 export interface UsuarioEmitente {
     correo: string;
 }
@@ -456,11 +453,18 @@ export interface Foto {
 
 export interface Publicacion {
   id: number;
-  descripcion: string;
+  descripcion?: string | null;
   privacity_mode: boolean;
-  itinerario: { id: number; nombre: string } | null;
-  fotos: Foto[]; // <-- AGREGADO: Array de fotos
-  user_shared?: Usuario; // Lo dejamos opcional para evitar ciclos
+  itinerario: { id: number; nombre?: string; title?: string } | null;
+  fotos?: Foto[];
+  resenas?: Resena[];
+  user_shared?: Usuario;
+  [key: string]: any;
+}
+
+export interface UpdatePublicationRequest {
+  descripcion?: string;
+  privacity_mode?: boolean;
 }
 
 export interface AverageRatingResponse {
@@ -485,7 +489,7 @@ export interface CreateItinerarioRequest {
   start_date?: string;
   end_date?: string;
   regions?: string[];
-  visibility?: "private" | "friends" | "public";
+  visibility?: string;
 }
 
 export interface DashboardStatsResponse {
@@ -500,4 +504,38 @@ export interface DashboardStatsResponse {
     reportesPendientes: number;
   };
   timestamp: string;
+}
+
+
+// ==========================================
+// NUEVAS INTERFACES ADMIN (Reportes y Usuarios)
+// ==========================================
+
+export interface AdminReportPreview {
+  reporte_id: number;
+  motivo_reporte: string;
+  estatus?: string; // "Publicación eliminada previamente" si aplica
+  data: {
+    publicacion_id: number;
+    descripcion: string;
+    fotos: string[]; // Array de URLs de las fotos
+    itinerario_id: number | null;
+    itinerario_titulo: string;
+  } | null;
+}
+
+export interface DeleteUserResponse {
+  message: string;
+  deletedUser: string;
+}
+
+// Actualizamos la interfaz principal ApiRoutes con las 2 nuevas funciones
+export interface ApiRoutes {
+  // ... (Todo lo que ya tenías) ...
+
+  // [NUEVO] Vista previa de reportes (con fotos y todo junto)
+  getAdminReportsPreview: () => Promise<AdminReportPreview[]>;
+
+  // [NUEVO] Eliminar usuario por username (más fácil que por ID)
+  deleteUserByUsername: (username: string) => Promise<DeleteUserResponse>;
 }
