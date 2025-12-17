@@ -224,7 +224,19 @@ export class ItinerariosAPI implements ApiRoutes {
       },
     });
 
-    const data = await request.json();
+    // Verificar si la respuesta tiene contenido antes de intentar parsear JSON
+    const text = await request.text();
+    let data;
+    
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch (e) {
+      // Si el parsing falla y la respuesta fue exitosa, asumir que no hay body
+      if (request.ok) {
+        return {} as T;
+      }
+      throw new Error("Respuesta inválida del servidor");
+    }
 
     if (!request.ok) {
       console.error('DELETE failed. Status:', request.status);

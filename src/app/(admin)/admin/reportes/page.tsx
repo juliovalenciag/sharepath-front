@@ -370,8 +370,9 @@ export default function ReportesPage() {
           removeStatus(id);
           setModalOpen(false);
           toast.success("Reporte eliminado correctamente");
-        } catch (error) {
-          toast.error("Error al eliminar el reporte");
+        } catch (error: any) {
+          console.error("Error al eliminar reporte:", error);
+          toast.error(`Error al eliminar el reporte: ${error?.message || 'Error desconocido'}`);
         }
       }
     });
