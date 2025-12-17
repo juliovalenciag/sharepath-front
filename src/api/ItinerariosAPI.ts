@@ -42,7 +42,9 @@ import {
   Reporte,
   ItinerarioData,
   DashboardStatsResponse,
-  UserInfoResponse
+  UserInfoResponse,
+  AdminReportPreview, 
+  DeleteUserResponse  
 } from "./interfaces/ApiRoutes";
 
 export class ItinerariosAPI implements ApiRoutes {
@@ -610,6 +612,24 @@ export class ItinerariosAPI implements ApiRoutes {
      */
     async getAdminReportDetail(reportId: number): Promise<Reporte> {
       return await this.get<Reporte>(`/reports/${reportId}`, true);
+    }
+
+    /**
+     * Trae todos los reportes con la info de la publicación ya "poblada"
+     * (fotos, titulo itinerario, descripcion) para armar la card rápido.
+     * Ruta Back: GET /reporte/admin/preview
+     */
+    async getAdminReportsPreview(): Promise<AdminReportPreview[]> {
+        return await this.get<AdminReportPreview[]>("/reporte/admin/preview", true);
+    }
+
+    /**
+     * Elimina un usuario (y toda su basura: fotos, posts, itinerarios) buscando por username.
+     * Ruta Back: DELETE /user/admin/:username
+     */
+    async deleteUserByUsername(username: string): Promise<DeleteUserResponse> {
+        // Codificamos el username por si tiene espacios o caracteres raros
+        return await this.delete<DeleteUserResponse>(`/user/admin/${encodeURIComponent(username)}`);
     }
 
 }
