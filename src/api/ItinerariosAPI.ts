@@ -19,6 +19,8 @@ import {
   VerifyPasswordRequest,
   SearchUserResponse,
   SendFriend,
+  CountFriendsResponse, 
+  CancelRequest,
   RespondFriend,
   ListRequest,
   ListFriend,
@@ -224,7 +226,19 @@ export class ItinerariosAPI implements ApiRoutes {
       },
     });
 
-    const data = await request.json();
+    // Verificar si la respuesta tiene contenido antes de intentar parsear JSON
+    const text = await request.text();
+    let data;
+    
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch (e) {
+      // Si el parsing falla y la respuesta fue exitosa, asumir que no hay body
+      if (request.ok) {
+        return {} as T;
+      }
+      throw new Error("Respuesta inválida del servidor");
+    }
 
     if (!request.ok) {
       console.error('DELETE failed. Status:', request.status);
@@ -416,9 +430,12 @@ export class ItinerariosAPI implements ApiRoutes {
     return await this.post<SendFriend>("/amigo/solicitud", true, { receiving });
   }
 
-  async cancelRequest(receiving: string): Promise<{ message: string }> {
-  return await this.post<{ message: string }>("/amigo/cancelar",true, { receiving });
+  async cancelFriendRequest(receiving: string): Promise<CancelRequest> {
+    return await this.post<CancelRequest>("/amigo/cancelar", true, { receiving });
   }
+  async countFriends(correo: string): Promise<CountFriendsResponse> {
+  return await this.get<CountFriendsResponse>(`/amigo/cont/${correo}`, true);
+}
 
   async respondFriendRequest(
     id: number,

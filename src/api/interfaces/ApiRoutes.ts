@@ -160,8 +160,9 @@ export interface SendFriend {
   data: Amigo;
 }
 
-export interface CancelRequestResponse {
+export interface CancelRequest {
   message: string;
+  data: Amigo;
 }
 
 export interface RespondFriend {
@@ -320,6 +321,7 @@ export interface ApiRoutes {
 
   // Amigo
   sendFriendRequest: (receiving: string) => Promise<SendFriend>;
+  cancelFriendRequest: (receiving: string) => Promise<CancelRequest>;
   respondFriendRequest: (id: number, state: number) => Promise<RespondFriend>;
   getRequests: () => Promise<ListRequest>;
   getFriends: () => Promise<ListFriend>;
