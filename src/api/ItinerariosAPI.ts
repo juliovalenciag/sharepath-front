@@ -416,6 +416,10 @@ export class ItinerariosAPI implements ApiRoutes {
     return await this.post<SendFriend>("/amigo/solicitud", true, { receiving });
   }
 
+  async cancelRequest(receiving: string): Promise<{ message: string }> {
+  return await this.post<{ message: string }>("/amigo/cancelar",true, { receiving });
+  }
+
   async respondFriendRequest(
     id: number,
     state: number
@@ -671,10 +675,6 @@ export class ItinerariosAPI implements ApiRoutes {
         return await this.get<AdminReportPreview[]>("/reports/", true);
     }
 
-    /**
-     * Elimina un usuario (y toda su basura: fotos, posts, itinerarios) buscando por username.
-     * Ruta Back: DELETE /user/admin/delete/:username
-     */
     async deleteUserByUsername(username: string): Promise<DeleteUserResponse> {
         return await this.delete<DeleteUserResponse>(`/user/admin/delete/${encodeURIComponent(username)}`);
     }
