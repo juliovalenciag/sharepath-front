@@ -24,13 +24,17 @@ export default function RecoverPasswordPage() {
 
     // Validación del correo
     if (!gmailRegex.test(correo)) {
-      toast.error("Por favor ingresa un correo válido que termine en @gmail.com");
+      toast.error(
+        "Por favor ingresa un correo válido que termine en @gmail.com"
+      );
       return;
     }
 
     // Validación del nombre de usuario
     if (!usernameRegex.test(username)) {
-      toast.error("El nombre de usuario debe tener entre 3 y 15 caracteres alfanuméricos.");
+      toast.error(
+        "El nombre de usuario debe tener entre 3 y 15 caracteres alfanuméricos."
+      );
       return;
     }
 
@@ -64,7 +68,6 @@ export default function RecoverPasswordPage() {
   return (
     <main className="flex min-h-screen w-full items-center justify-center bg-muted/40 p-4">
       <div className="flex w-full max-w-4xl min-h-[600px] overflow-hidden rounded-2xl shadow-2xl">
-        
         {/* Panel Izquierdo: Imagen */}
         <div className="hidden lg:block lg:w-1/2">
           <Image
@@ -80,8 +83,8 @@ export default function RecoverPasswordPage() {
         <div className="flex w-full flex-col items-center justify-center bg-card p-8 lg:w-1/2">
           <div className="w-full max-w-sm text-center">
             <form onSubmit={handleRecover}>
-              <Image 
-                src="/img/candado.png" 
+              <Image
+                src="/img/candado.png"
                 alt="Icono candado"
                 width={60}
                 height={60}
@@ -93,7 +96,10 @@ export default function RecoverPasswordPage() {
 
               <div className="mb-4 space-y-2">
                 <div className="relative">
-                  <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
+                  <FiUser
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                    size={20}
+                  />
                   <Input
                     type="text"
                     placeholder="Nombre de usuario"
@@ -105,7 +111,10 @@ export default function RecoverPasswordPage() {
                   />
                 </div>
                 <div className="relative">
-                  <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
+                  <FiMail
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                    size={20}
+                  />
                   <Input
                     type="email"
                     placeholder="Correo electrónico (solo Gmail)"
@@ -129,7 +138,10 @@ export default function RecoverPasswordPage() {
 
               <p className="mt-6 text-sm text-muted-foreground">
                 ¿Ya recuerdas tu contraseña?{" "}
-                <Link href="/sign-in" className="font-semibold text-primary hover:underline">
+                <Link
+                  href="/sign-in"
+                  className="font-semibold text-primary hover:underline"
+                >
                   Inicia sesión
                 </Link>
               </p>

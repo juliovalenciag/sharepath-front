@@ -171,6 +171,9 @@ export const NotificationCard = ({ notification }: { notification: any }) => {
       case "COMMENT":
       case "LIKE":
         return `/viajero/publicacion/${linkId}`; // Asumiendo una ruta para ver una publicación específica
+
+      case "REPORT":
+        return `/admin/reportes`; // Asumiendo una ruta para ver el reporte en admin
       default:
         return "#";
     }
