@@ -1,14 +1,12 @@
 // components/ItinerarioFrame.tsx
 "use client";
 import DiasCarousel from "./DiaCarousel";
-import Link from "next/link";
+
 import { useState } from "react";
 import { CalendarIcon, Ghost } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
-import { Textarea } from "@/components/ui/textarea";
-import Estrellas from "@/components/ui/Estrellas";
 import { Loader2 } from "lucide-react"; //  Icono de carga animado
 
 import {

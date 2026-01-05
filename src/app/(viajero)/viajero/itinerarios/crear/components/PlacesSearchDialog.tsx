@@ -3,7 +3,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
 import Fuse from "fuse.js";
 
 import {
@@ -11,7 +10,6 @@ import {
   MapPin,
   Search,
   Star,
-  Navigation,
   Info,
   ArrowLeft,
   Filter,

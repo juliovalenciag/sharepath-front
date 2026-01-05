@@ -1,4 +1,4 @@
-import { format, parseISO, addDays, differenceInCalendarDays } from "date-fns";
+import { format, parseISO } from "date-fns";
 import type {
   ItinerarioData,
   Actividad,

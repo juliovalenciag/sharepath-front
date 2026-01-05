@@ -15,7 +15,6 @@ import {
     MapPin, 
     Star, 
     Loader2, 
-    MoreHorizontal,
     Navigation
 } from "lucide-react"; // Usamos Lucide para consistencia
 

@@ -8,14 +8,10 @@ import {
   IconMapPin,
   IconUsers,
   IconFileText,
-  IconSettings,
-  IconBell,
 } from "@tabler/icons-react";
 
 import { NavDocuments } from "@/components/viajero-components/nav-documents";
 import { NavMain } from "@/components/viajero-components/nav-main";
-import { NavSecondary } from "@/components/viajero-components/nav-secondary";
-import { NavUser } from "@/components/viajero-components/nav-user";
 
 import {
   Sidebar,
@@ -26,7 +22,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { set } from "date-fns";
 
 const data = {
   user: {

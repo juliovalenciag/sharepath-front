@@ -1,11 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { format, formatDistanceToNow } from "date-fns";
-import { es } from "date-fns/locale";
+// import { format, formatDistanceToNow } from "date-fns";
+// import { es } from "date-fns/locale";
 import {
   CheckCircle2,
-  XCircle,
   Trash2,
   Eye,
   Search,
@@ -14,17 +13,13 @@ import {
   Loader2,
   ShieldAlert,
   FileText,
-  History,
   Image as ImageIcon,
   MapPin,
   RefreshCw,
   MoreHorizontal,
   Clock,
-  User,
   Flag,
   AlertCircle,
-  ArrowUpRight,
-  Calendar
 } from "lucide-react";
 
 import {

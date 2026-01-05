@@ -8,14 +8,11 @@ import { es } from "date-fns/locale";
 import {
   CalendarDays,
   Map as MapIcon,
-  Edit3,
   ArrowLeft,
   Share2,
   Clock,
   Loader2,
   List,
-  MapPin,
-  Globe,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";

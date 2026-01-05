@@ -10,7 +10,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   Loader2,
-  Filter,
   Search
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";

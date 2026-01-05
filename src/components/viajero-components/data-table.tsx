@@ -59,7 +59,6 @@ import { Button } from "@/components/ui/button"
 import {
   ChartConfig,
   ChartContainer,
-  ChartTooltip,
 } from "@/components/ui/chart"
 import { Checkbox } from "@/components/ui/checkbox"
 import {

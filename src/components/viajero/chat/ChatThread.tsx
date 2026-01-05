@@ -4,7 +4,7 @@ import * as React from "react";
 import { Conversation, Message } from "./_types";
 // import { currentUser } from "./_mock";
 import { cn } from "@/lib/utils";
-import { Check, CheckCheck } from "lucide-react";
+
 
 function formatDay(dateISO: string) {
   const d = new Date(dateISO);
@@ -33,7 +33,7 @@ function MessageStatus({ status }: { status?: string | number }){
 export function ChatThread({
   conversation,
   onSend,
-  onToggleDetails,
+  // onToggleDetails,
   selfUserId,
 }: {
   conversation: Conversation;
@@ -42,7 +42,7 @@ export function ChatThread({
   selfUserId: string;
 }) {
   const [text, setText] = React.useState("");
-  const [typing, setTyping] = React.useState(false);
+  const [, setTyping] = React.useState(false);
 
   /*Para que los mensajes se muestren hasta abajo*/
   const messagesRef = React.useRef<HTMLDivElement | null>(null);

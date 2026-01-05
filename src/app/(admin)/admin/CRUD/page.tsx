@@ -6,13 +6,9 @@ import {
   Map, 
   Trash2, 
   Eye, 
-  Settings, 
-  MoreVertical, 
   Image as ImageIcon, 
   Calendar,
   MapPin,
-  ChevronLeft,
-  ChevronRight,
   Filter,
   RefreshCw,
   AlertCircle
@@ -30,6 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import Image from "next/image";
 
 // --- Interfaces ---
 type ItinerarioUI = ItinerarioData & {
@@ -240,19 +237,19 @@ export default function ItinerariosPage() {
     setItinerarioSeleccionado(null);
   };
 
-  const nextSlide = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!itinerarioSeleccionado) return;
-    const total = (itinerarioSeleccionado as any).imagenes.length;
-    setCarouselIndex((prev) => (prev + 1) % total);
-  };
+  // const nextSlide = (e: React.MouseEvent) => {
+  //   e.stopPropagation();
+  //   if (!itinerarioSeleccionado) return;
+  //   const total = (itinerarioSeleccionado as any).imagenes.length;
+  //   setCarouselIndex((prev) => (prev + 1) % total);
+  // };
 
-  const prevSlide = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!itinerarioSeleccionado) return;
-    const total = (itinerarioSeleccionado as any).imagenes.length;
-    setCarouselIndex((prev) => (prev - 1 + total) % total);
-  };
+  // const prevSlide = (e: React.MouseEvent) => {
+  //   e.stopPropagation();
+  //   if (!itinerarioSeleccionado) return;
+  //   const total = (itinerarioSeleccionado as any).imagenes.length;
+  //   setCarouselIndex((prev) => (prev - 1 + total) % total);
+  // };
 
   const handleEliminar = async (id: number | string) => {
     const itinerario = itinerariosData.find((item) => item.id === id);
@@ -395,7 +392,7 @@ export default function ItinerariosPage() {
                         <div className="flex items-center">
                           <div className="h-12 w-20 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden border border-gray-200 relative">
                              {(item as any).imagenes?.[0] ? (
-                               <img 
+                               <Image
                                  src={(item as any).imagenes[0]} 
                                  className="h-full w-full object-cover" 
                                  alt="Thumbnail" 

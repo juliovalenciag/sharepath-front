@@ -2,7 +2,6 @@ import React from "react";
 import { Card, CardContent, CardDescription, CardTitle } from "./ui/card";
 import { GripVertical, Trash2 } from "lucide-react";
 import Image from "next/image";
-import { Input } from "./ui/input";
 import { Actividad } from "@/app/(viajero)/viajero/itinerarios/crear/page";
 
 import { getDefaultImageForCategory } from "@/lib/category-utils";
@@ -18,7 +17,6 @@ interface DiaDetalleProps {
 }
 export default function DiaDetalle({
   lugar,
-  onActivityChange,
   onDelete,
   dragListeners,
 }: DiaDetalleProps) {

@@ -12,10 +12,10 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ActiveThemeProvider } from "@/components/active-theme";
 import { StyleGlideProvider } from "@/components/styleglide-provider";
 import { Toaster } from "@/components/ui/sonner";
-import { createContext } from "react";
-import { ItinerariosAPI } from "@/api/ItinerariosAPI";
+// import { createContext } from "react";
+// import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 
-import { APP_CONFIG } from "@/config/app-config";
+// import { APP_CONFIG } from "@/config/app-config";
 import { getPreference } from "@/server/server-actions";
 import { PreferencesStoreProvider } from "@/stores/preferences/preferences-provider";
 import {
@@ -29,15 +29,15 @@ import { SocketProvider } from "@/context/socketContext";
 import {NotificationProvider} from "@/context/NotificationContext";
 
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+// const geistSans = Geist({
+//   variable: "--font-geist-sans",
+//   subsets: ["latin"],
+// });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+// const geistMono = Geist_Mono({
+//   variable: "--font-geist-mono",
+//   subsets: ["latin"],
+// });
 
 export const metadata: Metadata = {
   title: "Share Path",

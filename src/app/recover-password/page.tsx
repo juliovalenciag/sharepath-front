@@ -54,15 +54,15 @@ export default function RecoverPasswordPage() {
       return res.json();
     });
 
-    toast.promise(promise, {
-      loading: "Enviando código de verificación...",
-      success: (data) => {
-        setTimeout(() => router.push("/verify-code"), 1500);
-        return `Código enviado al correo ${correo}`;
-      },
-      error: (error) => error.message || "Error al enviar el código.",
-      finally: () => setIsLoading(false),
-    });
+    // toast.promise(promise, {
+    //   loading: "Enviando código de verificación...",
+    //   success: (data) => {
+    //     setTimeout(() => router.push("/verify-code"), 1500);
+    //     return `Código enviado al correo ${correo}`;
+    //   },
+    //   error: (error) => error.message || "Error al enviar el código.",
+    //   finally: () => setIsLoading(false),
+    // });
   };
 
   return (

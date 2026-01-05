@@ -25,7 +25,6 @@ import {
 
 import { AccountSwitcher } from "@/components/viajero/sidebar/account-switcher";
 import { LayoutControls } from "@/components/viajero/sidebar/layout-controls";
-import { SearchDialog } from "@/components/viajero/sidebar/search-dialog";
 import { NotificationBell } from "@/components/viajero/sidebar/notification-bell";
 import { ThemeSwitcher } from "@/components/viajero/sidebar/theme-switcher";
 export default async function Layout({

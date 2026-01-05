@@ -1,22 +1,16 @@
-"use client"
+"use client";
 //ESTE ARCHIVO YA NO SE USA
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSocket } from "@/context/socketContext"; // <--- Importar esto
 import {
-  IconCreditCard,
   IconDotsVertical,
   IconLogout,
-  IconNotification,
   IconUserCircle,
-} from "@tabler/icons-react"
+} from "@tabler/icons-react";
 
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,43 +19,41 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/ui/sidebar"
-import { url } from "inspector";
-import { useRouter } from "next/router";
+} from "@/components/ui/sidebar";
 
 export function NavUser({
   user,
 }: {
   user: {
-    username: string
-    correo: string
-    foto_url: string
-  }
+    username: string;
+    correo: string;
+    foto_url: string;
+  };
 }) {
   const { isMobile } = useSidebar();
-  const pathname     = usePathname();
+  const pathname = usePathname();
 
   const { recargarUsuario } = useSocket();
 
   const handleLogout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('user');
-    localStorage.removeItem('sessionID');
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("user");
+    localStorage.removeItem("sessionID");
 
     recargarUsuario();
 
-    window.location.href = '/';
+    window.location.href = "/";
     console.log("Sesion cerrada");
   };
 
   const menuItems = [
-    { title: "Cuenta", url: "/viajero/cuenta", icon: IconUserCircle},
+    { title: "Cuenta", url: "/viajero/cuenta", icon: IconUserCircle },
     // { title: "Notificaciones", url: "/viajero/notificaciones", icon: IconNotification},
   ];
 
@@ -75,8 +67,15 @@ export function NavUser({
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg grayscale">
-                <AvatarImage src={user.foto_url || "/videos/profile.jpg"} alt={user.username} />
-                <AvatarFallback className="rounded-lg">{ `${user.username?.charAt(0).toUpperCase()}${user.username?.charAt(1).toUpperCase()}` || "U" }</AvatarFallback>
+                <AvatarImage
+                  src={user.foto_url || "/videos/profile.jpg"}
+                  alt={user.username}
+                />
+                <AvatarFallback className="rounded-lg">
+                  {`${user.username?.charAt(0).toUpperCase()}${user.username
+                    ?.charAt(1)
+                    .toUpperCase()}` || "U"}
+                </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.username}</span>
@@ -97,7 +96,12 @@ export function NavUser({
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage src={user.foto_url} alt={user.username} />
-                  <AvatarFallback className="rounded-lg"> { `${user.username?.charAt(0).toUpperCase()}${user.username?.charAt(1).toUpperCase()}` || "U" } </AvatarFallback>
+                  <AvatarFallback className="rounded-lg">
+                    {" "}
+                    {`${user.username?.charAt(0).toUpperCase()}${user.username
+                      ?.charAt(1)
+                      .toUpperCase()}` || "U"}{" "}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user.username}</span>
@@ -137,7 +141,11 @@ export function NavUser({
             <DropdownMenuSeparator />
 
             <DropdownMenuItem asChild>
-              <Link href="/" className="flex items-center gap-2" onClick={handleLogout}>
+              <Link
+                href="/"
+                className="flex items-center gap-2"
+                onClick={handleLogout}
+              >
                 <IconLogout />
                 Cerrar sesión
               </Link>
@@ -146,5 +154,5 @@ export function NavUser({
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
-  )
+  );
 }

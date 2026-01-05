@@ -12,7 +12,7 @@ import { toast } from "sonner";
 // Importaciones de los componentes de Formulario de Shadcn UI
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
@@ -126,7 +126,7 @@ export default function SignUpPage() {
       const registerResponse = await api.doRegister({ nombre_completo: values.nombre_completo, correo: values.correo, 
         username: values.username, password: values.password, role: "user", privacity_mode: false,
       });
-      const loginUser = await api.doLogin(values.correo, values.password)
+      // const loginUser = await api.doLogin(values.correo, values.password)
       
        router.push("/viajero"); 
 
@@ -135,10 +135,10 @@ export default function SignUpPage() {
 
     toast.promise(promise, {
       loading: "Creando tu cuenta...",
-      success: (data) => {
-        setTimeout(() => router.push("/preferencias/pregunta1"), 3000);
-        return "¡Registro exitoso! Serás redirigido para darnos tus preferencias.";
-      },
+      // success: (data) => {
+      //   setTimeout(() => router.push("/preferencias/pregunta1"), 3000);
+      //   return "¡Registro exitoso! Serás redirigido para darnos tus preferencias.";
+      // },
       error: (error) => error.message,
       finally: () => setIsLoading(false),
     });

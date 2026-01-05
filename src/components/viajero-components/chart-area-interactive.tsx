@@ -14,8 +14,7 @@ import {
 } from "@/components/ui/card";
 import {
   ChartConfig,
-  ChartContainer,
-  ChartTooltip,
+  ChartContainer
 } from "@/components/ui/chart";
 import {
   Select,

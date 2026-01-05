@@ -3,11 +3,9 @@
 
 import * as React from "react";
 import { useRef, useEffect } from "react";
-import { cn } from "@/lib/utils";
 import { Conversation, Message, User } from "./_types";
 import { ChatsSidebar } from "./ChatsSidebar";
 import { ChatThread } from "./ChatThread";
-import { ChatDetails } from "./ChatDetails";
 import { useSocket } from "@/context/socketContext"; //
 // import { m } from "react-motion";
 //import { currentUser } from "./_mock"; //
@@ -206,7 +204,7 @@ export function ChatLayout() {
     });
 
     const nuevoMensaje = (message: { content: string; from: string; to: string }) => {
-        const currentActiveId = activeIdRef.current;
+        // const currentActiveId = activeIdRef.current;
         
         const fromSelf = message.from === userID; //Mensajes a mi mismo
         // const targetUserID = fromSelf ? message.to : message.from; //el target es el remitente (from)

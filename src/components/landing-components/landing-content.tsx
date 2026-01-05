@@ -3,7 +3,6 @@ import Image from "next/image";
 import {
   CheckCircle2,
   Map,
-  Users,
   Camera,
   Share2,
 } from "lucide-react";

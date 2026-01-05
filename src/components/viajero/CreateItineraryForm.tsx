@@ -18,7 +18,6 @@ import {
   IconCheck,
   IconX,
   IconInfoCircle,
-  IconUsersGroup,
 } from "@tabler/icons-react";
 
 import { Button } from "@/components/ui/button";
@@ -239,21 +238,21 @@ export default function CreateItineraryForm() {
 
   /* ------------------------- Helpers: companions -------------------------- */
 
-  function addCompanionTokenFromText(text: string) {
-    const token = text.trim().replace(/,+$/, "");
-    if (!token) return;
-    if (!companions.includes(token)) {
-      setValue("companions", [...companions, token], { shouldDirty: true });
-    }
-  }
+  // function addCompanionTokenFromText(text: string) {
+  //   const token = text.trim().replace(/,+$/, "");
+  //   if (!token) return;
+  //   if (!companions.includes(token)) {
+  //     setValue("companions", [...companions, token], { shouldDirty: true });
+  //   }
+  // }
 
-  function removeCompanionToken(token: string) {
-    setValue(
-      "companions",
-      companions.filter((t) => t !== token),
-      { shouldDirty: true }
-    );
-  }
+  // function removeCompanionToken(token: string) {
+  //   setValue(
+  //     "companions",
+  //     companions.filter((t) => t !== token),
+  //     { shouldDirty: true }
+  //   );
+  // }
 
   /* --------------------------- Date-picker logic -------------------------- */
 

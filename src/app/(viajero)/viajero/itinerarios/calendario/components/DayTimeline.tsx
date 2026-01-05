@@ -4,18 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import {
-  Clock,
-  MapPin,
-  ArrowRight,
-  Star,
-  MoreHorizontal,
-  Plus,
-} from "lucide-react";
+import { MapPin, ArrowRight, Star, MoreHorizontal, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 import type { ItinerarioData, LugarData } from "@/api/interfaces/ApiRoutes";
 
 // 1. IMPORTAMOS LA UTILIDAD DE CATEGORÍAS

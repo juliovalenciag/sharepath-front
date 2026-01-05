@@ -1,6 +1,6 @@
 // utils/itinerario-helpers.ts
 import { ItinerarioData } from "@/api/interfaces/ApiRoutes";
-import { format, differenceInDays, parseISO } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { es } from "date-fns/locale";
 
 export const transformarItinerario = (itinerarioApi: ItinerarioData) => {

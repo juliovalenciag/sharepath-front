@@ -36,9 +36,10 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { cn } from "@/lib/utils";
+import Image from "next/image";
+// import { ScrollArea } from "@/components/ui/scroll-area";
+// import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+// import { cn } from "@/lib/utils";
 
 // --- Tipos y Datos Mock ---
 
@@ -411,7 +412,7 @@ export default function DashboardAdmin() {
                                             {destino.calificacion} ★
                                         </Badge>
                                     </div>
-                                    <img
+                                    <Image
                                         src={destino.imagen}
                                         alt={destino.nombre}
                                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"

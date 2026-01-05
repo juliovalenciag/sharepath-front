@@ -10,8 +10,7 @@ import {
   User, 
   Shield, 
   Map, 
-  Users, 
-  Loader2,
+  Users,
   CalendarDays
 } from "lucide-react";
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";

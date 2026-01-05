@@ -1,4 +1,5 @@
 import { lugar } from "@/app/(dashboard)/dashboard/reportes/page"
+import Image from "next/image";
 
 interface ListaProps
 {
@@ -15,7 +16,7 @@ export default function ListaLugares({ lugares, onAddLugar } : ListaProps) {
         >
             <div>
                 { lugar.foto_url && (
-                    <img
+                    <Image
                         src={lugar.foto_url}
                         alt={lugar.nombre}
                         className="w-16 h-16 object-cover rounded-lg mr-4"

@@ -18,7 +18,6 @@ import { cn } from "@/lib/utils";
 import { PreguntaWrapper } from "@/components/cuestionario/PreguntaWrapper";
 
 import {
-  MapPin,
   Landmark,
   Trees,
   Tent,

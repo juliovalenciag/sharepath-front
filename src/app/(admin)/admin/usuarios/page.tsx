@@ -2,14 +2,9 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { 
-  Pencil, 
-  Lock, 
-  Unlock,
   Trash2, 
   Search, 
   Filter, 
-  UserPlus, 
-  MoreVertical,
   Shield,
   User as UserIcon,
   AlertCircle

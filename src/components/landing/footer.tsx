@@ -1,24 +1,8 @@
-import Link from "next/link";
 
-import { ArrowUpRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
 export function Footer() {
-  const navigation = [
-    { name: "Producto", href: "/#feature-modern-teams" },
-    { name: "Sobre nosotros", href: "/about" },
-    { name: "Precios", href: "/pricing" },
-    { name: "Preguntas frecuentes", href: "/faq" },
-    { name: "Contacto", href: "/contact" },
-  ];
-
-  const social = [
-    { name: "X (Twitter)", href: "https://x.com/ausrobdev" },
-    { name: "LinkedIn", href: "#" },
-  ];
-
-  const legal = [{ name: "Política de privacidad", href: "/privacy" }];
 
   return (
     <footer className="flex flex-col items-center gap-14 pt-28 lg:pt-32">

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { HiOutlineMagnifyingGlass } from "react-icons/hi2";
-import { Eye, Trash2, Settings } from "lucide-react";
+import { Trash2 } from "lucide-react";
 
 interface Itinerario {
   id: number;

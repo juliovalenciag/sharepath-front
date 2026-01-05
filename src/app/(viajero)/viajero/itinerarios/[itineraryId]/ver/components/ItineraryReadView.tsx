@@ -14,7 +14,6 @@ import {
   Clock,
   Loader2,
   List,
-  MapPin,
   Globe,
 } from "lucide-react";
 

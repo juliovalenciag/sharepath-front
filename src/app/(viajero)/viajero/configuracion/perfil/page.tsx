@@ -6,7 +6,6 @@ import {
   Globe2,
   CalendarDays,
   Loader2,
-  Heart,
   Users,
   Compass,
 } from "lucide-react";
@@ -27,24 +26,24 @@ import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 
 // --- Tipos que vienen (o vendrán) del backend ---
 
-interface ApiUser {
-  username: string;
-  correo: string;
-  foto_url: string;
+// interface ApiUser {
+//   username: string;
+//   correo: string;
+//   foto_url: string;
 
-  // Estos campos son opcionales por si después los agregas en el backend
-  bio?: string;
-  ciudad?: string;
-  pais?: string;
-  idiomas?: string[]; // ["Español", "Inglés"]
-  intereses?: string[]; // ["Gastronomía", "Museos", "Naturaleza"]
-  created_at?: string; // Fecha de registro
-  stats?: {
-    itinerarios_publicos?: number;
-    lugares_visitados?: number;
-    amigos?: number;
-  };
-}
+//   // Estos campos son opcionales por si después los agregas en el backend
+//   bio?: string;
+//   ciudad?: string;
+//   pais?: string;
+//   idiomas?: string[]; // ["Español", "Inglés"]
+//   intereses?: string[]; // ["Gastronomía", "Museos", "Naturaleza"]
+//   created_at?: string; // Fecha de registro
+//   stats?: {
+//     itinerarios_publicos?: number;
+//     lugares_visitados?: number;
+//     amigos?: number;
+//   };
+// }
 
 // Estructura interna del perfil
 interface TravelerProfile {

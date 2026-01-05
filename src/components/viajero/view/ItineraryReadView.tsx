@@ -6,8 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import {
-  getCategoryName,
-  getDefaultImageForCategory,
+  getCategoryName
 } from "@/lib/category-utils";
 
 // Carga dinámica en cliente para evitar SSR

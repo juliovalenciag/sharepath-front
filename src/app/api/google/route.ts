@@ -15,10 +15,10 @@ export async function POST(request: Request) {
   const body = await request.json();
 
   if (!body?.token) {
-    const response = NextResponse.json(
-      { message: "Token no enviado" },
-      { status: 400 }
-    );
+    // const response = NextResponse.json(
+    //   { message: "Token no enviado" },
+    //   { status: 400 }
+    // );
   }
   const client = new OAuth2Client(CLIENT_ID);
 

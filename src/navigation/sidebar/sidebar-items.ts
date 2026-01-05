@@ -1,42 +1,10 @@
 import {
-  ShoppingBag,
-  Forklift,
-  Mail,
   MessageSquare,
-  Calendar,
-  Kanban,
-  ReceiptText,
-  Users,
-  Lock,
-  User,
   House,
-  UserPen,
-  Fingerprint,
-  LayoutPanelLeft,
   BookMarked,
-  Map,
-  SquareArrowUpRight,
-  LayoutDashboard,
   BookUser,
   type LucideIcon,
-  Settings,
 } from "lucide-react";
-
-import {
-  IconCamera,
-  IconFileAi,
-  IconFileDescription,
-  IconHelp,
-  IconInnerShadowTop,
-  IconSearch,
-  IconSettings,
-  IconUsers,
-  IconHomeFilled,
-  IconCalendarFilled,
-  IconMessages,
-  IconCompassFilled,
-  IconMapPinFilled,
-} from "@tabler/icons-react";
 
 export interface NavSubItem {
   title: string;
@@ -140,7 +108,7 @@ export const sidebarItems: NavGroup[] = [
   //           url: "/viajero/configuracion/apariencia",
   //           icon: LayoutPanelLeft,
   //           newTab: false,
-         
+
   //         },
   //         {
   //           title: "Notificaciones",

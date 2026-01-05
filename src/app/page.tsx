@@ -1,10 +1,10 @@
 // import Image from "next/image";
-import HeroSection from "@/components/landing-components/hero-section";
-import IntroAnimada from "@/components/landing-components/introAnimada";
-import ContentSection from "@/components/landing-components/landing-content";
-import CallToAction from "@/components/landing-components/call-to-action";
-import FooterSection from "@/components/landing-components/footer";
-import { HeroHeader } from "@/components/landing-components/hero-header";
+// import HeroSection from "@/components/landing-components/hero-section";
+// import IntroAnimada from "@/components/landing-components/introAnimada";
+// import ContentSection from "@/components/landing-components/landing-content";
+// import CallToAction from "@/components/landing-components/call-to-action";
+// import FooterSection from "@/components/landing-components/footer";
+// import { HeroHeader } from "@/components/landing-components/hero-header";
 
 import { Background } from "@/components/landing/background";
 import { FAQ } from "@/components/landing/faq";

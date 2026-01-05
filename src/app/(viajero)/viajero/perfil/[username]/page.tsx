@@ -23,8 +23,6 @@ import { Card } from "@/components/ui/card";
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 import { getInitials } from "@/lib/utils";
 import { UserInfoResponse } from "@/api/interfaces/ApiRoutes";
-import { ListFriend } from "@/api/interfaces/ApiRoutes";
-import { Amigo } from "@/api/interfaces/ApiRoutes";
 
 export default function UserProfilePage() {
   const params = useParams();

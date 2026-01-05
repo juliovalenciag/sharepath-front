@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { ExternalLink, MapPin, Navigation } from "lucide-react";
+import { ExternalLink, Navigation } from "lucide-react";
 
 // Hook para actualizar el centro si cambian las props
 function MapUpdater({ center }: { center: [number, number] }) {
@@ -21,7 +21,7 @@ interface MiniMapProps {
   title?: string;
 }
 
-export default function MiniMap({ lat, lng, title }: MiniMapProps) {
+export default function MiniMap({ lat, lng }: MiniMapProps) {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {

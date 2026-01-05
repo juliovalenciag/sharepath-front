@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 
 export default function ViajeroChatsPage() {
   const searchParams = useSearchParams();
-  const initialUsername = searchParams.get("username") || undefined;
+  // const initialUsername = searchParams.get("username") || undefined;
 
   return (
     // <div className="min-h-[calc(100dvh-64px)] bg-background">

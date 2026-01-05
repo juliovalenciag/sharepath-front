@@ -1,7 +1,7 @@
-import { useState } from "react";
+// import { useState } from "react";
 
 export function useToast() {
-  const [message, setMessage] = useState("");
+  // const [message, setMessage] = useState("");
 
   const toast = ({ title, description, variant }: any) => {
     const text = `${title}: ${description}`;

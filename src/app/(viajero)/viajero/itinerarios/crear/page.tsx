@@ -31,7 +31,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Progress } from "@/components/ui/progress";
 
 // Componentes Presentacionales
 import { ItineraryHeader } from "./components/ItineraryHeader";

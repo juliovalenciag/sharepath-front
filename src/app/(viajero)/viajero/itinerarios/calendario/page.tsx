@@ -10,7 +10,6 @@ import { toast } from "sonner";
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 import type {
   ItinerarioData,
-  ItinerarioListResponse,
   LugarData,
 } from "@/api/interfaces/ApiRoutes";
 

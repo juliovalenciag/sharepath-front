@@ -6,15 +6,15 @@ import { Button } from "@/components/ui/button";
 import { ItinerariosAPI } from "@/api/ItinerariosAPI";
 import type { Publicacion } from "@/api/interfaces/ApiRoutes";
 import { Loader2, MapPin, Compass, SearchX, RefreshCw, Filter } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 
 export default function ViajeroLanding() {
   const [query, setQuery] = useState("");
   const [estadoSeleccionado, setEstadoSeleccionado] = useState("todos");
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState("todas");
-  const [publicaciones, setPublicaciones] = useState<any[]>([]);
+  const [ setPublicaciones] = useState<any[]>([]);
   const [todasLasPublicaciones, setTodasLasPublicaciones] = useState<any[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);

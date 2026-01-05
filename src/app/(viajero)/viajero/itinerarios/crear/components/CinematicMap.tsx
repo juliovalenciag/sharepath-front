@@ -26,7 +26,6 @@ import {
   Clock,
   Footprints,
   Layers,
-  LocateFixed,
   Map as MapIcon,
   Navigation,
   ChevronLeft,

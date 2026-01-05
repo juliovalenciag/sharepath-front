@@ -1,10 +1,9 @@
 import React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import Image from "next/image";
-import { HeroHeader } from "@/components/landing-components/hero-header";
 import { InfiniteSlider } from "@/components/ui/infinite-slider";
 import { ProgressiveBlur } from "@/components/ui/progressive-blur";
+import Image from "next/image";
 
 export default function HeroSection() {
   return (
@@ -20,11 +19,11 @@ export default function HeroSection() {
             playsInline
             className="absolute top-0 left-0 w-full h-full object-cover -z-20"
           >
-            <source src="/videos/video_bandera.mp4" type="video/mp4"/>
+            <source src="/videos/video_bandera.mp4" type="video/mp4" />
             Tu navegador no soporta el tag de video
           </video>
 
-        <div className="absolute top-0 left-0 w-full h-full bg-black/20 dark:bg-black/60 -z-10"></div>
+          <div className="absolute top-0 left-0 w-full h-full bg-black/20 dark:bg-black/60 -z-10"></div>
 
           <div className="pb-24 pt-12 md:pb-32 lg:pb-56 lg:pt-44">
             <div className="relative mx-auto flex max-w-6xl flex-col px-6 lg:block">
@@ -75,54 +74,46 @@ export default function HeroSection() {
               </div>
               <div className="relative py-6 md:w-[calc(100%-11rem)]">
                 <InfiniteSlider speedOnHover={20} speed={40} gap={150}>
-                  
                   <div className="flex">
-                    <img
+                    <Image
                       className="mx-auto h-4 w-fit dark:invert"
                       src="https://upload.wikimedia.org/wikipedia/commons/e/ea/Mapa_M%C3%A9xico%2C_D._F..svg"
                       alt="CDMX"
                       height="1000"
-                      width="auto"
                     />
                   </div>
                   <div className="flex">
-                    <img
+                    <Image
                       className="mx-auto h-5 w-fit dark:invert"
                       src="https://upload.wikimedia.org/wikipedia/commons/9/91/Blank_map_of_Morelos.svg"
                       alt="Morelos"
                       height="1000"
-                      width="auto"
                     />
                   </div>
                   <div className="flex">
-                    <img
+                    <Image
                       className="mx-auto h-5 w-fit dark:invert"
                       src="https://upload.wikimedia.org/wikipedia/commons/2/26/Blank_map_of_Hidalgo.svg"
                       alt="Hidalgo"
                       height="1000"
-                      width="auto"
                     />
                   </div>
                   <div className="flex">
-                    <img
+                    <Image
                       className="mx-auto h-4 w-fit dark:invert"
                       src="https://upload.wikimedia.org/wikipedia/commons/f/f3/Regions_of_the_state_of_Mexico_%28blank%29.svg"
                       alt="Estado de México"
                       height="1000"
-                      width="auto"
                     />
                   </div>
                   <div className="flex">
-                    <img
+                    <Image
                       className="mx-auto h-7 w-fit dark:invert"
                       src="https://upload.wikimedia.org/wikipedia/commons/2/26/QUE-mun-map.svg"
                       alt="Queretaro"
                       height="1000"
-                      width="auto"
                     />
                   </div>
-
-            
                 </InfiniteSlider>
 
                 <div className="bg-linear-to-r from-background absolute inset-y-0 left-0 w-20"></div>
